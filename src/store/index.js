@@ -74,7 +74,9 @@ export const useSettingsStore = create(
       darkMode: 'auto', // 'light' | 'dark' | 'auto'
       textSize: 'M', // 'S' | 'M' | 'L'
       ttsSpeed: 1,
-      ttsVoiceId: null, // ID de voz TTS seleccionada
+      ttsVoiceId: null,
+      elevenlabsApiKey: '',
+      elevenlabsVoiceId: 'onwK4e9ZLuTAKqWW03F9', // Daniel — voz por defecto de ElevenLabs
       dailyReminder: true,
       reminderTime: '07:00',
 
@@ -82,6 +84,8 @@ export const useSettingsStore = create(
       setTextSize: (textSize) => set({ textSize }),
       setTtsSpeed: (ttsSpeed) => set({ ttsSpeed }),
       setTtsVoiceId: (ttsVoiceId) => set({ ttsVoiceId }),
+      setElevenlabsApiKey: (k) => set({ elevenlabsApiKey: k }),
+      setElevenlabsVoiceId: (id) => set({ elevenlabsVoiceId: id }),
       setDailyReminder: (v) => set({ dailyReminder: v }),
       setReminderTime: (t) => set({ reminderTime: t }),
     }),

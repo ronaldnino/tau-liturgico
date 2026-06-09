@@ -4,14 +4,23 @@ import {
   Text,
   ScrollView,
   TouchableOpacity,
+  ActivityIndicator,
   StyleSheet,
   useColorScheme,
   Animated,
   Easing,
-  Linking,
+  Platform,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import Tts from 'react-native-tts';
+const _Sound = () => {
+  const mod = require('react-native-sound');
+  if (!mod)
+    throw new Error(
+      'react-native-sound no disponible. Corre: cd ios && pod install, luego reconstruye la app.'
+    );
+  return mod.default ?? mod;
+};
+const _Tts = () => require('react-native-tts').default;
 import { Colors } from '../theme';
 import { LitBadge } from '../components';
 import { useSettingsStore, useNotesStore, useLiturgicalStore } from '../store';
@@ -21,6 +30,7 @@ import {
   LITURGICAL_LABELS,
 } from '../data/liturgical';
 import { fetchDailyReadings } from '../services/lectionary';
+import { synthesize } from '../services/elevenlabs';
 
 const _rNow = new Date();
 const TODAY_ISO = `${_rNow.getFullYear()}-${String(_rNow.getMonth() + 1).padStart(2, '0')}-${String(_rNow.getDate()).padStart(2, '0')}`;
@@ -39,122 +49,404 @@ const _MONTHS_SHORT_ES = [
   'dic',
 ];
 
-const READING_LABELS = [
+const _READING_SHORT = {
+  'Primera Lectura': '1ª',
+  'Segunda Lectura': '2ª',
+  'Salmo Responsorial': 'Sal',
+  'Santo Evangelio': 'Ev',
+};
+const _FALLBACK_LABELS = [
   { short: '1ª', label: 'Primera Lectura' },
   { short: 'Sal', label: 'Salmo Responsorial' },
-  { short: 'Ev', label: 'Evangelio' },
+  { short: 'Ev', label: 'Santo Evangelio' },
 ];
 
-const MALE_NAMES = ['jorge', 'juan', 'diego', 'carlos', 'miguel', 'antonio'];
-const FEMALE_NAMES = [
-  'paulina',
-  'mónica',
-  'monica',
-  'luciana',
-  'isabel',
-  'sofía',
-  'sofia',
-  'laura',
-];
-
-function isMaleVoice(v) {
-  return MALE_NAMES.some((n) => v.name?.toLowerCase().includes(n));
-}
-function isFemaleVoice(v) {
-  return FEMALE_NAMES.some((n) => v.name?.toLowerCase().includes(n));
-}
-
-function bestSpanish(voices, predicate) {
-  return (
-    voices
-      .filter(
-        (v) =>
-          v.language?.startsWith('es') &&
-          !v.notInstalled &&
-          !v.networkConnectionRequired &&
-          predicate(v)
-      )
-      .sort((a, b) => (b.quality ?? 0) - (a.quality ?? 0))[0] ?? null
-  );
-}
-
-const _BASE_RATE = 0.42; // tasa que suena natural a 1× en es-MX
-
-function useTTSPlayer(voiceId, speed, onFinish) {
-  const [isPlaying, setIsPlaying] = useState(false);
+function useElevenLabsPlayer(apiKey, voiceId, speed, onFinish) {
+  const [playerState, setPlayerState] = useState('idle'); // idle | loading | playing | paused
   const [activeIdx, setActiveIdx] = useState(0);
   const [progress, setProgress] = useState(0);
-  const voiceRef = useRef(voiceId);
-  const onFinishRef = useRef(onFinish);
+  const [wordRange, setWordRange] = useState({ start: -1, end: -1 });
+  const [ttsError, setTtsError] = useState(null);
 
-  useEffect(() => {
-    voiceRef.current = voiceId;
-  }, [voiceId]);
+  const soundRef = useRef(null);
+  const timerRef = useRef(null);
+  const wordsRef = useRef([]);
+  const durationRef = useRef(0);
+  const onFinishRef = useRef(onFinish);
+  const tokenRef = useRef(0); // invalida callbacks de plays anteriores
+
   useEffect(() => {
     onFinishRef.current = onFinish;
   }, [onFinish]);
 
   useEffect(() => {
-    Tts.setDefaultLanguage('es-MX');
-    Tts.setDefaultPitch(1.0);
-
-    const s1 = Tts.addEventListener('tts-start', () => {
-      setIsPlaying(true);
-      setProgress(0);
-    });
-    const s2 = Tts.addEventListener('tts-finish', () => {
-      setIsPlaying(false);
-      setProgress(100);
-      onFinishRef.current?.();
-    });
-    const s3 = Tts.addEventListener('tts-cancel', () => {
-      setIsPlaying(false);
-    });
-    const s4 = Tts.addEventListener('tts-progress', (e) => {
-      if (e.end > 0) setProgress(Math.min(100, Math.round((e.start / e.end) * 100)));
-    });
-
+    try {
+      const S = _Sound();
+      if (typeof S?.setCategory === 'function') S.setCategory('Playback', false);
+    } catch (_) {}
     return () => {
-      Tts.stop();
-      s1.remove();
-      s2.remove();
-      s3.remove();
-      s4.remove();
+      clearInterval(timerRef.current);
+      soundRef.current?.stop();
+      soundRef.current?.release();
     };
   }, []);
 
-  const play = (idx, text, currentSpeed) => {
+  // Aplicar cambio de velocidad al sonido activo sin recargar audio
+  useEffect(() => {
+    soundRef.current?.setSpeed(speed ?? 1);
+  }, [speed]);
+
+  const _stopTimer = () => {
+    clearInterval(timerRef.current);
+    timerRef.current = null;
+  };
+
+  const _startTimer = (sound) => {
+    _stopTimer();
+    timerRef.current = setInterval(() => {
+      sound.getCurrentTime((sec, isPlaying) => {
+        if (!isPlaying) return;
+        const dur = durationRef.current;
+        if (dur > 0) setProgress(Math.min(99, Math.round((sec / dur) * 100)));
+        // Buscar palabra activa por tiempo real (alignment de ElevenLabs)
+        const words = wordsRef.current;
+        let w = null;
+        for (let i = words.length - 1; i >= 0; i--) {
+          if (words[i].startSec <= sec) {
+            w = words[i];
+            break;
+          }
+        }
+        setWordRange(w ? { start: w.start, end: w.end } : { start: -1, end: -1 });
+      });
+    }, 50);
+  };
+
+  const pause = useCallback(() => {
+    _stopTimer();
+    soundRef.current?.pause();
+    setPlayerState('paused');
+    setWordRange({ start: -1, end: -1 });
+  }, []);
+
+  const play = useCallback(
+    async (idx, text) => {
+      // Reanudar si es la misma lectura pausada
+      if (playerState === 'paused' && activeIdx === idx && soundRef.current) {
+        const myToken = ++tokenRef.current;
+        soundRef.current.setSpeed(speed ?? 1);
+        soundRef.current.play((ok) => {
+          if (myToken !== tokenRef.current) return;
+          _stopTimer();
+          soundRef.current?.release();
+          soundRef.current = null;
+          setPlayerState('idle');
+          setProgress(ok ? 100 : 0);
+          setWordRange({ start: -1, end: -1 });
+          if (ok) onFinishRef.current?.();
+        });
+        setPlayerState('playing');
+        _startTimer(soundRef.current);
+        return;
+      }
+
+      // Nueva lectura: cancelar reproducción actual
+      const myToken = ++tokenRef.current;
+      _stopTimer();
+      soundRef.current?.stop();
+      soundRef.current?.release();
+      soundRef.current = null;
+
+      setTtsError(null);
+      setPlayerState('loading');
+      setProgress(0);
+      setWordRange({ start: -1, end: -1 });
+
+      let result;
+      try {
+        result = await synthesize(apiKey, voiceId, text);
+      } catch (e) {
+        if (myToken !== tokenRef.current) return;
+        setTtsError(e.message);
+        setPlayerState('idle');
+        return;
+      }
+      if (myToken !== tokenRef.current) return;
+
+      const { audioPath, words } = result;
+      const SoundClass = _Sound();
+      const sound = new SoundClass(audioPath, '', (err) => {
+        if (myToken !== tokenRef.current) {
+          sound.release();
+          return;
+        }
+        if (err) {
+          setTtsError(err.message);
+          setPlayerState('idle');
+          return;
+        }
+        sound.setSpeed(speed ?? 1);
+        wordsRef.current = words;
+        durationRef.current = sound.getDuration();
+        soundRef.current = sound;
+        setActiveIdx(idx);
+        setPlayerState('playing');
+        setProgress(0);
+        sound.play((ok) => {
+          if (myToken !== tokenRef.current) return;
+          _stopTimer();
+          soundRef.current?.release();
+          soundRef.current = null;
+          setPlayerState('idle');
+          setProgress(ok ? 100 : 0);
+          setWordRange({ start: -1, end: -1 });
+          if (ok) onFinishRef.current?.();
+        });
+        _startTimer(sound);
+      });
+    },
+    [playerState, activeIdx, apiKey, voiceId, speed] // eslint-disable-line react-hooks/exhaustive-deps
+  );
+
+  const toggle = useCallback(
+    (idx, text) => {
+      if (playerState === 'playing' && activeIdx === idx) pause();
+      else play(idx, text);
+    },
+    [playerState, activeIdx, play, pause]
+  );
+
+  return {
+    isPlaying: playerState === 'playing',
+    isLoading: playerState === 'loading',
+    activeIdx,
+    progress,
+    wordRange,
+    ttsError,
+    toggle,
+  };
+}
+
+// iOS AVSpeechSynthesizer acepta rate en (0.0, 1.0) estricto; mapear nuestra escala 0.75–2×
+function _ttsRate(speed) {
+  const v = speed ?? 1;
+  return Platform.OS === 'ios' ? Math.max(0.01, Math.min(0.99, v * 0.45)) : v;
+}
+
+function useTTSPlayer(speed, onFinish) {
+  const [playerState, setPlayerState] = useState('idle');
+  const [activeIdx, setActiveIdx] = useState(0);
+  const [progress, setProgress] = useState(0);
+  const [wordRange, setWordRange] = useState({ start: -1, end: -1 });
+
+  const timerRef = useRef(null);
+  const t0Ref = useRef(0);
+  const charsPerMsRef = useRef(16 / 1000);
+  const totalCharsRef = useRef(0);
+  const charOffsetRef = useRef(0);
+  const wordsRef = useRef([]);
+  const activeIdxRef = useRef(0);
+  const pausePosRef = useRef(null);
+  const stoppingRef = useRef(false);
+  const onFinishRef = useRef(onFinish);
+  const speedRef = useRef(speed ?? 1);
+
+  useEffect(() => {
+    onFinishRef.current = onFinish;
+  }, [onFinish]);
+  useEffect(() => {
+    speedRef.current = speed ?? 1;
+  }, [speed]);
+
+  const _stopTimer = useCallback(() => {
+    clearInterval(timerRef.current);
+    timerRef.current = null;
+  }, []);
+
+  const _startTimer = useCallback((charOffset) => {
+    clearInterval(timerRef.current);
+    timerRef.current = setInterval(() => {
+      const elapsed = Date.now() - t0Ref.current;
+      const pos = charOffset + elapsed * charsPerMsRef.current;
+      const total = totalCharsRef.current;
+      if (total > 0) setProgress(Math.min(99, Math.round((pos / total) * 100)));
+      const words = wordsRef.current;
+      let w = null;
+      for (let i = words.length - 1; i >= 0; i--) {
+        if (words[i].start <= pos) {
+          w = words[i];
+          break;
+        }
+      }
+      setWordRange(w ? { start: w.start, end: w.end } : { start: -1, end: -1 });
+    }, 80);
+  }, []);
+
+  useEffect(() => {
+    let Tts;
+    try {
+      Tts = _Tts();
+    } catch (_) {
+      return;
+    }
+
+    const onStart = () => {
+      t0Ref.current = Date.now();
+    };
+
+    const onProgress = (e) => {
+      const charIndex = e.charIndex ?? e.location ?? 0;
+      const elapsed = Date.now() - t0Ref.current;
+      if (charIndex > 10 && elapsed > 100) {
+        charsPerMsRef.current = charIndex / elapsed;
+      }
+    };
+
+    const onFinishEvt = () => {
+      if (stoppingRef.current) {
+        stoppingRef.current = false;
+        return;
+      }
+      clearInterval(timerRef.current);
+      timerRef.current = null;
+      setPlayerState('idle');
+      setProgress(100);
+      setWordRange({ start: -1, end: -1 });
+      onFinishRef.current?.();
+    };
+
+    const onCancel = () => {
+      stoppingRef.current = false;
+    };
+
+    Tts.addEventListener('tts-start', onStart);
+    Tts.addEventListener('tts-progress', onProgress);
+    Tts.addEventListener('tts-finish', onFinishEvt);
+    Tts.addEventListener('tts-cancel', onCancel);
+
+    return () => {
+      Tts.removeEventListener('tts-start', onStart);
+      Tts.removeEventListener('tts-progress', onProgress);
+      Tts.removeEventListener('tts-finish', onFinishEvt);
+      Tts.removeEventListener('tts-cancel', onCancel);
+      clearInterval(timerRef.current);
+      stoppingRef.current = true;
+      Tts.stop();
+    };
+  }, []);
+
+  useEffect(() => {
+    try {
+      _Tts().setDefaultRate(_ttsRate(speed));
+    } catch (_) {}
+  }, [speed]);
+
+  const play = useCallback(
+    (idx, text) => {
+      let Tts;
+      try {
+        Tts = _Tts();
+      } catch (_) {
+        return;
+      }
+
+      // Reanudar desde pausa
+      if (pausePosRef.current?.idx === idx) {
+        const { charPos } = pausePosRef.current;
+        pausePosRef.current = null;
+        charOffsetRef.current = charPos;
+        stoppingRef.current = false;
+        Tts.setDefaultRate(_ttsRate(speedRef.current));
+        t0Ref.current = Date.now();
+        _startTimer(charPos);
+        Tts.speak(text.slice(charPos));
+        setActiveIdx(idx);
+        activeIdxRef.current = idx;
+        setPlayerState('playing');
+        return;
+      }
+
+      // Nueva lectura
+      stoppingRef.current = true;
+      Tts.stop();
+
+      const re = /\S+/g;
+      const words = [];
+      let m;
+      while ((m = re.exec(text)) !== null) {
+        words.push({ start: m.index, end: m.index + m[0].length });
+      }
+      wordsRef.current = words;
+      totalCharsRef.current = text.length;
+      charOffsetRef.current = 0;
+      charsPerMsRef.current = 16 / 1000;
+
+      Tts.setDefaultRate(_ttsRate(speedRef.current));
+      t0Ref.current = Date.now();
+      stoppingRef.current = false;
+      Tts.speak(text);
+      setActiveIdx(idx);
+      activeIdxRef.current = idx;
+      setPlayerState('playing');
+      setProgress(0);
+      setWordRange({ start: -1, end: -1 });
+      _startTimer(0);
+    },
+    [_startTimer]
+  );
+
+  const pause = useCallback(() => {
+    let Tts;
+    try {
+      Tts = _Tts();
+    } catch (_) {
+      return;
+    }
+    const elapsed = Date.now() - t0Ref.current;
+    const charPos = Math.min(
+      totalCharsRef.current,
+      charOffsetRef.current + Math.round(elapsed * charsPerMsRef.current)
+    );
+    pausePosRef.current = { idx: activeIdxRef.current, charPos };
+    stoppingRef.current = true;
+    clearInterval(timerRef.current);
+    timerRef.current = null;
     Tts.stop();
-    Tts.setDefaultRate(_BASE_RATE * (currentSpeed ?? speed ?? 1));
-    if (voiceRef.current) Tts.setDefaultVoice(voiceRef.current).catch(() => {});
-    setActiveIdx(idx);
-    setProgress(0);
-    Tts.speak(text);
-  };
+    setPlayerState('paused');
+    setWordRange({ start: -1, end: -1 });
+  }, []);
 
-  const pause = () => {
-    Tts.stop();
-    setIsPlaying(false);
-  };
+  const toggle = useCallback(
+    (idx, text) => {
+      if (playerState === 'playing' && activeIdx === idx) pause();
+      else play(idx, text);
+    },
+    [playerState, activeIdx, play, pause]
+  );
 
-  const toggle = (idx, text, currentSpeed) => {
-    if (isPlaying && activeIdx === idx) pause();
-    else play(idx, text, currentSpeed);
+  return {
+    isPlaying: playerState === 'playing',
+    isLoading: false,
+    activeIdx,
+    progress,
+    wordRange,
+    ttsError: null,
+    toggle,
   };
+}
 
-  return { isPlaying, activeIdx, progress, toggle };
+// Selecciona backend según si hay API key: ElevenLabs (premium) o TTS del sistema (gratis)
+function useAudioPlayer(apiKey, voiceId, speed, onFinish) {
+  const el = useElevenLabsPlayer(apiKey, voiceId, speed, apiKey ? onFinish : null);
+  const tts = useTTSPlayer(speed, !apiKey ? onFinish : null);
+  return apiKey ? el : tts;
 }
 
 export default function ReadingsScreen({ navigation, route }) {
   const insets = useSafeAreaInsets();
   const scheme = useColorScheme();
-  const {
-    darkMode,
-    ttsSpeed,
-    setTtsSpeed,
-    ttsVoiceId: ttsGender,
-    setTtsVoiceId: setTtsGender,
-  } = useSettingsStore();
+  const { darkMode, ttsSpeed, setTtsSpeed, elevenlabsApiKey, elevenlabsVoiceId } =
+    useSettingsStore();
   const { bookmarks, addBookmark, removeBookmark } = useNotesStore();
   const {
     readings: storeReadings,
@@ -166,16 +458,12 @@ export default function ReadingsScreen({ navigation, route }) {
   } = useLiturgicalStore();
   const dark = darkMode === 'dark' || (darkMode === 'auto' && scheme === 'dark');
 
-  // Fecha solicitada desde el calendario (ISO "YYYY-MM-DD") o null = hoy
   const targetDateISO = route?.params?.date ?? null;
   const routeColor = route?.params?.color ?? null;
   const routeCelebration = route?.params?.celebration ?? null;
   const isToday = !targetDateISO || targetDateISO === TODAY_ISO;
 
-  // Lecturas para fechas no-hoy: { iso, readings, error } o null
   const [dateResult, setDateResult] = useState(null);
-
-  // Resultado vigente solo si corresponde a la fecha activa
   const currentResult = dateResult?.iso === targetDateISO ? dateResult : null;
 
   const READINGS = isToday
@@ -184,18 +472,22 @@ export default function ReadingsScreen({ navigation, route }) {
       : STATIC_READINGS
     : (currentResult?.readings ?? []);
 
+  const readingLabels =
+    READINGS.length > 0
+      ? READINGS.map((r) => ({
+          short: _READING_SHORT[r.type] ?? '◆',
+          label: r.type,
+        }))
+      : _FALLBACK_LABELS;
+
   const bg = dark ? Colors.dark.bg : Colors.surface.secondary;
   const surface = dark ? Colors.dark.surface : Colors.surface.primary;
   const ink = dark ? Colors.dark.ink : Colors.ink.primary;
   const muted = dark ? Colors.dark.inkMuted : Colors.ink.muted;
   const border = dark ? Colors.dark.border : Colors.border.default;
 
-  const gender = ttsGender === 'male' ? 'male' : 'female';
   const [activeReading, setActiveReading] = useState(0);
-  const [voiceMap, setVoiceMap] = useState({ female: null, male: null });
-  const activeVoiceId = voiceMap[gender]?.id ?? null;
 
-  // Auto-avance: ref evita race conditions entre el callback del hook y el render
   const autoAdvanceRef = useRef(false);
   const handleFinish = useCallback(() => {
     setActiveReading((prev) => {
@@ -207,11 +499,15 @@ export default function ReadingsScreen({ navigation, route }) {
     });
   }, [READINGS.length]);
 
-  const { isPlaying, activeIdx, progress, toggle } = useTTSPlayer(
-    activeVoiceId,
-    ttsSpeed,
-    handleFinish
-  );
+  const {
+    isPlaying,
+    isLoading: ttsLoading,
+    activeIdx,
+    progress,
+    wordRange,
+    ttsError,
+    toggle,
+  } = useAudioPlayer(elevenlabsApiKey, elevenlabsVoiceId, ttsSpeed, handleFinish);
 
   // Dispara reproducción automática tras auto-avance
   useEffect(() => {
@@ -219,7 +515,7 @@ export default function ReadingsScreen({ navigation, route }) {
     autoAdvanceRef.current = false;
     const text = READINGS[activeReading]?.text;
     if (!text) return;
-    const t = setTimeout(() => toggle(activeReading, text, ttsSpeed), 600);
+    const t = setTimeout(() => toggle(activeReading, text), 600);
     return () => clearTimeout(t);
   }, [activeReading]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -229,17 +525,6 @@ export default function ReadingsScreen({ navigation, route }) {
     const idx = SPEED_OPTS.indexOf(ttsSpeed);
     setTtsSpeed(SPEED_OPTS[(idx + 1) % SPEED_OPTS.length]);
   }, [ttsSpeed, setTtsSpeed]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  useEffect(() => {
-    Tts.voices()
-      .then((all) => {
-        setVoiceMap({
-          female: bestSpanish(all, isFemaleVoice) ?? bestSpanish(all, () => true),
-          male: bestSpanish(all, isMaleVoice),
-        });
-      })
-      .catch(() => {});
-  }, []);
 
   // Sincronizar lecturas de hoy si no están o están caducadas
   const { lastSync } = useLiturgicalStore();
@@ -319,7 +604,6 @@ export default function ReadingsScreen({ navigation, route }) {
         return Math.ceil((new Date(y, m - 1, d) - new Date()) / 86400000);
       })()
     : 0;
-
   const isBookmarked = (ref) => bookmarks.some((b) => b.ref === ref);
 
   const toggleBookmark = (reading) => {
@@ -366,7 +650,7 @@ export default function ReadingsScreen({ navigation, route }) {
 
       {/* Tabs de lecturas */}
       <View style={[s.tabs, { backgroundColor: surface, borderBottomColor: border }]}>
-        {READING_LABELS.map((rl, i) => (
+        {readingLabels.map((rl, i) => (
           <TouchableOpacity
             key={i}
             style={[
@@ -394,13 +678,15 @@ export default function ReadingsScreen({ navigation, route }) {
         ) : (
           <View style={s.emptyState}>
             <Text style={[s.emptyText, { color: muted }]}>
-              {daysAhead > 62
-                ? 'Las lecturas de este día aún no están publicadas.\nDomínicos.org suele publicar con pocos días de antelación.'
+              {daysAhead > 62 || dateError === 'FECHA_SIN_LECTURAS'
+                ? 'Las lecturas de este día aún no están publicadas.\nSuelen publicarse con pocos días de antelación.'
                 : dateError || (isToday && syncError)
                   ? 'No se pudieron cargar las lecturas.\nVerifica tu conexión a internet.'
                   : 'No hay lecturas disponibles para este día.'}
             </Text>
-            {(dateError || (isToday && syncError)) && daysAhead <= 62 && (
+            {(dateError || (isToday && syncError)) &&
+            daysAhead <= 62 &&
+            dateError !== 'FECHA_SIN_LECTURAS' ? (
               <TouchableOpacity
                 onPress={handleRetry}
                 style={s.retryBtn}
@@ -408,7 +694,7 @@ export default function ReadingsScreen({ navigation, route }) {
               >
                 <Text style={s.retryBtnText}>Reintentar</Text>
               </TouchableOpacity>
-            )}
+            ) : null}
           </View>
         )
       ) : (
@@ -456,9 +742,14 @@ export default function ReadingsScreen({ navigation, route }) {
             </View>
           ) : null}
 
-          <Text style={[s.readingText, { color: ink }]}>
-            {READINGS[activeReading]?.text}
-          </Text>
+          <HighlightedText
+            text={READINGS[activeReading]?.text ?? ''}
+            start={isPlaying && activeIdx === activeReading ? wordRange.start : -1}
+            end={isPlaying && activeIdx === activeReading ? wordRange.end : -1}
+            style={s.readingText}
+            hlColor={Colors.brand.primary + '38'}
+            ink={ink}
+          />
 
           {/* Cierre litúrgico centrado y prominente */}
           <View style={[s.closingBlock, { borderTopColor: border }]}>
@@ -534,15 +825,18 @@ export default function ReadingsScreen({ navigation, route }) {
 
           {/* Play/Pause */}
           <TouchableOpacity
-            onPress={() =>
-              toggle(activeReading, READINGS[activeReading]?.text ?? '', ttsSpeed)
-            }
+            onPress={() => toggle(activeReading, READINGS[activeReading]?.text ?? '')}
             style={[s.playBtn, { backgroundColor: Colors.brand.primary }]}
             activeOpacity={0.85}
+            disabled={ttsLoading && activeIdx === activeReading}
           >
-            <Text style={s.playBtnIcon}>
-              {isPlaying && activeIdx === activeReading ? '⏸' : '▶'}
-            </Text>
+            {ttsLoading && activeIdx === activeReading ? (
+              <ActivityIndicator size="small" color="#fff" />
+            ) : (
+              <Text style={s.playBtnIcon}>
+                {isPlaying && activeIdx === activeReading ? '⏸' : '▶'}
+              </Text>
+            )}
           </TouchableOpacity>
 
           {/* Navegar lectura siguiente */}
@@ -573,48 +867,43 @@ export default function ReadingsScreen({ navigation, route }) {
           </TouchableOpacity>
         </View>
 
-        {/* Label lectura + selector de voz */}
+        {/* Label lectura + estado ElevenLabs */}
         <View style={s.playerFooter}>
           <Text style={[s.playerLabel, { color: muted }]}>
-            {READING_LABELS[activeReading]?.label}
+            {readingLabels[activeReading]?.label}
           </Text>
-          <View style={s.voiceToggle}>
-            <TouchableOpacity
-              onPress={() => setTtsGender('female')}
-              style={[
-                s.voiceBtn,
-                gender === 'female' && { backgroundColor: Colors.brand.primary },
-              ]}
+          {ttsError ? (
+            <Text
+              style={[s.ttsErrorText, { color: Colors.liturgical.red }]}
+              numberOfLines={2}
             >
-              <Text
-                style={[s.voiceBtnText, { color: gender === 'female' ? '#fff' : muted }]}
-              >
-                ♀ Mujer
+              {ttsError}
+            </Text>
+          ) : (
+            <View style={[s.elBadge, { borderColor: border }]}>
+              <Text style={[s.elBadgeText, { color: muted }]}>
+                {elevenlabsApiKey ? 'ElevenLabs' : 'Voz del sistema'}
               </Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              onPress={() =>
-                voiceMap.male ? setTtsGender('male') : Linking.openSettings()
-              }
-              style={[
-                s.voiceBtn,
-                gender === 'male' &&
-                  voiceMap.male && { backgroundColor: Colors.brand.primary },
-              ]}
-            >
-              <Text
-                style={[
-                  s.voiceBtnText,
-                  { color: gender === 'male' && voiceMap.male ? '#fff' : muted },
-                ]}
-              >
-                {voiceMap.male ? '♂ Hombre' : '♂ Instalar voz'}
-              </Text>
-            </TouchableOpacity>
-          </View>
+            </View>
+          )}
         </View>
       </View>
     </View>
+  );
+}
+
+// ── Texto con palabra resaltada ────────────────────────────────
+function HighlightedText({ text, start, end, style, hlColor, ink }) {
+  if (!text) return null;
+  if (start < 0 || end <= start) {
+    return <Text style={[style, { color: ink }]}>{text}</Text>;
+  }
+  return (
+    <Text style={[style, { color: ink }]}>
+      {text.slice(0, start)}
+      <Text style={{ backgroundColor: hlColor }}>{text.slice(start, end)}</Text>
+      {text.slice(end)}
+    </Text>
   );
 }
 
@@ -826,18 +1115,14 @@ const s = StyleSheet.create({
     letterSpacing: 0.5,
     textTransform: 'uppercase',
   },
-  voiceToggle: {
-    flexDirection: 'row',
-    gap: 6,
-  },
-  voiceBtn: {
-    paddingHorizontal: 10,
-    paddingVertical: 4,
+  elBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 3,
     borderRadius: 999,
-    borderWidth: 1,
-    borderColor: Colors.border.default,
+    borderWidth: 0.5,
   },
-  voiceBtnText: { fontSize: 11, fontWeight: '600' },
+  elBadgeText: { fontSize: 10, fontWeight: '600', letterSpacing: 0.5 },
+  ttsErrorText: { fontSize: 11, flex: 1, textAlign: 'right' },
 
   emptyState: {
     flex: 1,

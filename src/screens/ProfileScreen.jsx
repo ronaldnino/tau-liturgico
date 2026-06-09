@@ -1,10 +1,11 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
   ScrollView,
   Switch,
   TouchableOpacity,
+  TextInput,
   StyleSheet,
   useColorScheme,
   Alert,
@@ -14,6 +15,7 @@ import { Colors } from '../theme';
 import { Tau } from '../components';
 import { useSettingsStore, useAuthStore, useNotesStore } from '../store';
 import { CYCLE } from '../data/liturgical';
+import { clearTTSCache, DEFAULT_VOICE_ID } from '../services/elevenlabs';
 
 const SPEED_OPTIONS = [0.75, 1, 1.25, 1.5, 2];
 
@@ -52,9 +54,14 @@ export default function ProfileScreen() {
     setDarkMode,
     ttsSpeed,
     setTtsSpeed,
+    elevenlabsApiKey,
+    setElevenlabsApiKey,
+    elevenlabsVoiceId,
+    setElevenlabsVoiceId,
     dailyReminder,
     setDailyReminder,
   } = useSettingsStore();
+  const [showApiKey, setShowApiKey] = useState(false);
   const { notes } = useNotesStore();
   const { phone, logout } = useAuthStore();
   const dark = darkMode === 'dark' || (darkMode === 'auto' && scheme === 'dark');
@@ -162,6 +169,59 @@ export default function ProfileScreen() {
               ))}
             </View>
           }
+          isLast
+        />
+      </SettingsGroup>
+
+      {/* ElevenLabs */}
+      <SettingsGroup
+        title="ElevenLabs · Voz IA"
+        surface={surface}
+        ink={ink}
+        muted={muted}
+        border={border}
+      >
+        <View style={[sg.row, { borderBottomWidth: 0.5, borderBottomColor: border }]}>
+          <Text style={[sg.rowLabel, { color: ink }]}>API Key</Text>
+          <View style={s.apiKeyRow}>
+            <TextInput
+              value={elevenlabsApiKey}
+              onChangeText={setElevenlabsApiKey}
+              placeholder="sk-..."
+              placeholderTextColor={muted}
+              secureTextEntry={!showApiKey}
+              autoCapitalize="none"
+              autoCorrect={false}
+              style={[s.apiKeyInput, { color: ink, borderColor: border }]}
+            />
+            <TouchableOpacity onPress={() => setShowApiKey((v) => !v)} style={s.eyeBtn}>
+              <Text style={{ fontSize: 16 }}>{showApiKey ? '🙈' : '👁'}</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+        <View style={[sg.row, { borderBottomWidth: 0.5, borderBottomColor: border }]}>
+          <Text style={[sg.rowLabel, { color: ink }]}>Voice ID</Text>
+          <TextInput
+            value={elevenlabsVoiceId}
+            onChangeText={setElevenlabsVoiceId}
+            placeholder={DEFAULT_VOICE_ID}
+            placeholderTextColor={muted}
+            autoCapitalize="none"
+            autoCorrect={false}
+            style={[s.apiKeyInput, { color: ink, borderColor: border, width: 180 }]}
+          />
+        </View>
+        <SettingsRow
+          label="Limpiar caché de audio"
+          onPress={() =>
+            Alert.alert('Limpiar caché', '¿Borrar los archivos de audio guardados?', [
+              { text: 'Cancelar', style: 'cancel' },
+              { text: 'Limpiar', style: 'destructive', onPress: () => clearTTSCache() },
+            ])
+          }
+          ink={ink}
+          muted={muted}
+          border={border}
           isLast
         />
       </SettingsGroup>
@@ -328,6 +388,24 @@ const s = StyleSheet.create({
     borderWidth: 1,
   },
   speedChipText: { fontSize: 11, fontWeight: '600' },
+
+  apiKeyRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    flex: 1,
+    justifyContent: 'flex-end',
+  },
+  apiKeyInput: {
+    fontSize: 13,
+    borderWidth: 0.5,
+    borderRadius: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    width: 160,
+    textAlign: 'right',
+  },
+  eyeBtn: { padding: 4 },
 
   logoutBtn: {
     margin: 20,
