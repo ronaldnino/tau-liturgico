@@ -28,7 +28,7 @@ export default function PhoneScreen({ navigation }) {
   const [pickerOpen, setPickerOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const { setPhone: savePhone } = useAuthStore();
+  const { setPhone: savePhone, resetOnboarding } = useAuthStore();
 
   const digits = phone.replace(/\D/g, '');
   const isValid = digits.length >= 7;
@@ -61,7 +61,7 @@ export default function PhoneScreen({ navigation }) {
       >
         {/* Nav */}
         <View style={s.nav}>
-          <TouchableOpacity onPress={() => navigation.goBack()} style={s.backBtn}>
+          <TouchableOpacity onPress={resetOnboarding} style={s.backBtn}>
             <Text style={s.backArrow}>‹</Text>
           </TouchableOpacity>
           <Text style={s.step}>Paso 1 de 2</Text>

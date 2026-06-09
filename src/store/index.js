@@ -14,6 +14,7 @@ export const useAuthStore = create(
       setToken: (token) => set({ token, isAuthenticated: !!token }),
       setPhone: (phone) => set({ phone }),
       completeOnboarding: () => set({ hasCompletedOnboarding: true }),
+      resetOnboarding: () => set({ hasCompletedOnboarding: false }),
       logout: () => set({ isAuthenticated: false, token: null, phone: null }),
     }),
     {
