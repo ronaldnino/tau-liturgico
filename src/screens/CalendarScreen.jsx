@@ -57,15 +57,13 @@ function _isoDate(year, month, day) {
 
 function _buildMarkedDates(grid, viewYear, viewMonth, selectedISO) {
   const dates = {};
-  grid.forEach(({ day, inMonth, color, solemn, name, isToday, dow }) => {
+  grid.forEach(({ day, inMonth, color, solemn, isToday }) => {
     if (!inMonth) return;
     const key = _isoDate(viewYear, viewMonth, day);
-    const hasFeast = name !== null;
-    const isSunday = dow === 0;
     const litColor = Colors.liturgical[color] ?? Colors.liturgical.green;
     const dotColor = solemn ? Colors.liturgical.gold : litColor;
     dates[key] = {
-      dots: hasFeast || isSunday ? [{ key: color, color: dotColor }] : [],
+      dots: [{ key: color, color: dotColor }],
       selected: key === selectedISO,
       today: isToday,
       selectedColor: Colors.brand.primary,
