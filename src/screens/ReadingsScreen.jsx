@@ -78,19 +78,25 @@ function bestSpanish(voices, predicate) {
   );
 }
 
-function useTTSPlayer(voiceId) {
+const _BASE_RATE = 0.42; // tasa que suena natural a 1× en es-MX
+
+function useTTSPlayer(voiceId, speed, onFinish) {
   const [isPlaying, setIsPlaying] = useState(false);
   const [activeIdx, setActiveIdx] = useState(0);
   const [progress, setProgress] = useState(0);
   const voiceRef = useRef(voiceId);
+  const onFinishRef = useRef(onFinish);
+
   useEffect(() => {
     voiceRef.current = voiceId;
   }, [voiceId]);
+  useEffect(() => {
+    onFinishRef.current = onFinish;
+  }, [onFinish]);
 
   useEffect(() => {
     Tts.setDefaultLanguage('es-MX');
     Tts.setDefaultPitch(1.0);
-    Tts.setDefaultRate(0.42);
 
     const s1 = Tts.addEventListener('tts-start', () => {
       setIsPlaying(true);
@@ -99,6 +105,7 @@ function useTTSPlayer(voiceId) {
     const s2 = Tts.addEventListener('tts-finish', () => {
       setIsPlaying(false);
       setProgress(100);
+      onFinishRef.current?.();
     });
     const s3 = Tts.addEventListener('tts-cancel', () => {
       setIsPlaying(false);
@@ -116,8 +123,9 @@ function useTTSPlayer(voiceId) {
     };
   }, []);
 
-  const play = (idx, text) => {
+  const play = (idx, text, currentSpeed) => {
     Tts.stop();
+    Tts.setDefaultRate(_BASE_RATE * (currentSpeed ?? speed ?? 1));
     if (voiceRef.current) Tts.setDefaultVoice(voiceRef.current).catch(() => {});
     setActiveIdx(idx);
     setProgress(0);
@@ -129,9 +137,9 @@ function useTTSPlayer(voiceId) {
     setIsPlaying(false);
   };
 
-  const toggle = (idx, text) => {
+  const toggle = (idx, text, currentSpeed) => {
     if (isPlaying && activeIdx === idx) pause();
-    else play(idx, text);
+    else play(idx, text, currentSpeed);
   };
 
   return { isPlaying, activeIdx, progress, toggle };
@@ -143,6 +151,7 @@ export default function ReadingsScreen({ navigation, route }) {
   const {
     darkMode,
     ttsSpeed,
+    setTtsSpeed,
     ttsVoiceId: ttsGender,
     setTtsVoiceId: setTtsGender,
   } = useSettingsStore();
@@ -185,7 +194,41 @@ export default function ReadingsScreen({ navigation, route }) {
   const [activeReading, setActiveReading] = useState(0);
   const [voiceMap, setVoiceMap] = useState({ female: null, male: null });
   const activeVoiceId = voiceMap[gender]?.id ?? null;
-  const { isPlaying, activeIdx, progress, toggle } = useTTSPlayer(activeVoiceId);
+
+  // Auto-avance: ref evita race conditions entre el callback del hook y el render
+  const autoAdvanceRef = useRef(false);
+  const handleFinish = useCallback(() => {
+    setActiveReading((prev) => {
+      if (prev < READINGS.length - 1) {
+        autoAdvanceRef.current = true;
+        return prev + 1;
+      }
+      return prev;
+    });
+  }, [READINGS.length]);
+
+  const { isPlaying, activeIdx, progress, toggle } = useTTSPlayer(
+    activeVoiceId,
+    ttsSpeed,
+    handleFinish
+  );
+
+  // Dispara reproducción automática tras auto-avance
+  useEffect(() => {
+    if (!autoAdvanceRef.current) return;
+    autoAdvanceRef.current = false;
+    const text = READINGS[activeReading]?.text;
+    if (!text) return;
+    const t = setTimeout(() => toggle(activeReading, text, ttsSpeed), 600);
+    return () => clearTimeout(t);
+  }, [activeReading]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Opciones de velocidad — ciclado desde el badge del player
+  const SPEED_OPTS = [0.75, 1, 1.25, 1.5, 2];
+  const cycleSpeed = useCallback(() => {
+    const idx = SPEED_OPTS.indexOf(ttsSpeed);
+    setTtsSpeed(SPEED_OPTS[(idx + 1) % SPEED_OPTS.length]);
+  }, [ttsSpeed, setTtsSpeed]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     Tts.voices()
@@ -491,7 +534,9 @@ export default function ReadingsScreen({ navigation, route }) {
 
           {/* Play/Pause */}
           <TouchableOpacity
-            onPress={() => toggle(activeReading, READINGS[activeReading]?.text ?? '')}
+            onPress={() =>
+              toggle(activeReading, READINGS[activeReading]?.text ?? '', ttsSpeed)
+            }
             style={[s.playBtn, { backgroundColor: Colors.brand.primary }]}
             activeOpacity={0.85}
           >
@@ -516,10 +561,16 @@ export default function ReadingsScreen({ navigation, route }) {
             </Text>
           </TouchableOpacity>
 
-          {/* Velocidad */}
-          <View style={[s.speedBadge, { borderColor: border }]}>
-            <Text style={[s.speedText, { color: muted }]}>{ttsSpeed || 1}×</Text>
-          </View>
+          {/* Velocidad — tappable para ciclar */}
+          <TouchableOpacity
+            onPress={cycleSpeed}
+            style={[s.speedBadge, { borderColor: Colors.brand.primary }]}
+            activeOpacity={0.7}
+          >
+            <Text style={[s.speedText, { color: Colors.brand.primary }]}>
+              {ttsSpeed || 1}×
+            </Text>
+          </TouchableOpacity>
         </View>
 
         {/* Label lectura + selector de voz */}
