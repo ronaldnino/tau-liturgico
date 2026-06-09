@@ -13,6 +13,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Colors } from '../theme';
 import { Tau } from '../components';
 import { useSettingsStore, useAuthStore, useNotesStore } from '../store';
+import { CYCLE } from '../data/liturgical';
 
 const SPEED_OPTIONS = [0.75, 1, 1.25, 1.5, 2];
 
@@ -95,9 +96,7 @@ export default function ProfileScreen() {
           <Text style={[s.profilePhone, { color: ink }]}>
             {phone || '+502 0000-0000'}
           </Text>
-          <Text style={[s.profileSub, { color: muted }]}>
-            Año litúrgico 2026 · Ciclo C
-          </Text>
+          <Text style={[s.profileSub, { color: muted }]}>{CYCLE.fullLabel}</Text>
         </View>
       </View>
 
@@ -107,7 +106,7 @@ export default function ProfileScreen() {
         <View style={[s.statDivider, { backgroundColor: border }]} />
         <StatItem value="12" label="Lecturas" ink={ink} muted={muted} />
         <View style={[s.statDivider, { backgroundColor: border }]} />
-        <StatItem value="2026" label="Año" ink={ink} muted={muted} />
+        <StatItem value={CYCLE.liturgicalYear} label="Año" ink={ink} muted={muted} />
       </View>
 
       {/* Apariencia */}
@@ -209,14 +208,28 @@ export default function ProfileScreen() {
         />
         <SettingsRow
           label="Ciclo litúrgico"
-          value="C (Lucas)"
+          value={CYCLE.label}
           ink={ink}
           muted={muted}
           border={border}
         />
         <SettingsRow
-          label="Fuente de datos"
-          value="Misal Romano 3ª ed."
+          label="Año litúrgico"
+          value={String(CYCLE.liturgicalYear)}
+          ink={ink}
+          muted={muted}
+          border={border}
+        />
+        <SettingsRow
+          label="Lecturas diarias"
+          value="dominicos.org"
+          ink={ink}
+          muted={muted}
+          border={border}
+        />
+        <SettingsRow
+          label="Calendario"
+          value="Rito Romano"
           ink={ink}
           muted={muted}
           border={border}

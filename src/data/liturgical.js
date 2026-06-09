@@ -90,6 +90,26 @@ const _activeSeasonName = (() => {
 })();
 const _sm = _SEASON_META[_activeSeasonName] ?? _SEASON_META['Tiempo Ordinario'];
 
+// Ciclo litúrgico: A=Mateo, B=Marcos, C=Lucas.
+// advYear = año en que comienza el Adviento del ciclo actual.
+// Fórmula: ['A','B','C'][advYear % 3] donde 2022→A, 2023→B, 2024→C, 2025→A, …
+const _advYear = (() => {
+  const t = new Date();
+  t.setHours(0, 0, 0, 0);
+  return t >= _adventStart(_y) ? _y : _y - 1;
+})();
+const _CYCLE_LETTER = ['A', 'B', 'C'][_advYear % 3];
+const _CYCLE_GOSPEL = { A: 'Mateo', B: 'Marcos', C: 'Lucas' }[_CYCLE_LETTER];
+const _LITURGICAL_YEAR = _advYear + 1;
+
+export const CYCLE = {
+  letter: _CYCLE_LETTER,
+  gospel: _CYCLE_GOSPEL,
+  liturgicalYear: _LITURGICAL_YEAR,
+  label: `Ciclo ${_CYCLE_LETTER} · ${_CYCLE_GOSPEL}`,
+  fullLabel: `Año litúrgico ${_LITURGICAL_YEAR} · Ciclo ${_CYCLE_LETTER} (${_CYCLE_GOSPEL})`,
+};
+
 export const TODAY = {
   date: `${_WEEKDAYS[_w]}, ${_d} de ${_MONTHS[_m]}`,
   dateShort: `${_d} ${_MONTHS_SHORT[_m]}`,
@@ -105,7 +125,7 @@ export const TODAY = {
   grade: 'Feria',
   liturgicalColor: _sm.color,
   liturgicalColorLabel: _sm.label,
-  cycle: `Año litúrgico ${_y} · Ciclo C (Lucas)`,
+  cycle: CYCLE.fullLabel,
 };
 
 export const READINGS = [

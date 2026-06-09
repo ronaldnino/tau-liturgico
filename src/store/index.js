@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { fetchDailyReadings } from '../services/lectionary';
+import { CYCLE } from '../data/liturgical';
 
 // ── Auth ───────────────────────────────────────────────────────
 export const useAuthStore = create(
@@ -29,8 +30,8 @@ export const useAuthStore = create(
 export const useLiturgicalStore = create(
   persist(
     (set) => ({
-      year: 2026,
-      cycle: 'C',
+      year: CYCLE.liturgicalYear,
+      cycle: CYCLE.letter,
       lastSync: null,
       isLoading: false,
       error: null,
