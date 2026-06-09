@@ -15,7 +15,29 @@ import Tts from 'react-native-tts';
 import { Colors } from '../theme';
 import { LitBadge } from '../components';
 import { useSettingsStore, useNotesStore, useLiturgicalStore } from '../store';
-import { READINGS as STATIC_READINGS, TODAY } from '../data/liturgical';
+import {
+  READINGS as STATIC_READINGS,
+  TODAY,
+  LITURGICAL_LABELS,
+} from '../data/liturgical';
+import { fetchDailyReadings } from '../services/lectionary';
+
+const _rNow = new Date();
+const TODAY_ISO = `${_rNow.getFullYear()}-${String(_rNow.getMonth() + 1).padStart(2, '0')}-${String(_rNow.getDate()).padStart(2, '0')}`;
+const _MONTHS_SHORT_ES = [
+  'ene',
+  'feb',
+  'mar',
+  'abr',
+  'may',
+  'jun',
+  'jul',
+  'ago',
+  'sep',
+  'oct',
+  'nov',
+  'dic',
+];
 
 const READING_LABELS = [
   { short: '1ª', label: 'Primera Lectura' },
@@ -115,7 +137,7 @@ function useTTSPlayer(voiceId) {
   return { isPlaying, activeIdx, progress, toggle };
 }
 
-export default function ReadingsScreen({ navigation }) {
+export default function ReadingsScreen({ navigation, route }) {
   const insets = useSafeAreaInsets();
   const scheme = useColorScheme();
   const {
@@ -126,8 +148,25 @@ export default function ReadingsScreen({ navigation }) {
   } = useSettingsStore();
   const { bookmarks, addBookmark, removeBookmark } = useNotesStore();
   const { readings: storeReadings, isLoading, sync } = useLiturgicalStore();
-  const READINGS = storeReadings?.length > 0 ? storeReadings : STATIC_READINGS;
   const dark = darkMode === 'dark' || (darkMode === 'auto' && scheme === 'dark');
+
+  // Fecha solicitada desde el calendario (ISO "YYYY-MM-DD") o null = hoy
+  const targetDateISO = route?.params?.date ?? null;
+  const routeColor = route?.params?.color ?? null;
+  const routeCelebration = route?.params?.celebration ?? null;
+  const isToday = !targetDateISO || targetDateISO === TODAY_ISO;
+
+  // Lecturas para fechas no-hoy: { iso, readings, error } o null
+  const [dateResult, setDateResult] = useState(null);
+
+  // Resultado vigente solo si corresponde a la fecha activa
+  const currentResult = dateResult?.iso === targetDateISO ? dateResult : null;
+
+  const READINGS = isToday
+    ? storeReadings?.length > 0
+      ? storeReadings
+      : STATIC_READINGS
+    : (currentResult?.readings ?? []);
 
   const bg = dark ? Colors.dark.bg : Colors.surface.secondary;
   const surface = dark ? Colors.dark.surface : Colors.surface.primary;
@@ -152,16 +191,56 @@ export default function ReadingsScreen({ navigation }) {
       .catch(() => {});
   }, []);
 
-  // Sincronizar si no hay lecturas, hay un número incorrecto, o no es de hoy
+  // Sincronizar lecturas de hoy si no están o están caducadas
   const { lastSync } = useLiturgicalStore();
   useEffect(() => {
+    if (!isToday) return;
     const noReadings = !storeReadings || storeReadings.length === 0;
     const badCount =
       storeReadings && (storeReadings.length < 3 || storeReadings.length > 4);
     const notToday =
       !lastSync || new Date(lastSync).toDateString() !== new Date().toDateString();
     if (noReadings || badCount || notToday) sync().catch(() => {});
-  }, []);
+  }, [isToday]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Cargar lecturas de la fecha seleccionada desde el calendario
+  useEffect(() => {
+    if (isToday) return;
+    const [y, m, d] = targetDateISO.split('-').map(Number);
+    const date = new Date(y, m - 1, d);
+    fetchDailyReadings(date)
+      .then((r) => {
+        setDateResult({ iso: targetDateISO, readings: r, error: null });
+        setActiveReading(0);
+      })
+      .catch((e) =>
+        setDateResult({ iso: targetDateISO, readings: null, error: e.message })
+      );
+  }, [targetDateISO]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Encabezado según si es hoy u otra fecha
+  const datePending = !isToday && !!targetDateISO && !currentResult;
+  const showLoading = isToday ? isLoading : datePending;
+  const headerDate = isToday
+    ? TODAY.dateShort
+    : (() => {
+        const [y, m, d] = targetDateISO.split('-').map(Number);
+        return `${d} ${_MONTHS_SHORT_ES[m - 1]} · ${y}`;
+      })();
+  const headerTitle = showLoading ? 'Cargando…' : 'Lecturas';
+  const headerColorKey = isToday ? TODAY.liturgicalColor : (routeColor ?? 'green');
+  const headerColorLabel = isToday
+    ? TODAY.liturgicalColorLabel.split(' · ')[0]
+    : (LITURGICAL_LABELS[headerColorKey]?.name ?? 'Verde');
+
+  // Días adelante del día seleccionado y error de fetch
+  const dateError = !isToday ? (currentResult?.error ?? null) : null;
+  const daysAhead = !isToday
+    ? (() => {
+        const [y, m, d] = targetDateISO.split('-').map(Number);
+        return Math.ceil((new Date(y, m - 1, d) - new Date()) / 86400000);
+      })()
+    : 0;
 
   const isBookmarked = (ref) => bookmarks.some((b) => b.ref === ref);
 
@@ -196,14 +275,15 @@ export default function ReadingsScreen({ navigation }) {
           <Text style={[s.backArrow, { color: ink }]}>‹</Text>
         </TouchableOpacity>
         <View style={s.headerCenter}>
-          <Text style={[s.headerDate, { color: muted }]}>{TODAY.dateShort}</Text>
-          <Text style={[s.headerTitle, { color: ink }]}>
-            {isLoading ? 'Cargando…' : 'Lecturas'}
-          </Text>
+          <Text style={[s.headerDate, { color: muted }]}>{headerDate}</Text>
+          <Text style={[s.headerTitle, { color: ink }]}>{headerTitle}</Text>
+          {!isToday && routeCelebration ? (
+            <Text style={[s.headerCelebration, { color: muted }]} numberOfLines={1}>
+              {routeCelebration}
+            </Text>
+          ) : null}
         </View>
-        <LitBadge color={TODAY.liturgicalColor}>
-          {TODAY.liturgicalColorLabel.split(' · ')[0]}
-        </LitBadge>
+        <LitBadge color={headerColorKey}>{headerColorLabel}</LitBadge>
       </View>
 
       {/* Tabs de lecturas */}
@@ -229,44 +309,61 @@ export default function ReadingsScreen({ navigation }) {
         ))}
       </View>
 
-      {/* Texto de la lectura */}
-      <ScrollView
-        style={s.scroll}
-        contentContainerStyle={[s.scrollContent, { paddingBottom: insets.bottom + 120 }]}
-      >
-        <Text style={[s.readingType, { color: muted }]}>
-          {READINGS[activeReading]?.type}
-        </Text>
-        <Text style={[s.readingRef, { color: Colors.brand.primary }]}>
-          {READINGS[activeReading]?.ref}
-        </Text>
-        <Text style={[s.readingIntro, { color: muted }]}>
-          {READINGS[activeReading]?.intro}
-        </Text>
-        <Text style={[s.readingText, { color: ink }]}>
-          {READINGS[activeReading]?.text}
-        </Text>
-        <View style={[s.closingRow, { borderTopColor: border }]}>
-          <Text style={[s.closing, { color: muted }]}>
-            {READINGS[activeReading]?.closing}
+      {/* Texto de la lectura / estado vacío */}
+      {READINGS.length === 0 ? (
+        <View style={s.emptyState}>
+          <Text style={[s.emptyText, { color: muted }]}>
+            {showLoading
+              ? 'Cargando lecturas…'
+              : daysAhead > 62
+                ? 'Las lecturas de este día aún no están publicadas.\nDomínicos.org suele publicar con pocos días de antelación.'
+                : dateError
+                  ? 'No se pudieron cargar las lecturas.\nVerifica tu conexión a internet.'
+                  : 'No hay lecturas disponibles para este día.'}
           </Text>
-          <TouchableOpacity
-            onPress={() => toggleBookmark(READINGS[activeReading])}
-            style={s.bookmarkBtn}
-          >
-            <Text
-              style={{
-                fontSize: 20,
-                color: isBookmarked(READINGS[activeReading]?.ref)
-                  ? Colors.brand.primary
-                  : muted,
-              }}
-            >
-              {isBookmarked(READINGS[activeReading]?.ref) ? '🔖' : '🏷'}
-            </Text>
-          </TouchableOpacity>
         </View>
-      </ScrollView>
+      ) : (
+        <ScrollView
+          style={s.scroll}
+          contentContainerStyle={[
+            s.scrollContent,
+            { paddingBottom: insets.bottom + 120 },
+          ]}
+        >
+          <Text style={[s.readingType, { color: muted }]}>
+            {READINGS[activeReading]?.type}
+          </Text>
+          <Text style={[s.readingRef, { color: Colors.brand.primary }]}>
+            {READINGS[activeReading]?.ref}
+          </Text>
+          <Text style={[s.readingIntro, { color: muted }]}>
+            {READINGS[activeReading]?.intro}
+          </Text>
+          <Text style={[s.readingText, { color: ink }]}>
+            {READINGS[activeReading]?.text}
+          </Text>
+          <View style={[s.closingRow, { borderTopColor: border }]}>
+            <Text style={[s.closing, { color: muted }]}>
+              {READINGS[activeReading]?.closing}
+            </Text>
+            <TouchableOpacity
+              onPress={() => toggleBookmark(READINGS[activeReading])}
+              style={s.bookmarkBtn}
+            >
+              <Text
+                style={{
+                  fontSize: 20,
+                  color: isBookmarked(READINGS[activeReading]?.ref)
+                    ? Colors.brand.primary
+                    : muted,
+                }}
+              >
+                {isBookmarked(READINGS[activeReading]?.ref) ? '🔖' : '🏷'}
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </ScrollView>
+      )}
 
       {/* Player TTS sticky */}
       <View
@@ -411,6 +508,11 @@ const s = StyleSheet.create({
     fontSize: 22,
     lineHeight: 25,
   },
+  headerCelebration: {
+    fontSize: 11,
+    fontStyle: 'italic',
+    marginTop: 1,
+  },
 
   tabs: {
     flexDirection: 'row',
@@ -529,4 +631,17 @@ const s = StyleSheet.create({
     borderColor: Colors.border.default,
   },
   voiceBtnText: { fontSize: 11, fontWeight: '600' },
+
+  emptyState: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 32,
+  },
+  emptyText: {
+    fontFamily: 'CormorantGaramond-Medium',
+    fontSize: 17,
+    lineHeight: 26,
+    textAlign: 'center',
+  },
 });

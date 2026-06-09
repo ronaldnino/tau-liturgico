@@ -270,7 +270,13 @@ export default function CalendarScreen({ navigation }) {
         </View>
         <TouchableOpacity
           style={s.panelBtn}
-          onPress={() => navigation.navigate('Lecturas')}
+          onPress={() =>
+            navigation.navigate('Lecturas', {
+              date: selectedISO,
+              color: selectedCell?.color ?? 'green',
+              celebration: selectedCell?.name ?? null,
+            })
+          }
           activeOpacity={0.8}
         >
           <Text style={s.panelBtnText}>Ver lecturas →</Text>
