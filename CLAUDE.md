@@ -12,11 +12,24 @@ npm start
 npm run android
 npm run ios
 
+# Lint (ESLint + Prettier rules)
+npm run lint
+npm run lint:fix      # auto-fix safe issues
+
+# Format (Prettier only)
+npm run format
+
+# Tests
+npm test              # run all tests
+npm run test:watch    # watch mode
+npm run test:coverage # with coverage report
+
+# Run a single test file
+npx jest src/__tests__/liturgical.test.js
+
 # Re-link custom fonts after adding/removing assets
 npm run link-assets
 ```
-
-No lint, test, or type-check scripts exist yet. When they are added, document them here.
 
 ## Architecture
 
