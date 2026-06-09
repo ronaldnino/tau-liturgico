@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import {
   View,
   Text,
@@ -13,10 +13,14 @@ import { Tau, LitDot, LitBadge, SectionTitle } from '../components';
 import { useSettingsStore, useLiturgicalStore } from '../store';
 import {
   TODAY,
+  CYCLE,
   READINGS as STATIC_READINGS,
   UPCOMING,
   SEASONS,
 } from '../data/liturgical';
+
+const _n = new Date();
+const TODAY_ISO = `${_n.getFullYear()}-${String(_n.getMonth() + 1).padStart(2, '0')}-${String(_n.getDate()).padStart(2, '0')}`;
 
 export default function TodayScreen({ navigation }) {
   const insets = useSafeAreaInsets();
@@ -25,7 +29,6 @@ export default function TodayScreen({ navigation }) {
   const { readings: storeReadings } = useLiturgicalStore();
   const READINGS = storeReadings?.length > 0 ? storeReadings : STATIC_READINGS;
   const dark = darkMode === 'dark' || (darkMode === 'auto' && scheme === 'dark');
-  const [variant] = useState('A');
 
   // Colores contextuales
   const bg = dark ? Colors.dark.bg : Colors.surface.secondary;
@@ -70,7 +73,7 @@ export default function TodayScreen({ navigation }) {
               fontWeight: '600',
             }}
           >
-            {TODAY.season} · {TODAY.week}
+            {TODAY.week ? `${TODAY.season} · ${TODAY.week}` : TODAY.season}
           </Text>
         </LitBadge>
       </View>
@@ -127,16 +130,13 @@ export default function TodayScreen({ navigation }) {
           {/* Título */}
           <Text style={[s.celebrationTitle, { color: ink }]}>{TODAY.celebration}</Text>
 
-          {/* Descripción */}
-          <Text style={[s.celebrationDesc, { color: inkMuted }]}>
-            Obispo de Cracovia, mártir por defender la libertad de la Iglesia ante el rey
-            Boleslao II († 1079).
-          </Text>
+          {/* Año litúrgico y ciclo */}
+          <Text style={[s.celebrationDesc, { color: inkMuted }]}>{CYCLE.fullLabel}</Text>
 
           {/* CTA */}
           <TouchableOpacity
             style={s.readingsBtn}
-            onPress={() => navigation.navigate('Lecturas')}
+            onPress={() => navigation.navigate('Lecturas', { date: TODAY_ISO })}
             activeOpacity={0.8}
           >
             <Text style={s.readingsBtnText}>Leer las lecturas →</Text>
@@ -144,42 +144,40 @@ export default function TodayScreen({ navigation }) {
         </View>
       </View>
 
-      {/* ── Variante A: lista de lecturas ──────────────────── */}
-      {variant === 'A' && (
-        <View style={s.section}>
-          <SectionTitle
-            action="Ver todas"
-            onActionPress={() => navigation.navigate('Lecturas')}
-          >
-            Lecturas de hoy
-          </SectionTitle>
-          <View style={s.readingsList}>
-            {READINGS.map((r, i) => (
-              <TouchableOpacity
-                key={i}
-                style={[s.readingItem, { backgroundColor: surface, borderColor: border }]}
-                onPress={() => navigation.navigate('Lecturas')}
-                activeOpacity={0.7}
-              >
-                <View style={[s.readingNumber, { backgroundColor: Colors.brand.tint }]}>
-                  <Text style={[s.readingNumberText, { color: Colors.brand.primary }]}>
-                    {i + 1}
-                  </Text>
-                </View>
-                <View style={s.readingInfo}>
-                  <Text style={[s.readingType, { color: Colors.brand.primary }]}>
-                    {r.type}
-                  </Text>
-                  <Text style={[s.readingRef, { color: ink }]} numberOfLines={1}>
-                    {r.ref}
-                  </Text>
-                </View>
-                <ChevronRight color={inkMuted} />
-              </TouchableOpacity>
-            ))}
-          </View>
+      {/* ── Lista de lecturas ──────────────────────────────── */}
+      <View style={s.section}>
+        <SectionTitle
+          action="Ver todas"
+          onActionPress={() => navigation.navigate('Lecturas', { date: TODAY_ISO })}
+        >
+          Lecturas de hoy
+        </SectionTitle>
+        <View style={s.readingsList}>
+          {READINGS.map((r, i) => (
+            <TouchableOpacity
+              key={i}
+              style={[s.readingItem, { backgroundColor: surface, borderColor: border }]}
+              onPress={() => navigation.navigate('Lecturas', { date: TODAY_ISO })}
+              activeOpacity={0.7}
+            >
+              <View style={[s.readingNumber, { backgroundColor: Colors.brand.tint }]}>
+                <Text style={[s.readingNumberText, { color: Colors.brand.primary }]}>
+                  {i + 1}
+                </Text>
+              </View>
+              <View style={s.readingInfo}>
+                <Text style={[s.readingType, { color: Colors.brand.primary }]}>
+                  {r.type}
+                </Text>
+                <Text style={[s.readingRef, { color: ink }]} numberOfLines={1}>
+                  {r.ref}
+                </Text>
+              </View>
+              <ChevronRight color={inkMuted} />
+            </TouchableOpacity>
+          ))}
         </View>
-      )}
+      </View>
 
       {/* ── Tiempos litúrgicos (scroll horizontal) ─────────── */}
       <View style={s.section}>

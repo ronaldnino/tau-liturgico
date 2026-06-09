@@ -90,6 +90,46 @@ const _activeSeasonName = (() => {
 })();
 const _sm = _SEASON_META[_activeSeasonName] ?? _SEASON_META['Tiempo Ordinario'];
 
+// Semana litúrgica actual (número romano: I, II, … XXXIV)
+const _liturgicalWeek = (() => {
+  function _roman(n) {
+    const vals = [1, 4, 5, 9, 10, 40, 50, 90, 100];
+    const syms = ['I', 'IV', 'V', 'IX', 'X', 'XL', 'L', 'XC', 'C'];
+    let s = '';
+    for (let i = vals.length - 1; i >= 0; i--)
+      while (n >= vals[i]) {
+        s += syms[i];
+        n -= vals[i];
+      }
+    return s;
+  }
+  const t = new Date();
+  t.setHours(0, 0, 0, 0);
+  const dow = t.getDay();
+  const thisSunday = new Date(t.getFullYear(), t.getMonth(), t.getDate() - dow);
+  const e = _easter(_y);
+  const ashWed = _addDays(e, -46);
+  const adv = _adventStart(_y);
+  const christKing = _addDays(adv, -7); // último domingo antes de Adviento = semana 34
+
+  if (_activeSeasonName === 'Tiempo Ordinario') {
+    if (thisSunday < ashWed) {
+      // Primer período (ene-feb): forward desde Bautismo del Señor
+      const baptism = _baptismOfLord(_y);
+      return _roman(Math.max(1, Math.floor(_daysBetween(baptism, thisSunday) / 7) + 1));
+    }
+    // Segundo período (post-Pentecostés): backward desde Cristo Rey (sem. 34)
+    return _roman(Math.max(1, 34 - Math.round(_daysBetween(thisSunday, christKing) / 7)));
+  }
+  if (_activeSeasonName === 'Cuaresma')
+    return _roman(Math.min(6, Math.max(1, Math.floor(_daysBetween(ashWed, t) / 7) + 1)));
+  if (_activeSeasonName === 'Tiempo de Pascua')
+    return _roman(Math.min(7, Math.max(1, Math.floor(_daysBetween(e, t) / 7) + 1)));
+  if (_activeSeasonName === 'Adviento')
+    return _roman(Math.min(4, Math.max(1, Math.floor(_daysBetween(adv, t) / 7) + 1)));
+  return ''; // Navidad: sin número de semana
+})();
+
 // Ciclo litúrgico: A=Mateo, B=Marcos, C=Lucas.
 // advYear = año en que comienza el Adviento del ciclo actual.
 // Fórmula: ['A','B','C'][advYear % 3] donde 2022→A, 2023→B, 2024→C, 2025→A, …
@@ -118,7 +158,7 @@ export const TODAY = {
   month: _MONTHS_CAP[_m],
   year: String(_y),
   season: _activeSeasonName,
-  week: '',
+  week: _liturgicalWeek,
   seasonColor: _sm.color,
   celebration: _sm.celebration,
   celebrationShort: _activeSeasonName,

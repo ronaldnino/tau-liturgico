@@ -336,16 +336,55 @@ export default function ReadingsScreen({ navigation, route }) {
           <Text style={[s.readingRef, { color: Colors.brand.primary }]}>
             {READINGS[activeReading]?.ref}
           </Text>
-          <Text style={[s.readingIntro, { color: muted }]}>
-            {READINGS[activeReading]?.intro}
-          </Text>
+
+          {/* Separador del color litúrgico del día */}
+          <View
+            style={[
+              s.refDivider,
+              {
+                backgroundColor:
+                  Colors.liturgical[headerColorKey] ?? Colors.liturgical.green,
+              },
+            ]}
+          />
+
+          {/* Intro como epígrafe con borde lateral */}
+          {READINGS[activeReading]?.intro ? (
+            <View
+              style={[
+                s.introBox,
+                {
+                  backgroundColor:
+                    (Colors.liturgical[headerColorKey] ?? Colors.liturgical.green) + '18',
+                  borderLeftColor:
+                    Colors.liturgical[headerColorKey] ?? Colors.liturgical.green,
+                },
+              ]}
+            >
+              <Text style={[s.readingIntro, { color: muted }]}>
+                {READINGS[activeReading].intro}
+              </Text>
+            </View>
+          ) : null}
+
           <Text style={[s.readingText, { color: ink }]}>
             {READINGS[activeReading]?.text}
           </Text>
-          <View style={[s.closingRow, { borderTopColor: border }]}>
-            <Text style={[s.closing, { color: muted }]}>
-              {READINGS[activeReading]?.closing}
-            </Text>
+
+          {/* Cierre litúrgico centrado y prominente */}
+          <View style={[s.closingBlock, { borderTopColor: border }]}>
+            {READINGS[activeReading]?.closing ? (
+              <Text
+                style={[
+                  s.closingText,
+                  {
+                    color: Colors.liturgical[headerColorKey] ?? Colors.liturgical.green,
+                  },
+                ]}
+              >
+                {READINGS[activeReading].closing}
+              </Text>
+            ) : null}
             <TouchableOpacity
               onPress={() => toggleBookmark(READINGS[activeReading])}
               style={s.bookmarkBtn}
@@ -543,26 +582,45 @@ const s = StyleSheet.create({
     lineHeight: 26,
     marginBottom: 20,
   },
+  refDivider: {
+    width: 36,
+    height: 2,
+    borderRadius: 1,
+    marginTop: 4,
+    marginBottom: 20,
+  },
+  introBox: {
+    borderLeftWidth: 3,
+    paddingLeft: 14,
+    paddingVertical: 10,
+    paddingRight: 10,
+    borderRadius: 6,
+    marginBottom: 22,
+  },
   readingIntro: {
     fontStyle: 'italic',
     fontSize: 14,
-    lineHeight: 21,
-    marginBottom: 16,
+    lineHeight: 22,
   },
   readingText: {
     fontFamily: 'CormorantGaramond-Medium',
     fontSize: 18,
     lineHeight: 30,
-    marginBottom: 24,
+    marginBottom: 32,
   },
-  closingRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingTop: 16,
+  closingBlock: {
+    paddingTop: 20,
     borderTopWidth: 0.5,
-    gap: 12,
+    alignItems: 'center',
+    gap: 14,
   },
-  closing: { flex: 1, fontStyle: 'italic', fontSize: 14 },
+  closingText: {
+    fontFamily: 'CormorantGaramond-SemiBoldItalic',
+    fontSize: 20,
+    lineHeight: 26,
+    textAlign: 'center',
+    letterSpacing: 0.3,
+  },
   bookmarkBtn: { padding: 8 },
 
   player: {
