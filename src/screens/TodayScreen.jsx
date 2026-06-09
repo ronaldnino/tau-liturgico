@@ -83,7 +83,7 @@ export default function TodayScreen({ navigation }) {
             {
               backgroundColor: surface,
               borderColor: border,
-              borderLeftColor: Colors.liturgical.red,
+              borderLeftColor: Colors.liturgical[TODAY.liturgicalColor],
             },
           ]}
         >
@@ -91,7 +91,7 @@ export default function TodayScreen({ navigation }) {
           <View style={s.heroWatermark} pointerEvents="none">
             <Tau
               size={150}
-              color={Colors.liturgical.red}
+              color={Colors.liturgical[TODAY.liturgicalColor]}
               style={{ opacity: dark ? 0.06 : 0.04 }}
             />
           </View>
@@ -99,10 +99,18 @@ export default function TodayScreen({ navigation }) {
           {/* Badges */}
           <View style={s.heroBadgeRow}>
             <View
-              style={[s.colorBadge, { backgroundColor: Colors.liturgical.red + '15' }]}
+              style={[
+                s.colorBadge,
+                { backgroundColor: Colors.liturgical[TODAY.liturgicalColor] + '15' },
+              ]}
             >
-              <LitDot color="red" size={6} />
-              <Text style={[s.colorBadgeText, { color: Colors.liturgical.red }]}>
+              <LitDot color={TODAY.liturgicalColor} size={6} />
+              <Text
+                style={[
+                  s.colorBadgeText,
+                  { color: Colors.liturgical[TODAY.liturgicalColor] },
+                ]}
+              >
                 {TODAY.liturgicalColorLabel}
               </Text>
             </View>
