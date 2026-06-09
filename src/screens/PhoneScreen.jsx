@@ -16,9 +16,9 @@ import { useAuthStore } from '../store';
 import AuthService from '../services/auth';
 
 const COUNTRIES = [
-  { code: '+58',  flag: '🇻🇪', name: 'Venezuela' },
-  { code: '+34',  flag: '🇪🇸', name: 'España' },
-  { code: '+54',  flag: '🇦🇷', name: 'Argentina' },
+  { code: '+58', flag: '🇻🇪', name: 'Venezuela' },
+  { code: '+34', flag: '🇪🇸', name: 'España' },
+  { code: '+54', flag: '🇦🇷', name: 'Argentina' },
 ];
 
 export default function PhoneScreen({ navigation }) {
@@ -71,9 +71,7 @@ export default function PhoneScreen({ navigation }) {
         {/* Contenido */}
         <Tau size={48} color={Colors.brand.primary} style={s.tau} />
         <Text style={s.title}>Tu número{'\n'}de teléfono</Text>
-        <Text style={s.body}>
-          Te enviaremos un código de verificación por SMS.
-        </Text>
+        <Text style={s.body}>Te enviaremos un código de verificación por SMS.</Text>
 
         {/* Campo */}
         <View style={s.fieldRow}>
@@ -100,10 +98,16 @@ export default function PhoneScreen({ navigation }) {
             {COUNTRIES.map((c) => (
               <TouchableOpacity
                 key={c.code}
-                onPress={() => { setCountry(c); setPickerOpen(false); }}
+                onPress={() => {
+                  setCountry(c);
+                  setPickerOpen(false);
+                }}
                 style={[
                   s.pickerRow,
-                  c.code !== COUNTRIES[0].code && { borderTopWidth: 0.5, borderTopColor: Colors.border.divider },
+                  c.code !== COUNTRIES[0].code && {
+                    borderTopWidth: 0.5,
+                    borderTopColor: Colors.border.divider,
+                  },
                 ]}
               >
                 <Text style={s.flag}>{c.flag}</Text>
@@ -117,14 +121,11 @@ export default function PhoneScreen({ navigation }) {
         {error ? <Text style={s.error}>{error}</Text> : null}
 
         <Text style={s.disclaimer}>
-          Solo usamos tu número para verificar tu identidad. No lo compartimos con terceros.
+          Solo usamos tu número para verificar tu identidad. No lo compartimos con
+          terceros.
         </Text>
 
-        <PrimaryBtn
-          onPress={handleNext}
-          disabled={!isValid || loading}
-          style={s.cta}
-        >
+        <PrimaryBtn onPress={handleNext} disabled={!isValid || loading} style={s.cta}>
           {loading ? 'Enviando…' : 'Recibir código por SMS'}
         </PrimaryBtn>
       </ScrollView>
@@ -134,7 +135,7 @@ export default function PhoneScreen({ navigation }) {
 
 const s = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#fff' },
-  content:   { paddingHorizontal: 28, paddingBottom: 40 },
+  content: { paddingHorizontal: 28, paddingBottom: 40 },
 
   nav: {
     flexDirection: 'row',
@@ -142,11 +143,11 @@ const s = StyleSheet.create({
     justifyContent: 'space-between',
     marginBottom: 32,
   },
-  backBtn:   { padding: 6 },
+  backBtn: { padding: 6 },
   backArrow: { fontSize: 28, color: Colors.ink.primary, lineHeight: 32 },
-  step:      { fontSize: 12, fontWeight: '500', color: Colors.ink.muted, letterSpacing: 1 },
+  step: { fontSize: 12, fontWeight: '500', color: Colors.ink.muted, letterSpacing: 1 },
 
-  tau:  { marginBottom: 24 },
+  tau: { marginBottom: 24 },
   title: {
     fontFamily: 'CormorantGaramond-SemiBoldItalic',
     fontSize: 32,
@@ -156,7 +157,7 @@ const s = StyleSheet.create({
   },
   body: { fontSize: 15, lineHeight: 23, color: Colors.ink.muted, marginBottom: 32 },
 
-  fieldRow:   { flexDirection: 'row', gap: 10, marginBottom: 16 },
+  fieldRow: { flexDirection: 'row', gap: 10, marginBottom: 16 },
   countryBtn: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -199,7 +200,7 @@ const s = StyleSheet.create({
   pickerName: { flex: 1, fontSize: 15, color: Colors.ink.primary },
   pickerCode: { fontSize: 14, color: Colors.ink.muted },
 
-  error:      { color: Colors.liturgical.red, fontSize: 13, marginBottom: 12 },
+  error: { color: Colors.liturgical.red, fontSize: 13, marginBottom: 12 },
   disclaimer: { fontSize: 12, lineHeight: 18, color: Colors.ink.soft, marginBottom: 32 },
-  cta:        {},
+  cta: {},
 });

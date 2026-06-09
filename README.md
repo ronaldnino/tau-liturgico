@@ -1,6 +1,3 @@
-<<<<<<< HEAD
-# tau-liturgico
-=======
 # τau Litúrgico — React Native
 
 Aplicación de calendario litúrgico católico construida con React Native CLI 0.74 (sin Expo).

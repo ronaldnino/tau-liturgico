@@ -1,7 +1,54 @@
-const _WEEKDAYS  = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
-const _MONTHS    = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
-const _MONTHS_CAP  = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
-const _MONTHS_SHORT = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
+const _WEEKDAYS = [
+  'Domingo',
+  'Lunes',
+  'Martes',
+  'Miércoles',
+  'Jueves',
+  'Viernes',
+  'Sábado',
+];
+const _MONTHS = [
+  'enero',
+  'febrero',
+  'marzo',
+  'abril',
+  'mayo',
+  'junio',
+  'julio',
+  'agosto',
+  'septiembre',
+  'octubre',
+  'noviembre',
+  'diciembre',
+];
+const _MONTHS_CAP = [
+  'Enero',
+  'Febrero',
+  'Marzo',
+  'Abril',
+  'Mayo',
+  'Junio',
+  'Julio',
+  'Agosto',
+  'Septiembre',
+  'Octubre',
+  'Noviembre',
+  'Diciembre',
+];
+const _MONTHS_SHORT = [
+  'ene',
+  'feb',
+  'mar',
+  'abr',
+  'may',
+  'jun',
+  'jul',
+  'ago',
+  'sep',
+  'oct',
+  'nov',
+  'dic',
+];
 
 const _n = new Date();
 const _d = _n.getDate();
@@ -11,43 +58,54 @@ const _w = _n.getDay();
 
 // Determinar estación litúrgica activa para el header de Hoy
 const _SEASON_META = {
-  'Navidad':           { color: 'gold',   label: 'Oro · Navidad',       celebration: 'Tiempo de Navidad'          },
-  'Cuaresma':          { color: 'purple', label: 'Morado · Cuaresma',   celebration: 'Cuaresma'                   },
-  'Tiempo de Pascua':  { color: 'white',  label: 'Blanco · Pascua',     celebration: 'Tiempo de Pascua'           },
-  'Tiempo Ordinario':  { color: 'green',  label: 'Verde · Ordinario',   celebration: 'Feria del Tiempo Ordinario' },
-  'Adviento':          { color: 'purple', label: 'Morado · Adviento',   celebration: 'Adviento'                   },
+  Navidad: { color: 'gold', label: 'Oro · Navidad', celebration: 'Tiempo de Navidad' },
+  Cuaresma: { color: 'purple', label: 'Morado · Cuaresma', celebration: 'Cuaresma' },
+  'Tiempo de Pascua': {
+    color: 'white',
+    label: 'Blanco · Pascua',
+    celebration: 'Tiempo de Pascua',
+  },
+  'Tiempo Ordinario': {
+    color: 'green',
+    label: 'Verde · Ordinario',
+    celebration: 'Feria del Tiempo Ordinario',
+  },
+  Adviento: { color: 'purple', label: 'Morado · Adviento', celebration: 'Adviento' },
 };
 const _activeSeasonName = (() => {
-  const t = new Date(); t.setHours(0, 0, 0, 0);
-  const e   = _easter(_y);
+  const t = new Date();
+  t.setHours(0, 0, 0, 0);
+  const e = _easter(_y);
   const nav = _baptismOfLord(_y);
-  const ashWed = _addDays(e, -46), holySat = _addDays(e, -1);
-  const pent   = _addDays(e, 49),  adv      = _adventStart(_y);
+  const ashWed = _addDays(e, -46),
+    holySat = _addDays(e, -1);
+  const pent = _addDays(e, 49),
+    adv = _adventStart(_y);
   if (t >= new Date(_y - 1, 11, 25) && t <= nav) return 'Navidad';
-  if (t >= ashWed && t <= holySat)                return 'Cuaresma';
-  if (t >= e && t <= pent)                        return 'Tiempo de Pascua';
-  if (t > pent && t < adv)                        return 'Tiempo Ordinario';
-  if (t >= adv && t <= new Date(_y, 11, 24))      return 'Adviento';
+  if (t >= ashWed && t <= holySat) return 'Cuaresma';
+  if (t >= e && t <= pent) return 'Tiempo de Pascua';
+  if (t > pent && t < adv) return 'Tiempo Ordinario';
+  if (t >= adv && t <= new Date(_y, 11, 24)) return 'Adviento';
   return 'Tiempo Ordinario';
 })();
 const _sm = _SEASON_META[_activeSeasonName] ?? _SEASON_META['Tiempo Ordinario'];
 
 export const TODAY = {
-  date:      `${_WEEKDAYS[_w]}, ${_d} de ${_MONTHS[_m]}`,
+  date: `${_WEEKDAYS[_w]}, ${_d} de ${_MONTHS[_m]}`,
   dateShort: `${_d} ${_MONTHS_SHORT[_m]}`,
-  weekday:   _WEEKDAYS[_w],
-  day:       _d,
-  month:     _MONTHS_CAP[_m],
-  year:      String(_y),
-  season:               _activeSeasonName,
-  week:                 '',
-  seasonColor:          _sm.color,
-  celebration:          _sm.celebration,
-  celebrationShort:     _activeSeasonName,
-  grade:                'Feria',
-  liturgicalColor:      _sm.color,
+  weekday: _WEEKDAYS[_w],
+  day: _d,
+  month: _MONTHS_CAP[_m],
+  year: String(_y),
+  season: _activeSeasonName,
+  week: '',
+  seasonColor: _sm.color,
+  celebration: _sm.celebration,
+  celebrationShort: _activeSeasonName,
+  grade: 'Feria',
+  liturgicalColor: _sm.color,
   liturgicalColorLabel: _sm.label,
-  cycle:                `Año litúrgico ${_y} · Ciclo C (Lucas)`,
+  cycle: `Año litúrgico ${_y} · Ciclo C (Lucas)`,
 };
 
 export const READINGS = [
@@ -88,98 +146,128 @@ Yo, la luz, he venido al mundo, para que todo el que crea en mí no quede en tin
 // ── Catálogo de fiestas fijas (mes 0-11, día) ─────────────────
 const _FIXED_FEASTS = [
   // Enero
-  { m: 0,  d: 1,  name: 'Santa María, Madre de Dios',       color: 'white',  solemn: true  },
-  { m: 0,  d: 6,  name: 'Epifanía del Señor',               color: 'white',  solemn: true  },
+  { m: 0, d: 1, name: 'Santa María, Madre de Dios', color: 'white', solemn: true },
+  { m: 0, d: 6, name: 'Epifanía del Señor', color: 'white', solemn: true },
   // Febrero
-  { m: 1,  d: 2,  name: 'Presentación del Señor',           color: 'white',  solemn: false },
-  { m: 1,  d: 11, name: 'Ntra. Sra. de Lourdes',            color: 'white',  solemn: false },
+  { m: 1, d: 2, name: 'Presentación del Señor', color: 'white', solemn: false },
+  { m: 1, d: 11, name: 'Ntra. Sra. de Lourdes', color: 'white', solemn: false },
   // Marzo
-  { m: 2,  d: 19, name: 'San José, Esposo de la Virgen',    color: 'white',  solemn: true  },
-  { m: 2,  d: 25, name: 'Anunciación del Señor',            color: 'white',  solemn: true  },
+  { m: 2, d: 19, name: 'San José, Esposo de la Virgen', color: 'white', solemn: true },
+  { m: 2, d: 25, name: 'Anunciación del Señor', color: 'white', solemn: true },
   // Mayo
-  { m: 4,  d: 1,  name: 'San José Obrero',                  color: 'white',  solemn: false },
-  { m: 4,  d: 3,  name: 'Santos Felipe y Santiago',         color: 'red',    solemn: false },
-  { m: 4,  d: 14, name: 'San Matías, apóstol',              color: 'red',    solemn: false },
+  { m: 4, d: 1, name: 'San José Obrero', color: 'white', solemn: false },
+  { m: 4, d: 3, name: 'Santos Felipe y Santiago', color: 'red', solemn: false },
+  { m: 4, d: 14, name: 'San Matías, apóstol', color: 'red', solemn: false },
   // Junio
-  { m: 5,  d: 11, name: 'San Bernabé, apóstol',             color: 'red',    solemn: false },
-  { m: 5,  d: 13, name: 'San Antonio de Padua',             color: 'white',  solemn: false },
-  { m: 5,  d: 24, name: 'Natividad de Juan Bautista',       color: 'white',  solemn: true  },
-  { m: 5,  d: 29, name: 'Santos Pedro y Pablo, apóstoles',  color: 'red',    solemn: true  },
+  { m: 5, d: 11, name: 'San Bernabé, apóstol', color: 'red', solemn: false },
+  { m: 5, d: 13, name: 'San Antonio de Padua', color: 'white', solemn: false },
+  { m: 5, d: 24, name: 'Natividad de Juan Bautista', color: 'white', solemn: true },
+  { m: 5, d: 29, name: 'Santos Pedro y Pablo, apóstoles', color: 'red', solemn: true },
   // Julio
-  { m: 6,  d: 3,  name: 'Santo Tomás, apóstol',             color: 'red',    solemn: false },
-  { m: 6,  d: 16, name: 'Ntra. Sra. del Carmen',            color: 'white',  solemn: false },
-  { m: 6,  d: 22, name: 'Santa María Magdalena',            color: 'white',  solemn: false },
-  { m: 6,  d: 25, name: 'Santiago, apóstol',                color: 'red',    solemn: true  },
-  { m: 6,  d: 26, name: 'San Joaquín y Santa Ana',          color: 'white',  solemn: false },
+  { m: 6, d: 3, name: 'Santo Tomás, apóstol', color: 'red', solemn: false },
+  { m: 6, d: 16, name: 'Ntra. Sra. del Carmen', color: 'white', solemn: false },
+  { m: 6, d: 22, name: 'Santa María Magdalena', color: 'white', solemn: false },
+  { m: 6, d: 25, name: 'Santiago, apóstol', color: 'red', solemn: true },
+  { m: 6, d: 26, name: 'San Joaquín y Santa Ana', color: 'white', solemn: false },
   // Agosto
-  { m: 7,  d: 6,  name: 'Transfiguración del Señor',        color: 'white',  solemn: true  },
-  { m: 7,  d: 10, name: 'San Lorenzo, diácono y mártir',    color: 'red',    solemn: false },
-  { m: 7,  d: 15, name: 'Asunción de la Virgen María',      color: 'white',  solemn: true  },
-  { m: 7,  d: 22, name: 'Santa María Reina',                color: 'white',  solemn: false },
-  { m: 7,  d: 24, name: 'San Bartolomé, apóstol',           color: 'red',    solemn: false },
+  { m: 7, d: 6, name: 'Transfiguración del Señor', color: 'white', solemn: true },
+  { m: 7, d: 10, name: 'San Lorenzo, diácono y mártir', color: 'red', solemn: false },
+  { m: 7, d: 15, name: 'Asunción de la Virgen María', color: 'white', solemn: true },
+  { m: 7, d: 22, name: 'Santa María Reina', color: 'white', solemn: false },
+  { m: 7, d: 24, name: 'San Bartolomé, apóstol', color: 'red', solemn: false },
   // Septiembre
-  { m: 8,  d: 8,  name: 'Natividad de la Virgen María',     color: 'white',  solemn: false },
-  { m: 8,  d: 14, name: 'Exaltación de la Santa Cruz',      color: 'red',    solemn: true  },
-  { m: 8,  d: 15, name: 'Ntra. Sra. de los Dolores',        color: 'white',  solemn: false },
-  { m: 8,  d: 21, name: 'San Mateo, apóstol y evangelista', color: 'red',    solemn: false },
-  { m: 8,  d: 29, name: 'Santos Miguel, Gabriel y Rafael',  color: 'white',  solemn: false },
+  { m: 8, d: 8, name: 'Natividad de la Virgen María', color: 'white', solemn: false },
+  { m: 8, d: 14, name: 'Exaltación de la Santa Cruz', color: 'red', solemn: true },
+  { m: 8, d: 15, name: 'Ntra. Sra. de los Dolores', color: 'white', solemn: false },
+  { m: 8, d: 21, name: 'San Mateo, apóstol y evangelista', color: 'red', solemn: false },
+  { m: 8, d: 29, name: 'Santos Miguel, Gabriel y Rafael', color: 'white', solemn: false },
   // Octubre
-  { m: 9,  d: 2,  name: 'Santos Ángeles Custodios',         color: 'white',  solemn: false },
-  { m: 9,  d: 4,  name: 'San Francisco de Asís',            color: 'white',  solemn: false },
-  { m: 9,  d: 7,  name: 'Ntra. Sra. del Rosario',           color: 'white',  solemn: false },
-  { m: 9,  d: 18, name: 'San Lucas, evangelista',           color: 'red',    solemn: false },
-  { m: 9,  d: 28, name: 'Santos Simón y Judas Tadeo',       color: 'red',    solemn: false },
+  { m: 9, d: 2, name: 'Santos Ángeles Custodios', color: 'white', solemn: false },
+  { m: 9, d: 4, name: 'San Francisco de Asís', color: 'white', solemn: false },
+  { m: 9, d: 7, name: 'Ntra. Sra. del Rosario', color: 'white', solemn: false },
+  { m: 9, d: 18, name: 'San Lucas, evangelista', color: 'red', solemn: false },
+  { m: 9, d: 28, name: 'Santos Simón y Judas Tadeo', color: 'red', solemn: false },
   // Noviembre
-  { m: 10, d: 1,  name: 'Todos los Santos',                 color: 'white',  solemn: true  },
-  { m: 10, d: 2,  name: 'Conmemoración de los Fieles Difuntos', color: 'purple', solemn: false },
-  { m: 10, d: 9,  name: 'Dedicación de la Basílica de Letrán', color: 'white', solemn: false },
-  { m: 10, d: 30, name: 'San Andrés, apóstol',              color: 'red',    solemn: false },
+  { m: 10, d: 1, name: 'Todos los Santos', color: 'white', solemn: true },
+  {
+    m: 10,
+    d: 2,
+    name: 'Conmemoración de los Fieles Difuntos',
+    color: 'purple',
+    solemn: false,
+  },
+  {
+    m: 10,
+    d: 9,
+    name: 'Dedicación de la Basílica de Letrán',
+    color: 'white',
+    solemn: false,
+  },
+  { m: 10, d: 30, name: 'San Andrés, apóstol', color: 'red', solemn: false },
   // Diciembre
-  { m: 11, d: 8,  name: 'Inmaculada Concepción',            color: 'white',  solemn: true  },
-  { m: 11, d: 12, name: 'Ntra. Sra. de Guadalupe',          color: 'white',  solemn: false },
-  { m: 11, d: 25, name: 'Natividad del Señor',              color: 'gold',   solemn: true  },
-  { m: 11, d: 26, name: 'San Esteban, protomártir',         color: 'red',    solemn: false },
-  { m: 11, d: 27, name: 'San Juan, apóstol',                color: 'white',  solemn: false },
-  { m: 11, d: 28, name: 'Santos Inocentes',                 color: 'red',    solemn: false },
+  { m: 11, d: 8, name: 'Inmaculada Concepción', color: 'white', solemn: true },
+  { m: 11, d: 12, name: 'Ntra. Sra. de Guadalupe', color: 'white', solemn: false },
+  { m: 11, d: 25, name: 'Natividad del Señor', color: 'gold', solemn: true },
+  { m: 11, d: 26, name: 'San Esteban, protomártir', color: 'red', solemn: false },
+  { m: 11, d: 27, name: 'San Juan, apóstol', color: 'white', solemn: false },
+  { m: 11, d: 28, name: 'Santos Inocentes', color: 'red', solemn: false },
 ];
 
 // ── Fiestas móviles (relativas a Pascua) ──────────────────────
 function _moveableFeasts(year) {
   const e = _easter(year);
-  const f = (n, name, color, solemn = false) =>
-    ({ date: _addDays(e, n), name, color, solemn });
+  const f = (n, name, color, solemn = false) => ({
+    date: _addDays(e, n),
+    name,
+    color,
+    solemn,
+  });
   return [
-    f(-46, 'Miércoles de Ceniza',            'purple', true ),
-    f( -7, 'Domingo de Ramos',               'red',    true ),
-    f( -3, 'Jueves Santo',                   'white',  true ),
-    f( -2, 'Viernes Santo',                  'red',    true ),
-    f(  0, 'Domingo de Pascua',              'white',  true ),
-    f(  7, 'Divina Misericordia',            'white',  false),
-    f( 39, 'Ascensión del Señor',            'white',  true ),
-    f( 49, 'Domingo de Pentecostés',         'red',    true ),
-    f( 56, 'Santísima Trinidad',             'white',  true ),
-    f( 60, 'Corpus Christi',                 'white',  true ),
-    f( 68, 'Sagrado Corazón de Jesús',       'red',    true ),
-    f( 69, 'Inmaculado Corazón de María',    'white',  false),
+    f(-46, 'Miércoles de Ceniza', 'purple', true),
+    f(-7, 'Domingo de Ramos', 'red', true),
+    f(-3, 'Jueves Santo', 'white', true),
+    f(-2, 'Viernes Santo', 'red', true),
+    f(0, 'Domingo de Pascua', 'white', true),
+    f(7, 'Divina Misericordia', 'white', false),
+    f(39, 'Ascensión del Señor', 'white', true),
+    f(49, 'Domingo de Pentecostés', 'red', true),
+    f(56, 'Santísima Trinidad', 'white', true),
+    f(60, 'Corpus Christi', 'white', true),
+    f(68, 'Sagrado Corazón de Jesús', 'red', true),
+    f(69, 'Inmaculado Corazón de María', 'white', false),
   ];
 }
 
 // ── Próximas celebraciones desde mañana ───────────────────────
 function _computeUpcoming(count = 5) {
-  const DOW = ['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
-  const MON = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+  const DOW = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
+  const MON = [
+    'ene',
+    'feb',
+    'mar',
+    'abr',
+    'may',
+    'jun',
+    'jul',
+    'ago',
+    'sep',
+    'oct',
+    'nov',
+    'dic',
+  ];
 
-  const today    = new Date(); today.setHours(0, 0, 0, 0);
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
   const tomorrow = _addDays(today, 1);
-  const year     = today.getFullYear();
-  const all      = [];
+  const year = today.getFullYear();
+  const all = [];
 
-  [year, year + 1].forEach(y => {
+  [year, year + 1].forEach((y) => {
     _FIXED_FEASTS.forEach(({ m, d, name, color, solemn }) => {
       const date = new Date(y, m, d);
       if (date >= tomorrow) all.push({ date, name, color, solemn });
     });
-    _moveableFeasts(y).forEach(f => {
+    _moveableFeasts(y).forEach((f) => {
       if (f.date >= tomorrow) all.push(f);
     });
   });
@@ -193,10 +281,10 @@ function _computeUpcoming(count = 5) {
     if (!seen.has(key)) {
       seen.add(key);
       acc.push({
-        date:      `${DOW[f.date.getDay()]} ${f.date.getDate()} ${MON[f.date.getMonth()]}`,
-        name:      f.name,
-        color:     f.color,
-        solemn:    f.solemn,
+        date: `${DOW[f.date.getDay()]} ${f.date.getDate()} ${MON[f.date.getMonth()]}`,
+        name: f.name,
+        color: f.color,
+        solemn: f.solemn,
         highlight: f.solemn,
       });
     }
@@ -210,16 +298,20 @@ export const UPCOMING = _computeUpcoming(5);
 
 function _easter(year) {
   // Algoritmo anónimo gregoriano
-  const a = year % 19, b = Math.floor(year / 100), c = year % 100;
-  const d = Math.floor(b / 4), e = b % 4;
+  const a = year % 19,
+    b = Math.floor(year / 100),
+    c = year % 100;
+  const d = Math.floor(b / 4),
+    e = b % 4;
   const f = Math.floor((b + 8) / 25);
   const g = Math.floor((b - f + 1) / 3);
   const h = (19 * a + b - d - g + 15) % 30;
-  const i = Math.floor(c / 4), k = c % 4;
+  const i = Math.floor(c / 4),
+    k = c % 4;
   const l = (32 + 2 * e + 2 * i - h - k) % 7;
   const m = Math.floor((a + 11 * h + 22 * l) / 451);
   const month = Math.floor((h + l - 7 * m + 114) / 31) - 1;
-  const day   = ((h + l - 7 * m + 114) % 31) + 1;
+  const day = ((h + l - 7 * m + 114) % 31) + 1;
   return new Date(year, month, day);
 }
 
@@ -234,37 +326,52 @@ function _daysBetween(a, b) {
 function _adventStart(year) {
   // Primer domingo de Adviento: domingo entre el 27 nov y 3 dic
   const nov27 = new Date(year, 10, 27);
-  const dow    = nov27.getDay();
+  const dow = nov27.getDay();
   return _addDays(nov27, dow === 0 ? 0 : 7 - dow);
 }
 
 function _baptismOfLord(year) {
   // Primer domingo a partir del 7 de enero
   const jan7 = new Date(year, 0, 7);
-  const dow   = jan7.getDay();
+  const dow = jan7.getDay();
   return dow === 0 ? jan7 : _addDays(jan7, 7 - dow);
 }
 
 function _fmt(d) {
-  const MS = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+  const MS = [
+    'ene',
+    'feb',
+    'mar',
+    'abr',
+    'may',
+    'jun',
+    'jul',
+    'ago',
+    'sep',
+    'oct',
+    'nov',
+    'dic',
+  ];
   return `${d.getDate()} ${MS[d.getMonth()]}`;
 }
 
 function _seasonEntry(name, color, start, end, today) {
-  const before  = today < start;
-  const after   = today > end;
-  const active  = !before && !after;
-  const total   = _daysBetween(start, end) || 1;
+  const before = today < start;
+  const after = today > end;
+  const active = !before && !after;
+  const total = _daysBetween(start, end) || 1;
   const elapsed = Math.max(0, _daysBetween(start, today));
   const remaining = Math.max(0, _daysBetween(today, end));
   return {
     name,
     color,
-    range:    `${_fmt(start)} — ${_fmt(end)}`,
+    range: `${_fmt(start)} — ${_fmt(end)}`,
     progress: after ? 1 : before ? 0 : Math.min(1, elapsed / total),
     active,
     days: active
-      ? (remaining === 0 ? 'Hoy termina' : `${remaining} ${remaining === 1 ? 'día' : 'días'} restantes`)
+      ? remaining === 0
+        ? 'Hoy termina'
+        : `${remaining} ${remaining === 1 ? 'día' : 'días'} restantes`
       : before
         ? `Comienza en ${_daysBetween(today, start)} días`
         : 'Completado',
@@ -272,29 +379,29 @@ function _seasonEntry(name, color, start, end, today) {
 }
 
 function _computeSeasons() {
-  const today  = new Date();
+  const today = new Date();
   today.setHours(0, 0, 0, 0);
-  const year   = today.getFullYear();
+  const year = today.getFullYear();
 
   // Navidad: 25 dic del año anterior → Bautismo del Señor (año actual)
-  const navStart    = new Date(year - 1, 11, 25);
-  const navEnd      = _baptismOfLord(year);
+  const navStart = new Date(year - 1, 11, 25);
+  const navEnd = _baptismOfLord(year);
 
-  const easter      = _easter(year);
-  const ashWed      = _addDays(easter, -46);
-  const holySat     = _addDays(easter, -1);
-  const pentecost   = _addDays(easter, 49);
-  const ordStart    = _addDays(pentecost, 1);
+  const easter = _easter(year);
+  const ashWed = _addDays(easter, -46);
+  const holySat = _addDays(easter, -1);
+  const pentecost = _addDays(easter, 49);
+  const ordStart = _addDays(pentecost, 1);
   const adventStart = _adventStart(year);
-  const christKing  = _addDays(adventStart, -1);
-  const adventEnd   = new Date(year, 11, 24);
+  const christKing = _addDays(adventStart, -1);
+  const adventEnd = new Date(year, 11, 24);
 
   return [
-    _seasonEntry('Navidad',           'gold',   navStart,     navEnd,     today),
-    _seasonEntry('Cuaresma',          'purple', ashWed,       holySat,    today),
-    _seasonEntry('Tiempo de Pascua',  'white',  easter,       pentecost,  today),
-    _seasonEntry('Tiempo Ordinario',  'green',  ordStart,     christKing, today),
-    _seasonEntry('Adviento',          'purple', adventStart,  adventEnd,  today),
+    _seasonEntry('Navidad', 'gold', navStart, navEnd, today),
+    _seasonEntry('Cuaresma', 'purple', ashWed, holySat, today),
+    _seasonEntry('Tiempo de Pascua', 'white', easter, pentecost, today),
+    _seasonEntry('Tiempo Ordinario', 'green', ordStart, christKing, today),
+    _seasonEntry('Adviento', 'purple', adventStart, adventEnd, today),
   ];
 }
 
@@ -302,24 +409,25 @@ export const SEASONS = _computeSeasons();
 
 // Genera una grilla de 6 semanas (42 días) para cualquier mes, empezando en lunes
 export function buildMonthGrid(year, month) {
-  const firstDay   = new Date(year, month, 1);
-  const startDow   = firstDay.getDay(); // 0=dom
+  const firstDay = new Date(year, month, 1);
+  const startDow = firstDay.getDay(); // 0=dom
   const startOffset = startDow === 0 ? -6 : 1 - startDow;
-  const start      = new Date(year, month, 1 + startOffset);
-  const today      = new Date();
+  const start = new Date(year, month, 1 + startOffset);
+  const today = new Date();
 
   return Array.from({ length: 42 }, (_, i) => {
-    const d       = new Date(start);
+    const d = new Date(start);
     d.setDate(start.getDate() + i);
-    const day     = d.getDate();
-    const m       = d.getMonth();
-    const y       = d.getFullYear();
-    const dow     = d.getDay();
+    const day = d.getDate();
+    const m = d.getMonth();
+    const y = d.getFullYear();
+    const dow = d.getDay();
     const inMonth = m === month && y === year;
-    const isToday = inMonth &&
+    const isToday =
+      inMonth &&
       day === today.getDate() &&
-      m   === today.getMonth() &&
-      y   === today.getFullYear();
+      m === today.getMonth() &&
+      y === today.getFullYear();
     return { day, inMonth, dow, color: 'white', solemn: false, isToday };
   });
 }
@@ -352,17 +460,17 @@ export const NOTES_DATA = [
 ];
 
 export const BOOKMARKS_DATA = [
-  { date: 'Dom 24 may', name: 'Domingo de Pentecostés', color: 'red',   solemn: true },
-  { date: 'Jue 21 may', name: 'Ascensión del Señor',    color: 'white', solemn: true },
-  { date: 'Vie 1 may',  name: 'San José Obrero',         color: 'white' },
+  { date: 'Dom 24 may', name: 'Domingo de Pentecostés', color: 'red', solemn: true },
+  { date: 'Jue 21 may', name: 'Ascensión del Señor', color: 'white', solemn: true },
+  { date: 'Vie 1 may', name: 'San José Obrero', color: 'white' },
   { date: 'Lun 28 abr', name: 'San Pedro Chanel, mártir', color: 'red' },
 ];
 
 export const LITURGICAL_LABELS = {
-  green:  { name: 'Verde',  meaning: 'Tiempo Ordinario' },
+  green: { name: 'Verde', meaning: 'Tiempo Ordinario' },
   purple: { name: 'Morado', meaning: 'Adviento · Cuaresma' },
-  white:  { name: 'Blanco', meaning: 'Navidad · Pascua' },
-  red:    { name: 'Rojo',   meaning: 'Mártires · Pentecostés' },
-  rose:   { name: 'Rosa',   meaning: 'Gaudete · Laetare' },
-  gold:   { name: 'Oro',    meaning: 'Solemnidad mayor' },
+  white: { name: 'Blanco', meaning: 'Navidad · Pascua' },
+  red: { name: 'Rojo', meaning: 'Mártires · Pentecostés' },
+  rose: { name: 'Rosa', meaning: 'Gaudete · Laetare' },
+  gold: { name: 'Oro', meaning: 'Solemnidad mayor' },
 };

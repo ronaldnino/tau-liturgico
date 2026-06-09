@@ -16,11 +16,11 @@ import { useSettingsStore, useNotesStore } from '../store';
 const TABS = ['Notas', 'Marcadores'];
 
 const LIT_BORDER = {
-  white:  Colors.liturgical.white,
-  red:    Colors.liturgical.red,
-  green:  Colors.liturgical.green,
+  white: Colors.liturgical.white,
+  red: Colors.liturgical.red,
+  green: Colors.liturgical.green,
   purple: Colors.liturgical.purple,
-  gold:   Colors.liturgical.gold,
+  gold: Colors.liturgical.gold,
 };
 
 export default function NotesScreen() {
@@ -30,11 +30,11 @@ export default function NotesScreen() {
   const { notes, bookmarks, addNote, deleteNote } = useNotesStore();
   const dark = darkMode === 'dark' || (darkMode === 'auto' && scheme === 'dark');
 
-  const bg      = dark ? Colors.dark.bg      : Colors.surface.secondary;
+  const bg = dark ? Colors.dark.bg : Colors.surface.secondary;
   const surface = dark ? Colors.dark.surface : Colors.surface.primary;
-  const ink     = dark ? Colors.dark.ink     : Colors.ink.primary;
-  const muted   = dark ? Colors.dark.inkMuted : Colors.ink.muted;
-  const border  = dark ? Colors.dark.border  : Colors.border.default;
+  const ink = dark ? Colors.dark.ink : Colors.ink.primary;
+  const muted = dark ? Colors.dark.inkMuted : Colors.ink.muted;
+  const border = dark ? Colors.dark.border : Colors.border.default;
 
   const [activeTab, setActiveTab] = useState(0);
   const [composing, setComposing] = useState(false);
@@ -81,10 +81,18 @@ export default function NotesScreen() {
         {TABS.map((tab, i) => (
           <TouchableOpacity
             key={tab}
-            style={[s.tab, activeTab === i && { borderBottomColor: Colors.brand.primary }]}
+            style={[
+              s.tab,
+              activeTab === i && { borderBottomColor: Colors.brand.primary },
+            ]}
             onPress={() => setActiveTab(i)}
           >
-            <Text style={[s.tabText, { color: activeTab === i ? Colors.brand.primary : muted }]}>
+            <Text
+              style={[
+                s.tabText,
+                { color: activeTab === i ? Colors.brand.primary : muted },
+              ]}
+            >
               {tab}
             </Text>
           </TouchableOpacity>
@@ -93,7 +101,9 @@ export default function NotesScreen() {
 
       {/* Composer */}
       {composing && activeTab === 0 && (
-        <View style={[s.composer, { backgroundColor: surface, borderBottomColor: border }]}>
+        <View
+          style={[s.composer, { backgroundColor: surface, borderBottomColor: border }]}
+        >
           <TextInput
             value={draft}
             onChangeText={setDraft}
@@ -104,12 +114,23 @@ export default function NotesScreen() {
             style={[s.composerInput, { color: ink }]}
           />
           <View style={s.composerActions}>
-            <TouchableOpacity onPress={() => { setComposing(false); setDraft(''); }}>
+            <TouchableOpacity
+              onPress={() => {
+                setComposing(false);
+                setDraft('');
+              }}
+            >
               <Text style={[s.composerCancel, { color: muted }]}>Cancelar</Text>
             </TouchableOpacity>
             <TouchableOpacity
               onPress={saveNote}
-              style={[s.composerSave, { backgroundColor: Colors.brand.primary, opacity: draft.trim() ? 1 : 0.4 }]}
+              style={[
+                s.composerSave,
+                {
+                  backgroundColor: Colors.brand.primary,
+                  opacity: draft.trim() ? 1 : 0.4,
+                },
+              ]}
               disabled={!draft.trim()}
             >
               <Text style={s.composerSaveText}>Guardar</Text>
@@ -198,7 +219,16 @@ function NoteCard({ note, surface, ink, muted, border, onDelete }) {
 
 function BookmarkCard({ bookmark, surface, ink, muted, border }) {
   return (
-    <View style={[s.noteCard, { backgroundColor: surface, borderColor: border, borderLeftColor: Colors.brand.primary }]}>
+    <View
+      style={[
+        s.noteCard,
+        {
+          backgroundColor: surface,
+          borderColor: border,
+          borderLeftColor: Colors.brand.primary,
+        },
+      ]}
+    >
       <Text style={[s.noteDate, { color: muted }]}>{bookmark.date}</Text>
       <Text style={[s.noteText, { color: ink }]} numberOfLines={2}>
         {bookmark.text}
@@ -257,12 +287,17 @@ const s = StyleSheet.create({
     fontFamily: 'CormorantGaramond-Medium',
     marginBottom: 10,
   },
-  composerActions: { flexDirection: 'row', justifyContent: 'flex-end', gap: 12, alignItems: 'center' },
+  composerActions: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    gap: 12,
+    alignItems: 'center',
+  },
   composerCancel: { fontSize: 14, padding: 8 },
   composerSave: { paddingHorizontal: 16, paddingVertical: 8, borderRadius: 999 },
   composerSaveText: { color: '#fff', fontWeight: '600', fontSize: 14 },
 
-  scroll:        { flex: 1 },
+  scroll: { flex: 1 },
   scrollContent: { padding: 16, gap: 10 },
   emptyContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
 
@@ -273,8 +308,13 @@ const s = StyleSheet.create({
     padding: 14,
   },
   noteHeader: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 6 },
-  noteDate:   { fontSize: 11, fontWeight: '600', letterSpacing: 0.8, textTransform: 'uppercase' },
-  deleteBtn:  { padding: 2 },
+  noteDate: {
+    fontSize: 11,
+    fontWeight: '600',
+    letterSpacing: 0.8,
+    textTransform: 'uppercase',
+  },
+  deleteBtn: { padding: 2 },
   noteText: {
     fontFamily: 'CormorantGaramond-Medium',
     fontSize: 16,
@@ -283,7 +323,11 @@ const s = StyleSheet.create({
   bmRef: { fontSize: 12, fontWeight: '600', marginTop: 6 },
 
   empty: { alignItems: 'center', padding: 40, gap: 10 },
-  emptyIcon:  { fontSize: 40 },
-  emptyTitle: { fontSize: 18, fontFamily: 'CormorantGaramond-SemiBoldItalic', textAlign: 'center' },
-  emptyBody:  { fontSize: 14, lineHeight: 21, textAlign: 'center', maxWidth: 240 },
+  emptyIcon: { fontSize: 40 },
+  emptyTitle: {
+    fontSize: 18,
+    fontFamily: 'CormorantGaramond-SemiBoldItalic',
+    textAlign: 'center',
+  },
+  emptyBody: { fontSize: 14, lineHeight: 21, textAlign: 'center', maxWidth: 240 },
 });

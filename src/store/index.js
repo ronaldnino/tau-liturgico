@@ -71,10 +71,10 @@ export const useLiturgicalStore = create(
 export const useSettingsStore = create(
   persist(
     (set) => ({
-      darkMode: 'auto',       // 'light' | 'dark' | 'auto'
-      textSize: 'M',          // 'S' | 'M' | 'L'
+      darkMode: 'auto', // 'light' | 'dark' | 'auto'
+      textSize: 'M', // 'S' | 'M' | 'L'
       ttsSpeed: 1,
-      ttsVoiceId: null,       // ID de voz TTS seleccionada
+      ttsVoiceId: null, // ID de voz TTS seleccionada
       dailyReminder: true,
       reminderTime: '07:00',
 
@@ -101,8 +101,7 @@ export const useNotesStore = create(
 
       addNote: (note) =>
         set((s) => ({ notes: [{ id: Date.now(), ...note }, ...s.notes] })),
-      deleteNote: (id) =>
-        set((s) => ({ notes: s.notes.filter((n) => n.id !== id) })),
+      deleteNote: (id) => set((s) => ({ notes: s.notes.filter((n) => n.id !== id) })),
       addBookmark: (bm) =>
         set((s) => ({ bookmarks: [{ id: Date.now(), ...bm }, ...s.bookmarks] })),
       removeBookmark: (id) =>

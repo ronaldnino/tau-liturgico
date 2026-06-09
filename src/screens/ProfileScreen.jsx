@@ -35,9 +35,10 @@ function SettingsRow({ label, value, onPress, right, ink, muted, border, isLast 
       style={[sg.row, !isLast && { borderBottomWidth: 0.5, borderBottomColor: border }]}
     >
       <Text style={[sg.rowLabel, { color: ink }]}>{label}</Text>
-      {right || (value !== undefined && (
-        <Text style={[sg.rowValue, { color: muted }]}>{value}</Text>
-      ))}
+      {right ||
+        (value !== undefined && (
+          <Text style={[sg.rowValue, { color: muted }]}>{value}</Text>
+        ))}
     </TouchableOpacity>
   );
 }
@@ -45,16 +46,23 @@ function SettingsRow({ label, value, onPress, right, ink, muted, border, isLast 
 export default function ProfileScreen() {
   const insets = useSafeAreaInsets();
   const scheme = useColorScheme();
-  const { darkMode, setDarkMode, ttsSpeed, setTtsSpeed, dailyReminder, setDailyReminder } = useSettingsStore();
+  const {
+    darkMode,
+    setDarkMode,
+    ttsSpeed,
+    setTtsSpeed,
+    dailyReminder,
+    setDailyReminder,
+  } = useSettingsStore();
   const { notes } = useNotesStore();
   const { phone, logout } = useAuthStore();
   const dark = darkMode === 'dark' || (darkMode === 'auto' && scheme === 'dark');
 
-  const bg      = dark ? Colors.dark.bg      : Colors.surface.secondary;
+  const bg = dark ? Colors.dark.bg : Colors.surface.secondary;
   const surface = dark ? Colors.dark.surface : Colors.surface.primary;
-  const ink     = dark ? Colors.dark.ink     : Colors.ink.primary;
-  const muted   = dark ? Colors.dark.inkMuted : Colors.ink.muted;
-  const border  = dark ? Colors.dark.border  : Colors.border.default;
+  const ink = dark ? Colors.dark.ink : Colors.ink.primary;
+  const muted = dark ? Colors.dark.inkMuted : Colors.ink.muted;
+  const border = dark ? Colors.dark.border : Colors.border.default;
 
   const handleLogout = () => {
     Alert.alert('Cerrar sesión', '¿Estás seguro de que quieres salir?', [
@@ -84,8 +92,12 @@ export default function ProfileScreen() {
           <Tau size={52} color={Colors.brand.primary} />
         </View>
         <View style={s.profileInfo}>
-          <Text style={[s.profilePhone, { color: ink }]}>{phone || '+502 0000-0000'}</Text>
-          <Text style={[s.profileSub, { color: muted }]}>Año litúrgico 2026 · Ciclo C</Text>
+          <Text style={[s.profilePhone, { color: ink }]}>
+            {phone || '+502 0000-0000'}
+          </Text>
+          <Text style={[s.profileSub, { color: muted }]}>
+            Año litúrgico 2026 · Ciclo C
+          </Text>
         </View>
       </View>
 
@@ -99,7 +111,13 @@ export default function ProfileScreen() {
       </View>
 
       {/* Apariencia */}
-      <SettingsGroup title="Apariencia" surface={surface} ink={ink} muted={muted} border={border}>
+      <SettingsGroup
+        title="Apariencia"
+        surface={surface}
+        ink={ink}
+        muted={muted}
+        border={border}
+      >
         <SettingsRow
           label="Tema"
           value={THEME_LABEL[darkMode]}
@@ -112,7 +130,13 @@ export default function ProfileScreen() {
       </SettingsGroup>
 
       {/* Lectura en voz alta */}
-      <SettingsGroup title="Lectura en voz alta" surface={surface} ink={ink} muted={muted} border={border}>
+      <SettingsGroup
+        title="Lectura en voz alta"
+        surface={surface}
+        ink={ink}
+        muted={muted}
+        border={border}
+      >
         <SettingsRow
           label="Velocidad de lectura"
           ink={ink}
@@ -131,10 +155,7 @@ export default function ProfileScreen() {
                   ]}
                 >
                   <Text
-                    style={[
-                      s.speedChipText,
-                      { color: ttsSpeed === sp ? '#fff' : muted },
-                    ]}
+                    style={[s.speedChipText, { color: ttsSpeed === sp ? '#fff' : muted }]}
                   >
                     {sp}×
                   </Text>
@@ -147,7 +168,13 @@ export default function ProfileScreen() {
       </SettingsGroup>
 
       {/* Notificaciones */}
-      <SettingsGroup title="Notificaciones" surface={surface} ink={ink} muted={muted} border={border}>
+      <SettingsGroup
+        title="Notificaciones"
+        surface={surface}
+        ink={ink}
+        muted={muted}
+        border={border}
+      >
         <SettingsRow
           label="Recordatorio diario"
           ink={ink}
@@ -166,10 +193,35 @@ export default function ProfileScreen() {
       </SettingsGroup>
 
       {/* Acerca de */}
-      <SettingsGroup title="Acerca de" surface={surface} ink={ink} muted={muted} border={border}>
-        <SettingsRow label="Versión" value="1.0.0" ink={ink} muted={muted} border={border} />
-        <SettingsRow label="Ciclo litúrgico" value="C (Lucas)" ink={ink} muted={muted} border={border} />
-        <SettingsRow label="Fuente de datos" value="Misal Romano 3ª ed." ink={ink} muted={muted} border={border} isLast />
+      <SettingsGroup
+        title="Acerca de"
+        surface={surface}
+        ink={ink}
+        muted={muted}
+        border={border}
+      >
+        <SettingsRow
+          label="Versión"
+          value="1.0.0"
+          ink={ink}
+          muted={muted}
+          border={border}
+        />
+        <SettingsRow
+          label="Ciclo litúrgico"
+          value="C (Lucas)"
+          ink={ink}
+          muted={muted}
+          border={border}
+        />
+        <SettingsRow
+          label="Fuente de datos"
+          value="Misal Romano 3ª ed."
+          ink={ink}
+          muted={muted}
+          border={border}
+          isLast
+        />
       </SettingsGroup>
 
       {/* Cerrar sesión */}
@@ -178,7 +230,9 @@ export default function ProfileScreen() {
         style={[s.logoutBtn, { backgroundColor: surface, borderColor: border }]}
         activeOpacity={0.7}
       >
-        <Text style={[s.logoutText, { color: Colors.liturgical.red }]}>Cerrar sesión</Text>
+        <Text style={[s.logoutText, { color: Colors.liturgical.red }]}>
+          Cerrar sesión
+        </Text>
       </TouchableOpacity>
     </ScrollView>
   );
@@ -187,10 +241,30 @@ export default function ProfileScreen() {
 function StatItem({ value, label, ink, muted }) {
   return (
     <View style={{ flex: 1, alignItems: 'center', paddingVertical: 16 }}>
-      <Text style={[{ fontFamily: 'CormorantGaramond-SemiBoldItalic', fontSize: 28, lineHeight: 32 }, { color: ink }]}>
+      <Text
+        style={[
+          {
+            fontFamily: 'CormorantGaramond-SemiBoldItalic',
+            fontSize: 28,
+            lineHeight: 32,
+          },
+          { color: ink },
+        ]}
+      >
         {value}
       </Text>
-      <Text style={[{ fontSize: 11, fontWeight: '600', letterSpacing: 0.8, textTransform: 'uppercase', marginTop: 2 }, { color: muted }]}>
+      <Text
+        style={[
+          {
+            fontSize: 11,
+            fontWeight: '600',
+            letterSpacing: 0.8,
+            textTransform: 'uppercase',
+            marginTop: 2,
+          },
+          { color: muted },
+        ]}
+      >
         {label}
       </Text>
     </View>

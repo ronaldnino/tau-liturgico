@@ -21,11 +21,11 @@ export default function TodayScreen({ navigation }) {
   const [variant] = useState('A');
 
   // Colores contextuales
-  const bg       = dark ? Colors.dark.bg       : Colors.surface.secondary;
-  const surface  = dark ? Colors.dark.surface  : Colors.surface.primary;
-  const ink      = dark ? Colors.dark.ink      : Colors.ink.primary;
+  const bg = dark ? Colors.dark.bg : Colors.surface.secondary;
+  const surface = dark ? Colors.dark.surface : Colors.surface.primary;
+  const ink = dark ? Colors.dark.ink : Colors.ink.primary;
   const inkMuted = dark ? Colors.dark.inkMuted : Colors.ink.muted;
-  const border   = dark ? Colors.dark.border   : Colors.border.default;
+  const border = dark ? Colors.dark.border : Colors.border.default;
 
   return (
     <ScrollView
@@ -56,7 +56,13 @@ export default function TodayScreen({ navigation }) {
             backgroundColor: dark ? 'rgba(201,182,135,0.18)' : '#FAF6EC',
           }}
         >
-          <Text style={{ color: dark ? '#E0CC9D' : '#9A8453', fontSize: 11, fontWeight: '600' }}>
+          <Text
+            style={{
+              color: dark ? '#E0CC9D' : '#9A8453',
+              fontSize: 11,
+              fontWeight: '600',
+            }}
+          >
             {TODAY.season} · {TODAY.week}
           </Text>
         </LitBadge>
@@ -85,14 +91,19 @@ export default function TodayScreen({ navigation }) {
 
           {/* Badges */}
           <View style={s.heroBadgeRow}>
-            <View style={[s.colorBadge, { backgroundColor: Colors.liturgical.red + '15' }]}>
+            <View
+              style={[s.colorBadge, { backgroundColor: Colors.liturgical.red + '15' }]}
+            >
               <LitDot color="red" size={6} />
               <Text style={[s.colorBadgeText, { color: Colors.liturgical.red }]}>
                 {TODAY.liturgicalColorLabel}
               </Text>
             </View>
             <View
-              style={[s.gradeBadge, { backgroundColor: dark ? 'rgba(255,255,255,0.06)' : '#F1F5F9' }]}
+              style={[
+                s.gradeBadge,
+                { backgroundColor: dark ? 'rgba(255,255,255,0.06)' : '#F1F5F9' },
+              ]}
             >
               <Text style={[s.gradeBadgeText, { color: inkMuted }]}>{TODAY.grade}</Text>
             </View>
@@ -103,8 +114,8 @@ export default function TodayScreen({ navigation }) {
 
           {/* Descripción */}
           <Text style={[s.celebrationDesc, { color: inkMuted }]}>
-            Obispo de Cracovia, mártir por defender la libertad de la Iglesia
-            ante el rey Boleslao II († 1079).
+            Obispo de Cracovia, mártir por defender la libertad de la Iglesia ante el rey
+            Boleslao II († 1079).
           </Text>
 
           {/* CTA */}
@@ -250,9 +261,7 @@ export default function TodayScreen({ navigation }) {
                   >
                     {u.name}
                   </Text>
-                  {u.solemn && (
-                    <Text style={s.solemnnityLabel}>Solemnidad</Text>
-                  )}
+                  {u.solemn && <Text style={s.solemnnityLabel}>Solemnidad</Text>}
                 </View>
                 <LitDot color={u.color} size={9} />
               </View>
@@ -267,7 +276,9 @@ export default function TodayScreen({ navigation }) {
 // ── Micro-iconos ───────────────────────────────────────────────
 function BellIcon({ color }) {
   return (
-    <View style={{ width: 20, height: 20, alignItems: 'center', justifyContent: 'center' }}>
+    <View
+      style={{ width: 20, height: 20, alignItems: 'center', justifyContent: 'center' }}
+    >
       <Text style={{ fontSize: 16, opacity: 0.7 }}>🔔</Text>
     </View>
   );
@@ -280,7 +291,7 @@ function ChevronRight({ color }) {
 // ── Estilos ────────────────────────────────────────────────────
 const s = StyleSheet.create({
   container: { flex: 1 },
-  content:   {},
+  content: {},
 
   header: {
     flexDirection: 'row',
@@ -313,7 +324,7 @@ const s = StyleSheet.create({
     position: 'relative',
   },
   heroWatermark: { position: 'absolute', top: -18, right: -18 },
-  heroBadgeRow:  { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 8 },
+  heroBadgeRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 8 },
   colorBadge: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -322,9 +333,9 @@ const s = StyleSheet.create({
     paddingVertical: 4,
     borderRadius: 999,
   },
-  colorBadgeText:  { fontSize: 11, fontWeight: '600', letterSpacing: 0.3 },
-  gradeBadge:      { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 999 },
-  gradeBadgeText:  { fontSize: 11, fontWeight: '500' },
+  colorBadgeText: { fontSize: 11, fontWeight: '600', letterSpacing: 0.3 },
+  gradeBadge: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 999 },
+  gradeBadgeText: { fontSize: 11, fontWeight: '500' },
   celebrationTitle: {
     fontFamily: 'CormorantGaramond-SemiBoldItalic',
     fontSize: 26,
@@ -401,8 +412,8 @@ const s = StyleSheet.create({
     marginBottom: 12,
   },
   progressTrack: { height: 3, borderRadius: 999, overflow: 'hidden', marginBottom: 8 },
-  progressFill:  { height: '100%', borderRadius: 999 },
-  seasonDays:    { fontSize: 12, fontWeight: '500' },
+  progressFill: { height: '100%', borderRadius: 999 },
+  seasonDays: { fontSize: 12, fontWeight: '500' },
 
   // Próximas
   upcomingList: { borderRadius: 14, borderWidth: 0.5, overflow: 'hidden' },
@@ -433,8 +444,8 @@ const s = StyleSheet.create({
     fontSize: 18,
     lineHeight: 20,
   },
-  upcomingInfo:      { flex: 1 },
-  upcomingName:      { fontSize: 14, fontWeight: '500', lineHeight: 18 },
+  upcomingInfo: { flex: 1 },
+  upcomingName: { fontSize: 14, fontWeight: '500', lineHeight: 18 },
   upcomingNameSolemn: {
     fontFamily: 'CormorantGaramond-SemiBoldItalic',
     fontSize: 16,

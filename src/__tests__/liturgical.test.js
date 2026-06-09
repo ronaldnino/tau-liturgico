@@ -1,10 +1,4 @@
-import {
-  TODAY,
-  READINGS,
-  UPCOMING,
-  SEASONS,
-  buildMonthGrid,
-} from '../data/liturgical';
+import { TODAY, READINGS, UPCOMING, SEASONS, buildMonthGrid } from '../data/liturgical';
 
 describe('liturgical data', () => {
   describe('TODAY', () => {
@@ -17,7 +11,13 @@ describe('liturgical data', () => {
     });
 
     it('season es uno de los cinco tiempos litúrgicos', () => {
-      const valid = ['Navidad', 'Cuaresma', 'Tiempo de Pascua', 'Tiempo Ordinario', 'Adviento'];
+      const valid = [
+        'Navidad',
+        'Cuaresma',
+        'Tiempo de Pascua',
+        'Tiempo Ordinario',
+        'Adviento',
+      ];
       expect(valid).toContain(TODAY.season);
     });
 

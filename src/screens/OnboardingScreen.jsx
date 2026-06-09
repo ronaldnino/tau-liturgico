@@ -1,11 +1,5 @@
 import React, { useRef } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  Dimensions,
-  TouchableOpacity,
-} from 'react-native';
+import { View, Text, StyleSheet, Dimensions, TouchableOpacity } from 'react-native';
 import AppIntroSlider from 'react-native-app-intro-slider';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Colors } from '../theme';
@@ -81,9 +75,7 @@ export default function OnboardingScreen({ navigation }) {
       onDone={finish}
       onSkip={finish}
       showSkipButton
-      renderSkipButton={() => (
-        <Text style={s.skipBtn}>Saltar</Text>
-      )}
+      renderSkipButton={() => <Text style={s.skipBtn}>Saltar</Text>}
       renderNextButton={() => (
         <View style={s.nextBtn}>
           <Text style={s.nextBtnText}>›</Text>
@@ -179,6 +171,6 @@ const s = StyleSheet.create({
     justifyContent: 'center',
   },
   nextBtnText: { color: '#fff', fontSize: 22, fontWeight: '600' },
-  dot:       { backgroundColor: Colors.border.default },
+  dot: { backgroundColor: Colors.border.default },
   activeDot: { backgroundColor: Colors.brand.primary, width: 20 },
 });

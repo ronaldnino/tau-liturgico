@@ -15,19 +15,25 @@ export default function SyncScreen({ navigation, route }) {
   const [syncFailed, setSyncFailed] = useState(false);
   const [retryCount, setRetryCount] = useState(0);
   const [syncDone, setSyncDone] = useState(false);
-  const [progressDone, setProgressDone] = useState(false);
+  const progressDone = progress >= 100;
   const pulseAnim = useState(new Animated.Value(1))[0];
   const mounted = useRef(true);
 
   useEffect(() => {
     mounted.current = true;
-    return () => { mounted.current = false; };
+    return () => {
+      mounted.current = false;
+    };
   }, []);
 
   useEffect(() => {
     Animated.loop(
       Animated.sequence([
-        Animated.timing(pulseAnim, { toValue: 1.06, duration: 1200, useNativeDriver: true }),
+        Animated.timing(pulseAnim, {
+          toValue: 1.06,
+          duration: 1200,
+          useNativeDriver: true,
+        }),
         Animated.timing(pulseAnim, { toValue: 1, duration: 1200, useNativeDriver: true }),
       ])
     ).start();
@@ -42,17 +48,18 @@ export default function SyncScreen({ navigation, route }) {
 
   // Sync real del store
   useEffect(() => {
-    setSyncDone(false);
     sync()
-      .then(() => { if (mounted.current) setSyncDone(true); })
-      .catch(() => { if (mounted.current) setSyncFailed(true); });
+      .then(() => {
+        if (mounted.current) setSyncDone(true);
+      })
+      .catch(() => {
+        if (mounted.current) setSyncFailed(true);
+      });
   }, [retryCount]);
 
   // Animación de progreso independiente
   useEffect(() => {
     if (syncFailed) return;
-    setProgress(0);
-    setProgressDone(false);
     const interval = setInterval(() => {
       setProgress((p) => {
         if (p >= 100) {
@@ -65,19 +72,25 @@ export default function SyncScreen({ navigation, route }) {
     return () => clearInterval(interval);
   }, [syncFailed, retryCount]);
 
-  // Detectar cuando la barra llega a 100 (en un efecto separado, no dentro del setter)
-  useEffect(() => {
-    if (progress >= 100) setProgressDone(true);
-  }, [progress]);
-
   const handleRetry = useCallback(() => {
     setSyncFailed(false);
+    setSyncDone(false);
+    setProgress(0);
     setRetryCount((c) => c + 1);
   }, []);
 
   if (syncFailed) {
     return (
-      <View style={[s.container, { paddingTop: insets.top, paddingBottom: insets.bottom + 24, backgroundColor: '#fff' }]}>
+      <View
+        style={[
+          s.container,
+          {
+            paddingTop: insets.top,
+            paddingBottom: insets.bottom + 24,
+            backgroundColor: '#fff',
+          },
+        ]}
+      >
         <View style={s.errorCenter}>
           <View style={s.errorIcon}>
             <Text style={{ fontSize: 28 }}>📶</Text>
@@ -98,8 +111,11 @@ export default function SyncScreen({ navigation, route }) {
     <View
       style={[
         s.container,
-        { paddingTop: insets.top, paddingBottom: insets.bottom + 24,
-          backgroundColor: Colors.brand.primary },
+        {
+          paddingTop: insets.top,
+          paddingBottom: insets.bottom + 24,
+          backgroundColor: Colors.brand.primary,
+        },
       ]}
     >
       <View style={s.center}>

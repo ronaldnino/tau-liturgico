@@ -18,7 +18,8 @@ export default function TauWordmark({
       style={style}
     >
       <SvgText
-        x="60" y="150"
+        x="60"
+        y="150"
         fontFamily="CormorantGaramond-SemiBoldItalic"
         fontSize={190}
         fill={color}
@@ -26,7 +27,8 @@ export default function TauWordmark({
         {'τau'}
       </SvgText>
       <SvgText
-        x="200" y="195"
+        x="200"
+        y="195"
         fontFamily="CormorantGaramond-Medium"
         fontSize={36}
         letterSpacing={4.5}
@@ -35,8 +37,13 @@ export default function TauWordmark({
         {'LITÚRGICO'}
       </SvgText>
       <Line
-        x1="200" y1="208" x2="618" y2="208"
-        stroke={accent} strokeWidth={0.5} strokeOpacity={0.4}
+        x1="200"
+        y1="208"
+        x2="618"
+        y2="208"
+        stroke={accent}
+        strokeWidth={0.5}
+        strokeOpacity={0.4}
       />
     </Svg>
   );

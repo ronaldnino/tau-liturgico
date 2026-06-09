@@ -8,27 +8,29 @@ import { Colors } from '../theme';
 import { Tau } from '../components';
 
 import OnboardingScreen from '../screens/OnboardingScreen';
-import PhoneScreen      from '../screens/PhoneScreen';
-import OtpScreen        from '../screens/OtpScreen';
-import SyncScreen       from '../screens/SyncScreen';
-import TodayScreen      from '../screens/TodayScreen';
-import CalendarScreen   from '../screens/CalendarScreen';
-import ReadingsScreen   from '../screens/ReadingsScreen';
-import NotesScreen      from '../screens/NotesScreen';
-import ProfileScreen    from '../screens/ProfileScreen';
+import PhoneScreen from '../screens/PhoneScreen';
+import OtpScreen from '../screens/OtpScreen';
+import SyncScreen from '../screens/SyncScreen';
+import TodayScreen from '../screens/TodayScreen';
+import CalendarScreen from '../screens/CalendarScreen';
+import ReadingsScreen from '../screens/ReadingsScreen';
+import NotesScreen from '../screens/NotesScreen';
+import ProfileScreen from '../screens/ProfileScreen';
 
 const Stack = createNativeStackNavigator();
-const Tab   = createBottomTabNavigator();
+const Tab = createBottomTabNavigator();
 
 // ── Tab icons ──────────────────────────────────────────────────
-const CAL_ICON  = ({ color }) => <TabIcon label="◻" color={color} />;
+const CAL_ICON = ({ color }) => <TabIcon label="◻" color={color} />;
 const BOOK_ICON = ({ color }) => <TabIcon label="☰" color={color} />;
 const NOTE_ICON = ({ color }) => <TabIcon label="◻" color={color} />;
 const USER_ICON = ({ color }) => <TabIcon label="○" color={color} />;
 
 function TabIcon({ color, label }) {
   return (
-    <View style={{ width: 22, height: 22, alignItems: 'center', justifyContent: 'center' }}>
+    <View
+      style={{ width: 22, height: 22, alignItems: 'center', justifyContent: 'center' }}
+    >
       {/* replace with react-native-svg icons if desired */}
     </View>
   );
@@ -47,7 +49,7 @@ function MainTabs() {
           paddingTop: 6,
           height: 56,
         },
-        tabBarActiveTintColor:   Colors.brand.primary,
+        tabBarActiveTintColor: Colors.brand.primary,
         tabBarInactiveTintColor: Colors.ink.muted,
       }}
     >
@@ -85,8 +87,8 @@ function AuthStack() {
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
       <Stack.Screen name="Phone" component={PhoneScreen} />
-      <Stack.Screen name="Otp"   component={OtpScreen} />
-      <Stack.Screen name="Sync"  component={SyncScreen} />
+      <Stack.Screen name="Otp" component={OtpScreen} />
+      <Stack.Screen name="Sync" component={SyncScreen} />
     </Stack.Navigator>
   );
 }

@@ -139,11 +139,7 @@ export default function OtpScreen({ route, navigation }) {
 
         <View style={[s.footer, { paddingBottom: insets.bottom + 16 }]}>
           <PrimaryBtn onPress={verify} disabled={!complete || loading}>
-            {loading ? (
-              <ActivityIndicator color="#fff" />
-            ) : (
-              'Verificar'
-            )}
+            {loading ? <ActivityIndicator color="#fff" /> : 'Verificar'}
           </PrimaryBtn>
         </View>
       </View>
@@ -159,12 +155,12 @@ const s = StyleSheet.create({
     justifyContent: 'space-between',
     marginBottom: 32,
   },
-  backBtn:   { padding: 6 },
+  backBtn: { padding: 6 },
   backArrow: { fontSize: 28, color: Colors.ink.primary, lineHeight: 32 },
-  step:      { fontSize: 12, fontWeight: '500', color: Colors.ink.muted, letterSpacing: 1 },
+  step: { fontSize: 12, fontWeight: '500', color: Colors.ink.muted, letterSpacing: 1 },
 
   content: { flex: 1 },
-  tau:     { marginBottom: 24 },
+  tau: { marginBottom: 24 },
   title: {
     fontFamily: 'CormorantGaramond-SemiBoldItalic',
     fontSize: 32,
@@ -174,7 +170,7 @@ const s = StyleSheet.create({
   },
   body: { fontSize: 15, lineHeight: 23, color: Colors.ink.muted, marginBottom: 36 },
 
-  otpRow:  { flexDirection: 'row', gap: 8, justifyContent: 'space-between' },
+  otpRow: { flexDirection: 'row', gap: 8, justifyContent: 'space-between' },
   otpBox: {
     width: 44,
     height: 56,
@@ -189,10 +185,15 @@ const s = StyleSheet.create({
   otpBoxActive: { borderColor: Colors.brand.primary },
   otpBoxFilled: { borderColor: Colors.brand.primary },
 
-  error:      { color: Colors.liturgical.red, fontSize: 13, marginTop: 12, textAlign: 'center' },
-  resendRow:  { alignItems: 'center', marginTop: 20 },
+  error: {
+    color: Colors.liturgical.red,
+    fontSize: 13,
+    marginTop: 12,
+    textAlign: 'center',
+  },
+  resendRow: { alignItems: 'center', marginTop: 20 },
   resendCountdown: { fontSize: 13, color: Colors.ink.muted },
-  resendBtn:  { fontSize: 14, fontWeight: '600', color: Colors.brand.primary, padding: 8 },
+  resendBtn: { fontSize: 14, fontWeight: '600', color: Colors.brand.primary, padding: 8 },
 
   footer: { paddingTop: 12 },
 });

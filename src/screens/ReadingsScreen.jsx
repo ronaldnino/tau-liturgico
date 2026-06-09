@@ -23,38 +23,75 @@ const READING_LABELS = [
   { short: 'Ev', label: 'Evangelio' },
 ];
 
-const MALE_NAMES   = ['jorge', 'juan', 'diego', 'carlos', 'miguel', 'antonio'];
-const FEMALE_NAMES = ['paulina', 'mónica', 'monica', 'luciana', 'isabel', 'sofía', 'sofia', 'laura'];
+const MALE_NAMES = ['jorge', 'juan', 'diego', 'carlos', 'miguel', 'antonio'];
+const FEMALE_NAMES = [
+  'paulina',
+  'mónica',
+  'monica',
+  'luciana',
+  'isabel',
+  'sofía',
+  'sofia',
+  'laura',
+];
 
-function isMaleVoice(v)   { return MALE_NAMES.some(n   => v.name?.toLowerCase().includes(n)); }
-function isFemaleVoice(v) { return FEMALE_NAMES.some(n => v.name?.toLowerCase().includes(n)); }
+function isMaleVoice(v) {
+  return MALE_NAMES.some((n) => v.name?.toLowerCase().includes(n));
+}
+function isFemaleVoice(v) {
+  return FEMALE_NAMES.some((n) => v.name?.toLowerCase().includes(n));
+}
 
 function bestSpanish(voices, predicate) {
-  return voices
-    .filter(v => v.language?.startsWith('es') && !v.notInstalled && !v.networkConnectionRequired && predicate(v))
-    .sort((a, b) => (b.quality ?? 0) - (a.quality ?? 0))[0] ?? null;
+  return (
+    voices
+      .filter(
+        (v) =>
+          v.language?.startsWith('es') &&
+          !v.notInstalled &&
+          !v.networkConnectionRequired &&
+          predicate(v)
+      )
+      .sort((a, b) => (b.quality ?? 0) - (a.quality ?? 0))[0] ?? null
+  );
 }
 
 function useTTSPlayer(voiceId) {
   const [isPlaying, setIsPlaying] = useState(false);
   const [activeIdx, setActiveIdx] = useState(0);
-  const [progress, setProgress]   = useState(0);
+  const [progress, setProgress] = useState(0);
   const voiceRef = useRef(voiceId);
-  voiceRef.current = voiceId;
+  useEffect(() => {
+    voiceRef.current = voiceId;
+  }, [voiceId]);
 
   useEffect(() => {
     Tts.setDefaultLanguage('es-MX');
     Tts.setDefaultPitch(1.0);
     Tts.setDefaultRate(0.42);
 
-    const s1 = Tts.addEventListener('tts-start',    () => { setIsPlaying(true);  setProgress(0); });
-    const s2 = Tts.addEventListener('tts-finish',   () => { setIsPlaying(false); setProgress(100); });
-    const s3 = Tts.addEventListener('tts-cancel',   () => { setIsPlaying(false); });
+    const s1 = Tts.addEventListener('tts-start', () => {
+      setIsPlaying(true);
+      setProgress(0);
+    });
+    const s2 = Tts.addEventListener('tts-finish', () => {
+      setIsPlaying(false);
+      setProgress(100);
+    });
+    const s3 = Tts.addEventListener('tts-cancel', () => {
+      setIsPlaying(false);
+    });
     const s4 = Tts.addEventListener('tts-progress', (e) => {
       if (e.end > 0) setProgress(Math.min(100, Math.round((e.start / e.end) * 100)));
     });
 
-    return () => { Tts.stop(); s1.remove(); s2.remove(); s3.remove(); s4.remove(); };
+    return () => {
+      Tts.stop();
+      s1.remove();
+      s2.remove();
+      s3.remove();
+      s4.remove();
+    };
   }, []);
 
   const play = (idx, text) => {
@@ -65,7 +102,10 @@ function useTTSPlayer(voiceId) {
     Tts.speak(text);
   };
 
-  const pause = () => { Tts.stop(); setIsPlaying(false); };
+  const pause = () => {
+    Tts.stop();
+    setIsPlaying(false);
+  };
 
   const toggle = (idx, text) => {
     if (isPlaying && activeIdx === idx) pause();
@@ -78,29 +118,36 @@ function useTTSPlayer(voiceId) {
 export default function ReadingsScreen({ navigation }) {
   const insets = useSafeAreaInsets();
   const scheme = useColorScheme();
-  const { darkMode, ttsSpeed, ttsVoiceId: ttsGender, setTtsVoiceId: setTtsGender } = useSettingsStore();
+  const {
+    darkMode,
+    ttsSpeed,
+    ttsVoiceId: ttsGender,
+    setTtsVoiceId: setTtsGender,
+  } = useSettingsStore();
   const { bookmarks, addBookmark, removeBookmark } = useNotesStore();
   const dark = darkMode === 'dark' || (darkMode === 'auto' && scheme === 'dark');
 
-  const bg      = dark ? Colors.dark.bg      : Colors.surface.secondary;
+  const bg = dark ? Colors.dark.bg : Colors.surface.secondary;
   const surface = dark ? Colors.dark.surface : Colors.surface.primary;
-  const ink     = dark ? Colors.dark.ink     : Colors.ink.primary;
-  const muted   = dark ? Colors.dark.inkMuted : Colors.ink.muted;
-  const border  = dark ? Colors.dark.border  : Colors.border.default;
+  const ink = dark ? Colors.dark.ink : Colors.ink.primary;
+  const muted = dark ? Colors.dark.inkMuted : Colors.ink.muted;
+  const border = dark ? Colors.dark.border : Colors.border.default;
 
   const gender = ttsGender === 'male' ? 'male' : 'female';
-  const [activeReading, setActiveReading]   = useState(0);
-  const [voiceMap, setVoiceMap]             = useState({ female: null, male: null });
+  const [activeReading, setActiveReading] = useState(0);
+  const [voiceMap, setVoiceMap] = useState({ female: null, male: null });
   const activeVoiceId = voiceMap[gender]?.id ?? null;
   const { isPlaying, activeIdx, progress, toggle } = useTTSPlayer(activeVoiceId);
 
   useEffect(() => {
-    Tts.voices().then((all) => {
-      setVoiceMap({
-        female: bestSpanish(all, isFemaleVoice) ?? bestSpanish(all, () => true),
-        male:   bestSpanish(all, isMaleVoice),
-      });
-    }).catch(() => {});
+    Tts.voices()
+      .then((all) => {
+        setVoiceMap({
+          female: bestSpanish(all, isFemaleVoice) ?? bestSpanish(all, () => true),
+          male: bestSpanish(all, isMaleVoice),
+        });
+      })
+      .catch(() => {});
   }, []);
 
   const isBookmarked = (ref) => bookmarks.some((b) => b.ref === ref);
@@ -110,14 +157,28 @@ export default function ReadingsScreen({ navigation }) {
       const bm = bookmarks.find((b) => b.ref === reading.ref);
       if (bm) removeBookmark(bm.id);
     } else {
-      addBookmark({ id: Date.now().toString(), ref: reading.ref, text: reading.ref, date: TODAY.date });
+      addBookmark({
+        id: Date.now().toString(),
+        ref: reading.ref,
+        text: reading.ref,
+        date: TODAY.date,
+      });
     }
   };
 
   return (
     <View style={[s.container, { backgroundColor: bg }]}>
       {/* Header */}
-      <View style={[s.header, { paddingTop: insets.top + 12, backgroundColor: surface, borderBottomColor: border }]}>
+      <View
+        style={[
+          s.header,
+          {
+            paddingTop: insets.top + 12,
+            backgroundColor: surface,
+            borderBottomColor: border,
+          },
+        ]}
+      >
         <TouchableOpacity onPress={() => navigation.goBack()} style={s.backBtn}>
           <Text style={[s.backArrow, { color: ink }]}>‹</Text>
         </TouchableOpacity>
@@ -135,10 +196,18 @@ export default function ReadingsScreen({ navigation }) {
         {READING_LABELS.map((rl, i) => (
           <TouchableOpacity
             key={i}
-            style={[s.tab, activeReading === i && { borderBottomColor: Colors.brand.primary }]}
+            style={[
+              s.tab,
+              activeReading === i && { borderBottomColor: Colors.brand.primary },
+            ]}
             onPress={() => setActiveReading(i)}
           >
-            <Text style={[s.tabShort, { color: activeReading === i ? Colors.brand.primary : muted }]}>
+            <Text
+              style={[
+                s.tabShort,
+                { color: activeReading === i ? Colors.brand.primary : muted },
+              ]}
+            >
               {rl.short}
             </Text>
           </TouchableOpacity>
@@ -170,7 +239,14 @@ export default function ReadingsScreen({ navigation }) {
             onPress={() => toggleBookmark(READINGS[activeReading])}
             style={s.bookmarkBtn}
           >
-            <Text style={{ fontSize: 20, color: isBookmarked(READINGS[activeReading]?.ref) ? Colors.brand.primary : muted }}>
+            <Text
+              style={{
+                fontSize: 20,
+                color: isBookmarked(READINGS[activeReading]?.ref)
+                  ? Colors.brand.primary
+                  : muted,
+              }}
+            >
               {isBookmarked(READINGS[activeReading]?.ref) ? '🔖' : '🏷'}
             </Text>
           </TouchableOpacity>
@@ -209,7 +285,11 @@ export default function ReadingsScreen({ navigation }) {
             style={s.playerBtn}
             disabled={activeReading === 0}
           >
-            <Text style={[s.playerBtnIcon, { color: activeReading === 0 ? border : ink }]}>⏮</Text>
+            <Text
+              style={[s.playerBtnIcon, { color: activeReading === 0 ? border : ink }]}
+            >
+              ⏮
+            </Text>
           </TouchableOpacity>
 
           {/* Play/Pause */}
@@ -229,7 +309,14 @@ export default function ReadingsScreen({ navigation }) {
             style={s.playerBtn}
             disabled={activeReading === READINGS.length - 1}
           >
-            <Text style={[s.playerBtnIcon, { color: activeReading === READINGS.length - 1 ? border : ink }]}>⏭</Text>
+            <Text
+              style={[
+                s.playerBtnIcon,
+                { color: activeReading === READINGS.length - 1 ? border : ink },
+              ]}
+            >
+              ⏭
+            </Text>
           </TouchableOpacity>
 
           {/* Velocidad */}
@@ -246,20 +333,33 @@ export default function ReadingsScreen({ navigation }) {
           <View style={s.voiceToggle}>
             <TouchableOpacity
               onPress={() => setTtsGender('female')}
-              style={[s.voiceBtn, gender === 'female' && { backgroundColor: Colors.brand.primary }]}
+              style={[
+                s.voiceBtn,
+                gender === 'female' && { backgroundColor: Colors.brand.primary },
+              ]}
             >
-              <Text style={[s.voiceBtnText, { color: gender === 'female' ? '#fff' : muted }]}>
+              <Text
+                style={[s.voiceBtnText, { color: gender === 'female' ? '#fff' : muted }]}
+              >
                 ♀ Mujer
               </Text>
             </TouchableOpacity>
             <TouchableOpacity
-              onPress={() => voiceMap.male
-                ? setTtsGender('male')
-                : Linking.openSettings()
+              onPress={() =>
+                voiceMap.male ? setTtsGender('male') : Linking.openSettings()
               }
-              style={[s.voiceBtn, gender === 'male' && voiceMap.male && { backgroundColor: Colors.brand.primary }]}
+              style={[
+                s.voiceBtn,
+                gender === 'male' &&
+                  voiceMap.male && { backgroundColor: Colors.brand.primary },
+              ]}
             >
-              <Text style={[s.voiceBtnText, { color: gender === 'male' && voiceMap.male ? '#fff' : muted }]}>
+              <Text
+                style={[
+                  s.voiceBtnText,
+                  { color: gender === 'male' && voiceMap.male ? '#fff' : muted },
+                ]}
+              >
                 {voiceMap.male ? '♂ Hombre' : '♂ Instalar voz'}
               </Text>
             </TouchableOpacity>
@@ -281,10 +381,16 @@ const s = StyleSheet.create({
     borderBottomWidth: 0.5,
     gap: 12,
   },
-  backBtn:      { padding: 4, marginRight: 4 },
-  backArrow:    { fontSize: 28, lineHeight: 32 },
+  backBtn: { padding: 4, marginRight: 4 },
+  backArrow: { fontSize: 28, lineHeight: 32 },
   headerCenter: { flex: 1 },
-  headerDate:   { fontSize: 11, fontWeight: '600', letterSpacing: 1, textTransform: 'uppercase', marginBottom: 2 },
+  headerDate: {
+    fontSize: 11,
+    fontWeight: '600',
+    letterSpacing: 1,
+    textTransform: 'uppercase',
+    marginBottom: 2,
+  },
   headerTitle: {
     fontFamily: 'CormorantGaramond-SemiBoldItalic',
     fontSize: 22,
@@ -304,7 +410,7 @@ const s = StyleSheet.create({
   },
   tabShort: { fontSize: 13, fontWeight: '600' },
 
-  scroll:        { flex: 1 },
+  scroll: { flex: 1 },
   scrollContent: { padding: 24 },
 
   readingType: {
@@ -339,7 +445,7 @@ const s = StyleSheet.create({
     borderTopWidth: 0.5,
     gap: 12,
   },
-  closing:     { flex: 1, fontStyle: 'italic', fontSize: 14 },
+  closing: { flex: 1, fontStyle: 'italic', fontSize: 14 },
   bookmarkBtn: { padding: 8 },
 
   player: {
@@ -366,7 +472,7 @@ const s = StyleSheet.create({
     gap: 24,
     marginBottom: 8,
   },
-  playerBtn:     { padding: 6 },
+  playerBtn: { padding: 6 },
   playerBtnIcon: { fontSize: 20 },
   playBtn: {
     width: 52,

@@ -1,30 +1,30 @@
 export const FontFamily = {
   serif: {
-    regular:        'CormorantGaramond-Regular',
-    medium:         'CormorantGaramond-Medium',
-    semiBold:       'CormorantGaramond-SemiBold',
-    regularItalic:  'CormorantGaramond-Italic',
-    mediumItalic:   'CormorantGaramond-MediumItalic',
+    regular: 'CormorantGaramond-Regular',
+    medium: 'CormorantGaramond-Medium',
+    semiBold: 'CormorantGaramond-SemiBold',
+    regularItalic: 'CormorantGaramond-Italic',
+    mediumItalic: 'CormorantGaramond-MediumItalic',
     semiBoldItalic: 'CormorantGaramond-SemiBoldItalic',
   },
 };
 
 export const FontSize = {
-  xs:   12,
-  sm:   13,
+  xs: 12,
+  sm: 13,
   base: 15,
-  md:   16,
-  lg:   18,
-  xl:   22,
+  md: 16,
+  lg: 18,
+  xl: 22,
   '2xl': 28,
   '3xl': 34,
   '4xl': 42,
 };
 
 export const LineHeight = {
-  tight:   1.15,
-  snug:    1.3,
-  normal:  1.5,
+  tight: 1.15,
+  snug: 1.3,
+  normal: 1.5,
   relaxed: 1.65,
 };
 

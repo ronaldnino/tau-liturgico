@@ -14,16 +14,50 @@ import { LitDot, LitBadge } from '../components';
 import { useSettingsStore } from '../store';
 import { buildMonthGrid, LITURGICAL_LABELS } from '../data/liturgical';
 
-const _WEEKDAYS_ES  = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
-const _MONTHS_ES    = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
-const _MONTHS_ES_CAP = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
+const _WEEKDAYS_ES = [
+  'Domingo',
+  'Lunes',
+  'Martes',
+  'Miércoles',
+  'Jueves',
+  'Viernes',
+  'Sábado',
+];
+const _MONTHS_ES = [
+  'enero',
+  'febrero',
+  'marzo',
+  'abril',
+  'mayo',
+  'junio',
+  'julio',
+  'agosto',
+  'septiembre',
+  'octubre',
+  'noviembre',
+  'diciembre',
+];
+const _MONTHS_ES_CAP = [
+  'Enero',
+  'Febrero',
+  'Marzo',
+  'Abril',
+  'Mayo',
+  'Junio',
+  'Julio',
+  'Agosto',
+  'Septiembre',
+  'Octubre',
+  'Noviembre',
+  'Diciembre',
+];
 
-const _now          = new Date();
-const CUR_YEAR      = _now.getFullYear();
-const CUR_MONTH     = _now.getMonth();
-const TODAY_DAY     = _now.getDate();
-const TODAY_ISO     = `${CUR_YEAR}-${String(CUR_MONTH + 1).padStart(2, '0')}-${String(TODAY_DAY).padStart(2, '0')}`;
-const MONTH_GRID    = buildMonthGrid(CUR_YEAR, CUR_MONTH);
+const _now = new Date();
+const CUR_YEAR = _now.getFullYear();
+const CUR_MONTH = _now.getMonth();
+const TODAY_DAY = _now.getDate();
+const TODAY_ISO = `${CUR_YEAR}-${String(CUR_MONTH + 1).padStart(2, '0')}-${String(TODAY_DAY).padStart(2, '0')}`;
+const MONTH_GRID = buildMonthGrid(CUR_YEAR, CUR_MONTH);
 
 function buildMarkedDates(selected) {
   const dates = {};
@@ -50,11 +84,11 @@ export default function CalendarScreen({ navigation }) {
   const dark = darkMode === 'dark' || (darkMode === 'auto' && scheme === 'dark');
   const [selected, setSelected] = useState(TODAY_DAY);
 
-  const bg      = dark ? Colors.dark.bg      : Colors.surface.secondary;
+  const bg = dark ? Colors.dark.bg : Colors.surface.secondary;
   const surface = dark ? Colors.dark.surface : Colors.surface.primary;
-  const ink     = dark ? Colors.dark.ink     : Colors.ink.primary;
-  const muted   = dark ? Colors.dark.inkMuted : Colors.ink.muted;
-  const border  = dark ? Colors.dark.border  : Colors.border.default;
+  const ink = dark ? Colors.dark.ink : Colors.ink.primary;
+  const muted = dark ? Colors.dark.inkMuted : Colors.ink.muted;
+  const border = dark ? Colors.dark.border : Colors.border.default;
 
   const detail = DETAIL[selected];
 
@@ -71,10 +105,7 @@ export default function CalendarScreen({ navigation }) {
           <Text style={[s.month, { color: ink }]}>{_MONTHS_ES_CAP[CUR_MONTH]}</Text>
           <Text style={[s.year, { color: muted }]}>{CUR_YEAR}</Text>
         </View>
-        <TouchableOpacity
-          style={s.todayBtn}
-          onPress={() => setSelected(TODAY_DAY)}
-        >
+        <TouchableOpacity style={s.todayBtn} onPress={() => setSelected(TODAY_DAY)}>
           <Text style={s.todayBtnText}>Hoy</Text>
         </TouchableOpacity>
       </View>
@@ -105,8 +136,8 @@ export default function CalendarScreen({ navigation }) {
       <View style={s.legend}>
         {[
           { c: 'white', l: 'Pascua' },
-          { c: 'red',   l: 'Mártir' },
-          { c: 'gold',  l: 'Solemnidad' },
+          { c: 'red', l: 'Mártir' },
+          { c: 'gold', l: 'Solemnidad' },
         ].map((it) => (
           <View key={it.l} style={s.legendItem}>
             <LitDot color={it.c} size={7} />
@@ -130,7 +161,8 @@ export default function CalendarScreen({ navigation }) {
           <View style={s.panelHandle} />
           <View style={s.panelDateRow}>
             <Text style={[s.panelDate, { color: muted }]}>
-              {_WEEKDAYS_ES[new Date(CUR_YEAR, CUR_MONTH, selected).getDay()]} · {selected} de {_MONTHS_ES[CUR_MONTH]}
+              {_WEEKDAYS_ES[new Date(CUR_YEAR, CUR_MONTH, selected).getDay()]} ·{' '}
+              {selected} de {_MONTHS_ES[CUR_MONTH]}
             </Text>
             {selected === TODAY_DAY && (
               <View style={s.todayPill}>
@@ -178,8 +210,8 @@ const s = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 10,
   },
-  chevBtn:     { padding: 6 },
-  chev:        { fontSize: 28, lineHeight: 32 },
+  chevBtn: { padding: 6 },
+  chev: { fontSize: 28, lineHeight: 32 },
   monthCenter: { alignItems: 'center' },
   month: {
     fontFamily: 'CormorantGaramond-SemiBoldItalic',
@@ -221,9 +253,19 @@ const s = StyleSheet.create({
     alignSelf: 'center',
     marginBottom: 14,
   },
-  panelDateRow:  { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 6 },
-  panelDate:     { fontSize: 12, fontWeight: '600', letterSpacing: 1, textTransform: 'uppercase' },
-  todayPill:     { paddingHorizontal: 8, paddingVertical: 2, borderRadius: 999, backgroundColor: Colors.brand.primary },
+  panelDateRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 6 },
+  panelDate: {
+    fontSize: 12,
+    fontWeight: '600',
+    letterSpacing: 1,
+    textTransform: 'uppercase',
+  },
+  todayPill: {
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 999,
+    backgroundColor: Colors.brand.primary,
+  },
   todayPillText: { color: '#fff', fontSize: 10, fontWeight: '600', letterSpacing: 1 },
   panelName: {
     fontFamily: 'CormorantGaramond-SemiBoldItalic',
@@ -232,7 +274,7 @@ const s = StyleSheet.create({
     marginBottom: 10,
   },
   panelBadgeRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 14 },
-  panelGrade:    { fontSize: 12 },
+  panelGrade: { fontSize: 12 },
   panelBtn: {
     width: '100%',
     paddingVertical: 13,
