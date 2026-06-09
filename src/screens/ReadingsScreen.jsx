@@ -14,8 +14,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Tts from 'react-native-tts';
 import { Colors } from '../theme';
 import { LitBadge } from '../components';
-import { useSettingsStore, useNotesStore } from '../store';
-import { READINGS, TODAY } from '../data/liturgical';
+import { useSettingsStore, useNotesStore, useLiturgicalStore } from '../store';
+import { READINGS as STATIC_READINGS, TODAY } from '../data/liturgical';
 
 const READING_LABELS = [
   { short: '1ª', label: 'Primera Lectura' },
@@ -125,6 +125,8 @@ export default function ReadingsScreen({ navigation }) {
     setTtsVoiceId: setTtsGender,
   } = useSettingsStore();
   const { bookmarks, addBookmark, removeBookmark } = useNotesStore();
+  const { readings: storeReadings, isLoading, sync } = useLiturgicalStore();
+  const READINGS = storeReadings?.length > 0 ? storeReadings : STATIC_READINGS;
   const dark = darkMode === 'dark' || (darkMode === 'auto' && scheme === 'dark');
 
   const bg = dark ? Colors.dark.bg : Colors.surface.secondary;
@@ -148,6 +150,15 @@ export default function ReadingsScreen({ navigation }) {
         });
       })
       .catch(() => {});
+  }, []);
+
+  // Sincronizar si no hay lecturas, hay un número incorrecto, o no es de hoy
+  const { lastSync } = useLiturgicalStore();
+  useEffect(() => {
+    const noReadings = !storeReadings || storeReadings.length === 0;
+    const badCount = storeReadings && (storeReadings.length < 3 || storeReadings.length > 4);
+    const notToday = !lastSync || new Date(lastSync).toDateString() !== new Date().toDateString();
+    if (noReadings || badCount || notToday) sync().catch(() => {});
   }, []);
 
   const isBookmarked = (ref) => bookmarks.some((b) => b.ref === ref);
@@ -184,7 +195,9 @@ export default function ReadingsScreen({ navigation }) {
         </TouchableOpacity>
         <View style={s.headerCenter}>
           <Text style={[s.headerDate, { color: muted }]}>{TODAY.dateShort}</Text>
-          <Text style={[s.headerTitle, { color: ink }]}>Lecturas</Text>
+          <Text style={[s.headerTitle, { color: ink }]}>
+            {isLoading ? 'Cargando…' : 'Lecturas'}
+          </Text>
         </View>
         <LitBadge color={TODAY.liturgicalColor}>
           {TODAY.liturgicalColorLabel.split(' · ')[0]}

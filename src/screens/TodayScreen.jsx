@@ -10,13 +10,15 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Colors } from '../theme';
 import { Tau, LitDot, LitBadge, SectionTitle } from '../components';
-import { useSettingsStore } from '../store';
-import { TODAY, READINGS, UPCOMING, SEASONS } from '../data/liturgical';
+import { useSettingsStore, useLiturgicalStore } from '../store';
+import { TODAY, READINGS as STATIC_READINGS, UPCOMING, SEASONS } from '../data/liturgical';
 
 export default function TodayScreen({ navigation }) {
   const insets = useSafeAreaInsets();
   const scheme = useColorScheme();
   const { darkMode } = useSettingsStore();
+  const { readings: storeReadings } = useLiturgicalStore();
+  const READINGS = storeReadings?.length > 0 ? storeReadings : STATIC_READINGS;
   const dark = darkMode === 'dark' || (darkMode === 'auto' && scheme === 'dark');
   const [variant] = useState('A');
 

@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { fetchDailyReadings } from '../services/lectionary';
 
 // ── Auth ───────────────────────────────────────────────────────
 export const useAuthStore = create(
@@ -45,14 +46,8 @@ export const useLiturgicalStore = create(
       sync: async () => {
         set({ isLoading: true, error: null });
         try {
-          if (__DEV__) {
-            await new Promise((r) => setTimeout(r, 1800));
-          } else {
-            // TODO: reemplazar con fetch al endpoint real del año litúrgico
-            // const data = await AuthService.apiFetch('/calendar/2026');
-            // set({ calendar: data.calendar, readings: data.readings });
-          }
-          set({ lastSync: new Date().toISOString() });
+          const readings = await fetchDailyReadings();
+          set({ readings, lastSync: new Date().toISOString() });
         } catch (e) {
           set({ error: e.message });
           throw e;
