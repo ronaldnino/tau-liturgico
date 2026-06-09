@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import {
   View,
   Text,
@@ -26,9 +26,17 @@ export default function TodayScreen({ navigation }) {
   const insets = useSafeAreaInsets();
   const scheme = useColorScheme();
   const { darkMode } = useSettingsStore();
-  const { readings: storeReadings } = useLiturgicalStore();
+  const { readings: storeReadings, lastSync, sync } = useLiturgicalStore();
   const READINGS = storeReadings?.length > 0 ? storeReadings : STATIC_READINGS;
   const dark = darkMode === 'dark' || (darkMode === 'auto' && scheme === 'dark');
+
+  // Precarga en segundo plano: sincroniza las lecturas de hoy al abrir la app
+  useEffect(() => {
+    const noReadings = !storeReadings || storeReadings.length === 0;
+    const notToday =
+      !lastSync || new Date(lastSync).toDateString() !== new Date().toDateString();
+    if (noReadings || notToday) sync().catch(() => {});
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Colores contextuales
   const bg = dark ? Colors.dark.bg : Colors.surface.secondary;

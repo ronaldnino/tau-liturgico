@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -147,7 +147,14 @@ export default function ReadingsScreen({ navigation, route }) {
     setTtsVoiceId: setTtsGender,
   } = useSettingsStore();
   const { bookmarks, addBookmark, removeBookmark } = useNotesStore();
-  const { readings: storeReadings, isLoading, sync } = useLiturgicalStore();
+  const {
+    readings: storeReadings,
+    isLoading,
+    sync,
+    error: syncError,
+    readingsCache,
+    cacheReading,
+  } = useLiturgicalStore();
   const dark = darkMode === 'dark' || (darkMode === 'auto' && scheme === 'dark');
 
   // Fecha solicitada desde el calendario (ISO "YYYY-MM-DD") o null = hoy
@@ -203,20 +210,48 @@ export default function ReadingsScreen({ navigation, route }) {
     if (noReadings || badCount || notToday) sync().catch(() => {});
   }, [isToday]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Cargar lecturas de la fecha seleccionada desde el calendario
+  // Cargar lecturas de la fecha seleccionada (con caché)
   useEffect(() => {
     if (isToday) return;
-    const [y, m, d] = targetDateISO.split('-').map(Number);
-    const date = new Date(y, m - 1, d);
-    fetchDailyReadings(date)
+    const iso = targetDateISO;
+    const cached = readingsCache[iso];
+    // Cache hit: diferir setState para no llamarlo síncronamente en el body del effect
+    const promise = cached
+      ? Promise.resolve(cached)
+      : fetchDailyReadings(
+          (() => {
+            const [y, m, d] = iso.split('-').map(Number);
+            return new Date(y, m - 1, d);
+          })()
+        ).then((r) => {
+          cacheReading(iso, r);
+          return r;
+        });
+    promise
       .then((r) => {
+        setDateResult({ iso, readings: r, error: null });
+        setActiveReading(0);
+      })
+      .catch((e) => setDateResult({ iso, readings: null, error: e.message }));
+  }, [targetDateISO]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const handleRetry = useCallback(() => {
+    if (isToday) {
+      sync().catch(() => {});
+      return;
+    }
+    setDateResult(null);
+    const [y, m, d] = targetDateISO.split('-').map(Number);
+    fetchDailyReadings(new Date(y, m - 1, d))
+      .then((r) => {
+        cacheReading(targetDateISO, r);
         setDateResult({ iso: targetDateISO, readings: r, error: null });
         setActiveReading(0);
       })
       .catch((e) =>
         setDateResult({ iso: targetDateISO, readings: null, error: e.message })
       );
-  }, [targetDateISO]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [isToday, targetDateISO, sync, cacheReading]);
 
   // Encabezado según si es hoy u otra fecha
   const datePending = !isToday && !!targetDateISO && !currentResult;
@@ -311,17 +346,28 @@ export default function ReadingsScreen({ navigation, route }) {
 
       {/* Texto de la lectura / estado vacío */}
       {READINGS.length === 0 ? (
-        <View style={s.emptyState}>
-          <Text style={[s.emptyText, { color: muted }]}>
-            {showLoading
-              ? 'Cargando lecturas…'
-              : daysAhead > 62
+        showLoading ? (
+          <ReadingSkeleton dark={dark} />
+        ) : (
+          <View style={s.emptyState}>
+            <Text style={[s.emptyText, { color: muted }]}>
+              {daysAhead > 62
                 ? 'Las lecturas de este día aún no están publicadas.\nDomínicos.org suele publicar con pocos días de antelación.'
-                : dateError
+                : dateError || (isToday && syncError)
                   ? 'No se pudieron cargar las lecturas.\nVerifica tu conexión a internet.'
                   : 'No hay lecturas disponibles para este día.'}
-          </Text>
-        </View>
+            </Text>
+            {(dateError || (isToday && syncError)) && daysAhead <= 62 && (
+              <TouchableOpacity
+                onPress={handleRetry}
+                style={s.retryBtn}
+                activeOpacity={0.8}
+              >
+                <Text style={s.retryBtnText}>Reintentar</Text>
+              </TouchableOpacity>
+            )}
+          </View>
+        )
       ) : (
         <ScrollView
           style={s.scroll}
@@ -521,6 +567,58 @@ export default function ReadingsScreen({ navigation, route }) {
   );
 }
 
+// ── Skeleton de carga ──────────────────────────────────────────
+function ReadingSkeleton({ dark }) {
+  const [opacity] = useState(() => new Animated.Value(0.4));
+  useEffect(() => {
+    const anim = Animated.loop(
+      Animated.sequence([
+        Animated.timing(opacity, {
+          toValue: 1,
+          duration: 750,
+          easing: Easing.inOut(Easing.ease),
+          useNativeDriver: true,
+        }),
+        Animated.timing(opacity, {
+          toValue: 0.4,
+          duration: 750,
+          easing: Easing.inOut(Easing.ease),
+          useNativeDriver: true,
+        }),
+      ])
+    );
+    anim.start();
+    return () => anim.stop();
+  }, [opacity]);
+
+  const bg = dark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.08)';
+  return (
+    <Animated.View style={[sk.wrap, { opacity }]}>
+      <View style={[sk.line, { width: 90, height: 11, backgroundColor: bg }]} />
+      <View
+        style={[sk.line, { width: 180, height: 22, marginTop: 8, backgroundColor: bg }]}
+      />
+      <View
+        style={[
+          sk.line,
+          { width: 36, height: 2, marginTop: 12, marginBottom: 4, backgroundColor: bg },
+        ]}
+      />
+      {[1.0, 0.95, 1.0, 0.88, 0.92, 0.75].map((w, i) => (
+        <View
+          key={i}
+          style={[
+            sk.line,
+            { width: `${w * 100}%`, height: 16, marginTop: 12, backgroundColor: bg },
+          ]}
+        />
+      ))}
+    </Animated.View>
+  );
+}
+
+const sk = StyleSheet.create({ wrap: { padding: 24 }, line: { borderRadius: 6 } });
+
 const s = StyleSheet.create({
   container: { flex: 1 },
 
@@ -702,4 +800,12 @@ const s = StyleSheet.create({
     lineHeight: 26,
     textAlign: 'center',
   },
+  retryBtn: {
+    marginTop: 18,
+    paddingVertical: 11,
+    paddingHorizontal: 28,
+    borderRadius: 10,
+    backgroundColor: Colors.brand.primary,
+  },
+  retryBtnText: { color: '#fff', fontWeight: '600', fontSize: 14 },
 });

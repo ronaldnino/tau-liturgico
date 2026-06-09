@@ -38,9 +38,12 @@ export const useLiturgicalStore = create(
       todayData: null,
       readings: [],
       calendar: {},
+      readingsCache: {},
 
       setLoading: (isLoading) => set({ isLoading }),
       setError: (error) => set({ error }),
+      cacheReading: (dateISO, readings) =>
+        set((s) => ({ readingsCache: { ...s.readingsCache, [dateISO]: readings } })),
       setTodayData: (data) =>
         set({ todayData: data, lastSync: new Date().toISOString() }),
       setReadings: (readings) => set({ readings }),
