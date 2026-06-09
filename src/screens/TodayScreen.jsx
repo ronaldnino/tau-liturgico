@@ -11,7 +11,12 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Colors } from '../theme';
 import { Tau, LitDot, LitBadge, SectionTitle } from '../components';
 import { useSettingsStore, useLiturgicalStore } from '../store';
-import { TODAY, READINGS as STATIC_READINGS, UPCOMING, SEASONS } from '../data/liturgical';
+import {
+  TODAY,
+  READINGS as STATIC_READINGS,
+  UPCOMING,
+  SEASONS,
+} from '../data/liturgical';
 
 export default function TodayScreen({ navigation }) {
   const insets = useSafeAreaInsets();

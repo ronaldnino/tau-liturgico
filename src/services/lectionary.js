@@ -18,11 +18,7 @@ function decodeEntities(str) {
 }
 
 function stripHtml(str) {
-  return decodeEntities(
-    str
-      .replace(/<br\s*\/?>/gi, '\n')
-      .replace(/<[^>]+>/g, '')
-  ).trim();
+  return decodeEntities(str.replace(/<br\s*\/?>/gi, '\n').replace(/<[^>]+>/g, '')).trim();
 }
 
 function extractRef(intro, typeLabel) {
@@ -41,11 +37,17 @@ function extractRef(intro, typeLabel) {
   // Quitar el prefacio estándar para dejar solo "LibroNombre cap, vv"
   let ref = intro
     .replace(/^Lectura del santo evangelio según\s*/i, '')
-    .replace(/^Lectura de la (primera|segunda|tercera) carta del? (apóstol\s+)?san(ta)?\s*/i, '')
+    .replace(
+      /^Lectura de la (primera|segunda|tercera) carta del? (apóstol\s+)?san(ta)?\s*/i,
+      ''
+    )
     .replace(/^Lectura de la carta del? (apóstol\s+)?san(ta)?\s*/i, '')
     .replace(/^Lectura de la carta a los\s*/i, '')
     .replace(/^Lectura de la carta a las\s*/i, '')
-    .replace(/^Lectura del (primer[oa]?|segund[oa]?|tercer[oa]?) libro de (los\s+|las\s+)?/i, '')
+    .replace(
+      /^Lectura del (primer[oa]?|segund[oa]?|tercer[oa]?) libro de (los\s+|las\s+)?/i,
+      ''
+    )
     .replace(/^Lectura del libro de (los\s+|las\s+|la\s+|el\s+)?/i, '')
     .replace(/^Lectura del libro del\s*/i, '')
     .replace(/^Lectura del libro de\s*/i, '')
@@ -63,10 +65,13 @@ function extractRef(intro, typeLabel) {
 // Devuelve null para secciones que no son lecturas (reflexiones, videos, etc.)
 function normalizeType(h2Text) {
   const t = h2Text.toLowerCase().trim();
-  if (t === 'primera lectura') return { type: 'Primera Lectura', closing: 'Palabra de Dios.' };
-  if (t === 'segunda lectura') return { type: 'Segunda Lectura', closing: 'Palabra de Dios.' };
+  if (t === 'primera lectura')
+    return { type: 'Primera Lectura', closing: 'Palabra de Dios.' };
+  if (t === 'segunda lectura')
+    return { type: 'Segunda Lectura', closing: 'Palabra de Dios.' };
   if (t === 'salmo de hoy') return { type: 'Salmo Responsorial', closing: '' };
-  if (t === 'evangelio del día') return { type: 'Santo Evangelio', closing: 'Palabra del Señor.' };
+  if (t === 'evangelio del día')
+    return { type: 'Santo Evangelio', closing: 'Palabra del Señor.' };
   return null;
 }
 
@@ -92,9 +97,7 @@ function parseReadings(html) {
 
     // Collect non-empty <p> blocks
     const pMatches = [...part.matchAll(/<p>([\s\S]*?)<\/p>/gi)];
-    const paragraphs = pMatches
-      .map(m => stripHtml(m[1]))
-      .filter(t => t.length > 0);
+    const paragraphs = pMatches.map((m) => stripHtml(m[1])).filter((t) => t.length > 0);
 
     if (paragraphs.length === 0) continue;
 

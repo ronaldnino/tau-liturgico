@@ -156,8 +156,10 @@ export default function ReadingsScreen({ navigation }) {
   const { lastSync } = useLiturgicalStore();
   useEffect(() => {
     const noReadings = !storeReadings || storeReadings.length === 0;
-    const badCount = storeReadings && (storeReadings.length < 3 || storeReadings.length > 4);
-    const notToday = !lastSync || new Date(lastSync).toDateString() !== new Date().toDateString();
+    const badCount =
+      storeReadings && (storeReadings.length < 3 || storeReadings.length > 4);
+    const notToday =
+      !lastSync || new Date(lastSync).toDateString() !== new Date().toDateString();
     if (noReadings || badCount || notToday) sync().catch(() => {});
   }, []);
 

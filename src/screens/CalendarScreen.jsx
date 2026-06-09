@@ -1,12 +1,5 @@
-import React, { useState } from 'react';
-import {
-  View,
-  Text,
-  TouchableOpacity,
-  ScrollView,
-  StyleSheet,
-  useColorScheme,
-} from 'react-native';
+import React, { useState, useMemo, useCallback } from 'react';
+import { View, Text, TouchableOpacity, StyleSheet, useColorScheme } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Calendar } from 'react-native-calendars';
 import { Colors } from '../theme';
@@ -57,32 +50,39 @@ const CUR_YEAR = _now.getFullYear();
 const CUR_MONTH = _now.getMonth();
 const TODAY_DAY = _now.getDate();
 const TODAY_ISO = `${CUR_YEAR}-${String(CUR_MONTH + 1).padStart(2, '0')}-${String(TODAY_DAY).padStart(2, '0')}`;
-const MONTH_GRID = buildMonthGrid(CUR_YEAR, CUR_MONTH);
 
-function buildMarkedDates(selected) {
+function _isoDate(year, month, day) {
+  return `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+}
+
+function _buildMarkedDates(grid, viewYear, viewMonth, selectedISO) {
   const dates = {};
-  MONTH_GRID.forEach(({ day, inMonth, color, solemn, isToday }) => {
+  grid.forEach(({ day, inMonth, color, solemn, name, isToday, dow }) => {
     if (!inMonth) return;
-    const key = `${CUR_YEAR}-${String(CUR_MONTH + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-    const dotColor = solemn ? Colors.liturgical.gold : Colors.liturgical[color];
+    const key = _isoDate(viewYear, viewMonth, day);
+    const hasFeast = name !== null;
+    const isSunday = dow === 0;
+    const litColor = Colors.liturgical[color] ?? Colors.liturgical.green;
+    const dotColor = solemn ? Colors.liturgical.gold : litColor;
     dates[key] = {
-      dots: [{ key: color, color: dotColor }],
-      selected: day === selected,
+      dots: hasFeast || isSunday ? [{ key: color, color: dotColor }] : [],
+      selected: key === selectedISO,
       today: isToday,
-      selectedColor: isToday ? Colors.brand.primary : Colors.brand.tint,
+      selectedColor: Colors.brand.primary,
     };
   });
   return dates;
 }
-
-const DETAIL = {};
 
 export default function CalendarScreen({ navigation }) {
   const insets = useSafeAreaInsets();
   const scheme = useColorScheme();
   const { darkMode } = useSettingsStore();
   const dark = darkMode === 'dark' || (darkMode === 'auto' && scheme === 'dark');
-  const [selected, setSelected] = useState(TODAY_DAY);
+
+  const [viewYear, setViewYear] = useState(CUR_YEAR);
+  const [viewMonth, setViewMonth] = useState(CUR_MONTH);
+  const [selectedDay, setSelectedDay] = useState(TODAY_DAY);
 
   const bg = dark ? Colors.dark.bg : Colors.surface.secondary;
   const surface = dark ? Colors.dark.surface : Colors.surface.primary;
@@ -90,7 +90,73 @@ export default function CalendarScreen({ navigation }) {
   const muted = dark ? Colors.dark.inkMuted : Colors.ink.muted;
   const border = dark ? Colors.dark.border : Colors.border.default;
 
-  const detail = DETAIL[selected];
+  const monthGrid = useMemo(
+    () => buildMonthGrid(viewYear, viewMonth),
+    [viewYear, viewMonth]
+  );
+
+  const selectedISO = _isoDate(viewYear, viewMonth, selectedDay);
+
+  const markedDates = useMemo(
+    () => _buildMarkedDates(monthGrid, viewYear, viewMonth, selectedISO),
+    [monthGrid, viewYear, viewMonth, selectedISO]
+  );
+
+  const selectedCell = useMemo(
+    () => monthGrid.find((c) => c.inMonth && c.day === selectedDay) ?? null,
+    [monthGrid, selectedDay]
+  );
+
+  const goToPrevMonth = useCallback(() => {
+    let y = viewYear;
+    let m = viewMonth;
+    if (m === 0) {
+      y -= 1;
+      m = 11;
+    } else {
+      m -= 1;
+    }
+    const maxDay = new Date(y, m + 1, 0).getDate();
+    setViewYear(y);
+    setViewMonth(m);
+    setSelectedDay((d) => Math.min(d, maxDay));
+  }, [viewYear, viewMonth]);
+
+  const goToNextMonth = useCallback(() => {
+    let y = viewYear;
+    let m = viewMonth;
+    if (m === 11) {
+      y += 1;
+      m = 0;
+    } else {
+      m += 1;
+    }
+    const maxDay = new Date(y, m + 1, 0).getDate();
+    setViewYear(y);
+    setViewMonth(m);
+    setSelectedDay((d) => Math.min(d, maxDay));
+  }, [viewYear, viewMonth]);
+
+  const goToToday = useCallback(() => {
+    setViewYear(CUR_YEAR);
+    setViewMonth(CUR_MONTH);
+    setSelectedDay(TODAY_DAY);
+  }, []);
+
+  const handleDayPress = useCallback(
+    (day) => {
+      const [y, m] = day.dateString.split('-').map(Number);
+      setSelectedDay(day.day);
+      if (y !== viewYear || m - 1 !== viewMonth) {
+        setViewYear(y);
+        setViewMonth(m - 1);
+      }
+    },
+    [viewYear, viewMonth]
+  );
+
+  const currentMonthISO = `${viewYear}-${String(viewMonth + 1).padStart(2, '0')}-01`;
+  const isViewingCurrentMonth = viewYear === CUR_YEAR && viewMonth === CUR_MONTH;
 
   return (
     <View style={[s.container, { backgroundColor: bg }]}>
@@ -98,24 +164,28 @@ export default function CalendarScreen({ navigation }) {
 
       {/* Header mes */}
       <View style={s.header}>
-        <TouchableOpacity style={s.chevBtn}>
+        <TouchableOpacity style={s.chevBtn} onPress={goToPrevMonth}>
           <Text style={[s.chev, { color: ink }]}>‹</Text>
         </TouchableOpacity>
         <View style={s.monthCenter}>
-          <Text style={[s.month, { color: ink }]}>{_MONTHS_ES_CAP[CUR_MONTH]}</Text>
-          <Text style={[s.year, { color: muted }]}>{CUR_YEAR}</Text>
+          <Text style={[s.month, { color: ink }]}>{_MONTHS_ES_CAP[viewMonth]}</Text>
+          <Text style={[s.year, { color: muted }]}>{viewYear}</Text>
         </View>
-        <TouchableOpacity style={s.todayBtn} onPress={() => setSelected(TODAY_DAY)}>
+        <TouchableOpacity
+          style={[s.todayBtn, isViewingCurrentMonth && s.todayBtnMuted]}
+          onPress={goToToday}
+        >
           <Text style={s.todayBtnText}>Hoy</Text>
         </TouchableOpacity>
       </View>
 
       {/* Calendario */}
       <Calendar
-        current={TODAY_ISO}
-        markedDates={buildMarkedDates(selected)}
+        key={currentMonthISO}
+        current={currentMonthISO}
+        markedDates={markedDates}
         markingType="multi-dot"
-        onDayPress={(day) => setSelected(day.day)}
+        onDayPress={handleDayPress}
         hideArrows
         renderHeader={() => null}
         theme={{
@@ -135,7 +205,8 @@ export default function CalendarScreen({ navigation }) {
       {/* Leyenda */}
       <View style={s.legend}>
         {[
-          { c: 'white', l: 'Pascua' },
+          { c: 'white', l: 'Pascua/Navidad' },
+          { c: 'purple', l: 'Adviento/Cuaresma' },
           { c: 'red', l: 'Mártir' },
           { c: 'gold', l: 'Solemnidad' },
         ].map((it) => (
@@ -147,55 +218,64 @@ export default function CalendarScreen({ navigation }) {
       </View>
 
       {/* Panel del día seleccionado */}
-      {selected != null && (
-        <View
-          style={[
-            s.panel,
-            {
-              backgroundColor: surface,
-              borderTopColor: border,
-              paddingBottom: insets.bottom + 14,
-            },
-          ]}
-        >
-          <View style={s.panelHandle} />
-          <View style={s.panelDateRow}>
-            <Text style={[s.panelDate, { color: muted }]}>
-              {_WEEKDAYS_ES[new Date(CUR_YEAR, CUR_MONTH, selected).getDay()]} ·{' '}
-              {selected} de {_MONTHS_ES[CUR_MONTH]}
-            </Text>
-            {selected === TODAY_DAY && (
-              <View style={s.todayPill}>
-                <Text style={s.todayPillText}>Hoy</Text>
-              </View>
-            )}
-          </View>
-          <Text style={[s.panelName, { color: ink }]}>
-            {detail?.name ?? 'Feria del Tiempo Ordinario'}
+      <View
+        style={[
+          s.panel,
+          {
+            backgroundColor: surface,
+            borderTopColor: border,
+            paddingBottom: insets.bottom + 14,
+          },
+        ]}
+      >
+        <View style={s.panelHandle} />
+        <View style={s.panelDateRow}>
+          <Text style={[s.panelDate, { color: muted }]}>
+            {selectedCell
+              ? _WEEKDAYS_ES[selectedCell.dow]
+              : _WEEKDAYS_ES[new Date(viewYear, viewMonth, selectedDay).getDay()]}{' '}
+            · {selectedDay} de {_MONTHS_ES[viewMonth]}
           </Text>
-          <View style={s.panelBadgeRow}>
-            <LitBadge
-              color={detail?.color ?? 'green'}
+          {selectedISO === TODAY_ISO && (
+            <View style={s.todayPill}>
+              <Text style={s.todayPillText}>Hoy</Text>
+            </View>
+          )}
+        </View>
+        <Text style={[s.panelName, { color: ink }]}>{selectedCell?.name ?? 'Feria'}</Text>
+        <View style={s.panelBadgeRow}>
+          <LitBadge
+            color={selectedCell?.color ?? 'green'}
+            style={{
+              backgroundColor:
+                (Colors.liturgical[selectedCell?.color ?? 'green'] ??
+                  Colors.liturgical.green) + '20',
+            }}
+          >
+            <Text
               style={{
-                backgroundColor: Colors.liturgical[detail?.color ?? 'green'] + '15',
-                color: Colors.liturgical[detail?.color ?? 'green'],
+                color:
+                  Colors.liturgical[selectedCell?.color ?? 'green'] ??
+                  Colors.liturgical.green,
+                fontSize: 11,
+                fontWeight: '600',
               }}
             >
-              {LITURGICAL_LABELS[detail?.color ?? 'green']?.name ?? 'Verde'}
-            </LitBadge>
-            <Text style={[s.panelGrade, { color: muted }]}>
-              {detail?.grade ?? 'Feria'}
+              {LITURGICAL_LABELS[selectedCell?.color ?? 'green']?.name ?? 'Verde'}
             </Text>
-          </View>
-          <TouchableOpacity
-            style={s.panelBtn}
-            onPress={() => navigation.navigate('Lecturas')}
-            activeOpacity={0.8}
-          >
-            <Text style={s.panelBtnText}>Ver lecturas →</Text>
-          </TouchableOpacity>
+          </LitBadge>
+          <Text style={[s.panelGrade, { color: muted }]}>
+            {selectedCell?.grade ?? 'Feria'}
+          </Text>
         </View>
-      )}
+        <TouchableOpacity
+          style={s.panelBtn}
+          onPress={() => navigation.navigate('Lecturas')}
+          activeOpacity={0.8}
+        >
+          <Text style={s.panelBtnText}>Ver lecturas →</Text>
+        </TouchableOpacity>
+      </View>
     </View>
   );
 }
@@ -225,6 +305,7 @@ const s = StyleSheet.create({
     borderRadius: 999,
     backgroundColor: Colors.brand.primary,
   },
+  todayBtnMuted: { opacity: 0.4 },
   todayBtnText: { color: '#fff', fontWeight: '600', fontSize: 12 },
 
   legend: {
