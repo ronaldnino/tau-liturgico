@@ -297,6 +297,19 @@ function useElevenLabsPlayer(apiKey, voiceId, speed, onFinish) {
     [playerState, activeIdx, apiKey, voiceId, speed] // eslint-disable-line react-hooks/exhaustive-deps
   );
 
+  const stop = useCallback(() => {
+    ++tokenRef.current; // invalida cualquier operación async en vuelo
+    _stopTimer();
+    soundRef.current?.stop();
+    soundRef.current?.release();
+    soundRef.current = null;
+    setPlayerState('idle');
+    setActiveIdx(0);
+    setProgress(0);
+    setWordRange({ start: -1, end: -1 });
+    setTtsError(null);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
   const toggle = useCallback(
     (idx, text) => {
       if (playerState === 'playing' && activeIdx === idx) pause();
@@ -313,6 +326,7 @@ function useElevenLabsPlayer(apiKey, voiceId, speed, onFinish) {
     wordRange,
     ttsError,
     toggle,
+    stop,
   };
 }
 
@@ -530,6 +544,19 @@ function useTTSPlayer(speed, onFinish) {
     setWordRange({ start: -1, end: -1 });
   }, []);
 
+  const stop = useCallback(() => {
+    stoppingRef.current = true;
+    pausePosRef.current = null;
+    lastHighlightPosRef.current = 0;
+    charOffsetRef.current = 0;
+    _stopTimer();
+    try { _Tts().stop(); } catch (_) {}
+    setPlayerState('idle');
+    setActiveIdx(0);
+    setProgress(0);
+    setWordRange({ start: -1, end: -1 });
+  }, [_stopTimer]);
+
   const toggle = useCallback(
     (idx, text) => {
       if (playerState === 'playing' && activeIdx === idx) pause();
@@ -546,6 +573,7 @@ function useTTSPlayer(speed, onFinish) {
     wordRange,
     ttsError: null,
     toggle,
+    stop,
   };
 }
 
@@ -621,7 +649,14 @@ export default function ReadingsScreen({ navigation, route }) {
     wordRange,
     ttsError,
     toggle,
+    stop,
   } = useAudioPlayer(elevenlabsApiKey, elevenlabsVoiceId, ttsSpeed, handleFinish);
+
+  // Cuando cambia la fecha: detener el player y volver a la primera lectura
+  useEffect(() => {
+    stop();
+    setActiveReading(0);
+  }, [targetDateISO]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Dispara reproducción automática tras auto-avance
   useEffect(() => {
