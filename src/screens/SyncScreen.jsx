@@ -1,11 +1,64 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
-import { View, Text, StyleSheet, Animated } from 'react-native';
+import { View, Text, StyleSheet, Animated, TouchableOpacity } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import Svg, { Path, Circle } from 'react-native-svg';
 import { Colors } from '../theme';
-import { Tau, TauWordmark, PrimaryBtn } from '../components';
+import { Tau, TauWordmark } from '../components';
 import { useAuthStore, useLiturgicalStore } from '../store';
 
-export default function SyncScreen({ navigation, route }) {
+function IcoNoSignal({ c = Colors.brand.primary, size = 40 }) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      {/* Barras de señal (atenuadas) */}
+      <Path
+        d="M1 6l5.5 5.5"
+        stroke={c}
+        strokeWidth={1.5}
+        strokeLinecap="round"
+        strokeOpacity={0.3}
+      />
+      <Path d="M1 1l22 22" stroke={c} strokeWidth={1.5} strokeLinecap="round" />
+      <Path
+        d="M16.72 11.06A10.94 10.94 0 0119 12.55"
+        stroke={c}
+        strokeWidth={1.5}
+        strokeLinecap="round"
+        strokeOpacity={0.3}
+      />
+      <Path
+        d="M5 12.55a10.94 10.94 0 015.17-2.39"
+        stroke={c}
+        strokeWidth={1.5}
+        strokeLinecap="round"
+        strokeOpacity={0.3}
+      />
+      <Path
+        d="M10.71 5.05A16 16 0 0122.56 9"
+        stroke={c}
+        strokeWidth={1.5}
+        strokeLinecap="round"
+        strokeOpacity={0.3}
+      />
+      <Path
+        d="M1.42 9a15.91 15.91 0 014.7-2.88"
+        stroke={c}
+        strokeWidth={1.5}
+        strokeLinecap="round"
+        strokeOpacity={0.3}
+      />
+      <Path
+        d="M8.53 16.11a6 6 0 016.95 0"
+        stroke={c}
+        strokeWidth={1.5}
+        strokeLinecap="round"
+        strokeOpacity={0.3}
+      />
+      <Circle cx="12" cy="20" r="1" fill={c} />
+    </Svg>
+  );
+}
+
+export default function SyncScreen({ route }) {
   const insets = useSafeAreaInsets();
   const token = route.params?.token;
   const { setToken } = useAuthStore();
@@ -37,16 +90,12 @@ export default function SyncScreen({ navigation, route }) {
         Animated.timing(pulseAnim, { toValue: 1, duration: 1200, useNativeDriver: true }),
       ])
     ).start();
-  }, []);
+  }, [pulseAnim]);
 
-  // Cuando ambos terminan, actualizar el token — fuera de cualquier setState callback
   useEffect(() => {
-    if (syncDone && progressDone) {
-      setToken(token);
-    }
-  }, [syncDone, progressDone]);
+    if (syncDone && progressDone) setToken(token);
+  }, [syncDone, progressDone, token, setToken]);
 
-  // Sync real del store
   useEffect(() => {
     sync()
       .then(() => {
@@ -55,9 +104,8 @@ export default function SyncScreen({ navigation, route }) {
       .catch(() => {
         if (mounted.current) setSyncFailed(true);
       });
-  }, [retryCount]);
+  }, [retryCount]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Animación de progreso independiente
   useEffect(() => {
     if (syncFailed) return;
     const interval = setInterval(() => {
@@ -83,26 +131,25 @@ export default function SyncScreen({ navigation, route }) {
     return (
       <View
         style={[
-          s.container,
-          {
-            paddingTop: insets.top,
-            paddingBottom: insets.bottom + 24,
-            backgroundColor: '#fff',
-          },
+          s.root,
+          s.errorRoot,
+          { paddingTop: insets.top, paddingBottom: insets.bottom + 24 },
         ]}
       >
         <View style={s.errorCenter}>
-          <View style={s.errorIcon}>
-            <Text style={{ fontSize: 28 }}>📶</Text>
+          <View style={s.errorIconWrap}>
+            <IcoNoSignal c={Colors.brand.primary} size={36} />
           </View>
-          <Text style={s.errorTitle}>Sin conexión a internet</Text>
+          <Text style={s.errorTitle}>Sin conexión</Text>
           <Text style={s.errorBody}>
             Necesitas internet para descargar el calendario litúrgico la primera vez.
           </Text>
         </View>
-        <PrimaryBtn onPress={handleRetry} style={s.retryBtn}>
-          Reintentar
-        </PrimaryBtn>
+        <View style={s.errorFooter}>
+          <TouchableOpacity onPress={handleRetry} style={s.retryBtn} activeOpacity={0.85}>
+            <Text style={s.retryText}>Reintentar</Text>
+          </TouchableOpacity>
+        </View>
       </View>
     );
   }
@@ -110,42 +157,46 @@ export default function SyncScreen({ navigation, route }) {
   return (
     <View
       style={[
-        s.container,
-        {
-          paddingTop: insets.top,
-          paddingBottom: insets.bottom + 24,
-          backgroundColor: Colors.brand.primary,
-        },
+        s.root,
+        s.loadingRoot,
+        { paddingTop: insets.top, paddingBottom: insets.bottom + 24 },
       ]}
     >
+      {/* Marca de agua */}
+      <View style={s.bgTau} pointerEvents="none">
+        <Tau size={340} color="rgba(255,255,255,0.05)" />
+      </View>
+
       <View style={s.center}>
-        <Animated.View style={{ transform: [{ scale: pulseAnim }], marginBottom: 24 }}>
+        <Animated.View style={[s.tauWrap, { transform: [{ scale: pulseAnim }] }]}>
           <Tau size={88} color="#fff" />
         </Animated.View>
 
-        <TauWordmark width={220} color="#fff" accentColor="#fff" />
+        <TauWordmark width={220} color="#fff" accentColor="rgba(255,255,255,0.5)" />
 
         <Text style={s.syncing}>Descargando año litúrgico 2026…</Text>
 
-        {/* Barra de progreso */}
         <View style={s.trackWrap}>
           <View style={[s.fill, { width: `${progress}%` }]} />
         </View>
-        <Text style={s.percent}>{progress}% · Esto solo ocurre una vez</Text>
+        <Text style={s.percent}>{progress}% · Solo ocurre una vez</Text>
       </View>
     </View>
   );
 }
 
 const s = StyleSheet.create({
-  container: { flex: 1, paddingHorizontal: 28 },
+  root: { flex: 1, paddingHorizontal: 28 },
 
-  center: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
+  /* ── Loading ── */
+  loadingRoot: { backgroundColor: Colors.brand.primary },
+  bgTau: {
+    position: 'absolute',
+    top: -40,
+    right: -60,
   },
-
+  center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
+  tauWrap: { marginBottom: 24 },
   syncing: {
     fontFamily: 'CormorantGaramond-MediumItalic',
     fontSize: 17,
@@ -161,29 +212,26 @@ const s = StyleSheet.create({
     backgroundColor: 'rgba(255,255,255,0.2)',
     overflow: 'hidden',
   },
-  fill: {
-    height: '100%',
-    backgroundColor: '#fff',
-    borderRadius: 999,
-  },
+  fill: { height: '100%', backgroundColor: '#fff', borderRadius: 999 },
   percent: {
     fontSize: 12,
-    color: 'rgba(255,255,255,0.65)',
+    color: 'rgba(255,255,255,0.6)',
     marginTop: 14,
     letterSpacing: 0.5,
   },
 
-  // Error state
+  /* ── Error ── */
+  errorRoot: { backgroundColor: Colors.surface.primary },
   errorCenter: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: 12,
   },
-  errorIcon: {
-    width: 72,
-    height: 72,
-    borderRadius: 36,
+  errorIconWrap: {
+    width: 76,
+    height: 76,
+    borderRadius: 38,
     backgroundColor: Colors.brand.tint,
     alignItems: 'center',
     justifyContent: 'center',
@@ -191,9 +239,9 @@ const s = StyleSheet.create({
   },
   errorTitle: {
     fontFamily: 'CormorantGaramond-SemiBoldItalic',
-    fontSize: 26,
+    fontSize: 28,
     color: Colors.ink.primary,
-    marginBottom: 8,
+    marginBottom: 10,
     textAlign: 'center',
   },
   errorBody: {
@@ -203,5 +251,12 @@ const s = StyleSheet.create({
     textAlign: 'center',
     maxWidth: 280,
   },
-  retryBtn: {},
+  errorFooter: { paddingTop: 12 },
+  retryBtn: {
+    backgroundColor: Colors.brand.primary,
+    borderRadius: 14,
+    paddingVertical: 16,
+    alignItems: 'center',
+  },
+  retryText: { color: '#fff', fontSize: 16, fontWeight: '600' },
 });

@@ -1,36 +1,29 @@
 import React, { useState, useMemo, useCallback } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, useColorScheme } from 'react-native';
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  StyleSheet,
+  useColorScheme,
+  Dimensions,
+} from 'react-native';
+import Svg, { Path, Line } from 'react-native-svg';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Calendar } from 'react-native-calendars';
 import { Colors } from '../theme';
-import { LitDot, LitBadge } from '../components';
 import { useSettingsStore } from '../store';
 import { buildMonthGrid, LITURGICAL_LABELS } from '../data/liturgical';
 
-const _WEEKDAYS_ES = [
-  'Domingo',
-  'Lunes',
-  'Martes',
-  'Miércoles',
-  'Jueves',
-  'Viernes',
-  'Sábado',
-];
-const _MONTHS_ES = [
-  'enero',
-  'febrero',
-  'marzo',
-  'abril',
-  'mayo',
-  'junio',
-  'julio',
-  'agosto',
-  'septiembre',
-  'octubre',
-  'noviembre',
-  'diciembre',
-];
-const _MONTHS_ES_CAP = [
+/* ── Constantes ─────────────────────────────────────────────────────────── */
+
+const W = Dimensions.get('window').width;
+const GRID_H_PAD = 20;
+const CELL_SIZE = Math.floor((W - GRID_H_PAD * 2) / 7);
+
+const LIT_COLORS = Object.values(Colors.liturgical);
+
+const DAY_HEADERS = ['L', 'M', 'M', 'J', 'V', 'S', 'D'];
+
+const MONTHS_CAP = [
   'Enero',
   'Febrero',
   'Marzo',
@@ -44,33 +37,164 @@ const _MONTHS_ES_CAP = [
   'Noviembre',
   'Diciembre',
 ];
+const MONTHS_MIN = [
+  'enero',
+  'febrero',
+  'marzo',
+  'abril',
+  'mayo',
+  'junio',
+  'julio',
+  'agosto',
+  'septiembre',
+  'octubre',
+  'noviembre',
+  'diciembre',
+];
+const WEEKDAYS = [
+  'Domingo',
+  'Lunes',
+  'Martes',
+  'Miércoles',
+  'Jueves',
+  'Viernes',
+  'Sábado',
+];
 
 const _now = new Date();
 const CUR_YEAR = _now.getFullYear();
 const CUR_MONTH = _now.getMonth();
 const TODAY_DAY = _now.getDate();
-const TODAY_ISO = `${CUR_YEAR}-${String(CUR_MONTH + 1).padStart(2, '0')}-${String(TODAY_DAY).padStart(2, '0')}`;
 
-function _isoDate(year, month, day) {
-  return `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+function _iso(y, m, d) {
+  return `${y}-${String(m + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
 }
 
-function _buildMarkedDates(grid, viewYear, viewMonth, selectedISO) {
-  const dates = {};
-  grid.forEach(({ day, inMonth, color, solemn, isToday }) => {
-    if (!inMonth) return;
-    const key = _isoDate(viewYear, viewMonth, day);
-    const litColor = Colors.liturgical[color] ?? Colors.liturgical.green;
-    const dotColor = solemn ? Colors.liturgical.gold : litColor;
-    dates[key] = {
-      dots: [{ key: color, color: dotColor }],
-      selected: key === selectedISO,
-      today: isToday,
-      selectedColor: Colors.brand.primary,
-    };
-  });
-  return dates;
+const TODAY_ISO = _iso(CUR_YEAR, CUR_MONTH, TODAY_DAY);
+
+/* ── Iconos SVG ─────────────────────────────────────────────────────────── */
+
+function IcoChevLeft({ c, size = 20 }) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <Path
+        d="M15 18l-6-6 6-6"
+        stroke={c}
+        strokeWidth={2}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </Svg>
+  );
 }
+
+function IcoChevRight({ c, size = 20 }) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <Path
+        d="M9 18l6-6-6-6"
+        stroke={c}
+        strokeWidth={2}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </Svg>
+  );
+}
+
+function IcoBook({ color, size = 20 }) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <Path
+        d="M4 4.5C4 3.12 5.12 2 6.5 2H20v15H6.5A1.5 1.5 0 0 0 5 18.5V20M4 4.5v15M4 4.5A1.5 1.5 0 0 0 5.5 6H20"
+        stroke={color}
+        strokeWidth={1.6}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <Path
+        d="M4 19.5A1.5 1.5 0 0 1 5.5 18H20v3H5.5A1.5 1.5 0 0 1 4 19.5Z"
+        stroke={color}
+        strokeWidth={1.6}
+        strokeLinejoin="round"
+      />
+      <Line
+        x1="9"
+        y1="7"
+        x2="16"
+        y2="7"
+        stroke={color}
+        strokeWidth={1.3}
+        strokeLinecap="round"
+      />
+      <Line
+        x1="9"
+        y1="10.5"
+        x2="14"
+        y2="10.5"
+        stroke={color}
+        strokeWidth={1.3}
+        strokeLinecap="round"
+      />
+    </Svg>
+  );
+}
+
+/* ── Barra litúrgica ────────────────────────────────────────────────────── */
+
+function LitBar() {
+  return (
+    <View style={s.litBar}>
+      {LIT_COLORS.map((c) => (
+        <View key={c} style={[s.litSeg, { backgroundColor: c }]} />
+      ))}
+    </View>
+  );
+}
+
+/* ── Celda del día ──────────────────────────────────────────────────────── */
+
+function DayCell({ cell, isSelected, ink, muted, onPress }) {
+  const { day, inMonth, isToday, color, solemn } = cell;
+  const litColor = Colors.liturgical[color] ?? Colors.liturgical.green;
+  const dotColor = solemn ? Colors.liturgical.gold : litColor;
+
+  const numColor = isSelected
+    ? '#fff'
+    : isToday
+      ? Colors.brand.primary
+      : inMonth
+        ? ink
+        : muted;
+
+  return (
+    <TouchableOpacity
+      style={s.dayCell}
+      onPress={() => onPress(cell)}
+      activeOpacity={inMonth ? 0.65 : 1}
+      disabled={!inMonth}
+    >
+      <View
+        style={[
+          s.dayCellCircle,
+          isSelected && s.dayCellSelected,
+          isToday && !isSelected && s.dayCellToday,
+        ]}
+      >
+        <Text style={[s.dayNum, { color: numColor }, !inMonth && s.dayNumFaded]}>
+          {day}
+        </Text>
+      </View>
+      {inMonth ? (
+        <View style={[s.dayCellDot, { backgroundColor: dotColor }]} />
+      ) : (
+        <View style={s.dayCellDotEmpty} />
+      )}
+    </TouchableOpacity>
+  );
+}
+
+/* ── Pantalla principal ─────────────────────────────────────────────────── */
 
 export default function CalendarScreen({ navigation }) {
   const insets = useSafeAreaInsets();
@@ -93,47 +217,51 @@ export default function CalendarScreen({ navigation }) {
     [viewYear, viewMonth]
   );
 
-  const selectedISO = _isoDate(viewYear, viewMonth, selectedDay);
+  const selectedISO = _iso(viewYear, viewMonth, selectedDay);
+  const isCurrentMonth = viewYear === CUR_YEAR && viewMonth === CUR_MONTH;
 
-  const markedDates = useMemo(
-    () => _buildMarkedDates(monthGrid, viewYear, viewMonth, selectedISO),
-    [monthGrid, viewYear, viewMonth, selectedISO]
-  );
-
+  /* Celda seleccionada */
   const selectedCell = useMemo(
     () => monthGrid.find((c) => c.inMonth && c.day === selectedDay) ?? null,
     [monthGrid, selectedDay]
   );
 
-  const goToPrevMonth = useCallback(() => {
-    let y = viewYear;
-    let m = viewMonth;
-    if (m === 0) {
-      y -= 1;
-      m = 11;
-    } else {
-      m -= 1;
-    }
-    const maxDay = new Date(y, m + 1, 0).getDate();
-    setViewYear(y);
-    setViewMonth(m);
-    setSelectedDay((d) => Math.min(d, maxDay));
-  }, [viewYear, viewMonth]);
+  /* Datos del panel */
+  const selColor = selectedCell?.color ?? 'green';
+  const selLitColor = Colors.liturgical[selColor] ?? Colors.liturgical.green;
+  const selLabel = LITURGICAL_LABELS[selColor] ?? {
+    name: 'Verde',
+    meaning: 'Tiempo Ordinario',
+  };
+  const selGrade = selectedCell?.grade ?? 'Feria';
+  const selWeekday = selectedCell
+    ? WEEKDAYS[selectedCell.dow]
+    : WEEKDAYS[new Date(viewYear, viewMonth, selectedDay).getDay()];
+  const isSunday = selectedCell?.dow === 0;
+  const readingsSub = isSunday ? '1ª · Sal · 2ª · Ev' : '1ª · Sal · Ev';
 
-  const goToNextMonth = useCallback(() => {
-    let y = viewYear;
-    let m = viewMonth;
-    if (m === 11) {
-      y += 1;
-      m = 0;
-    } else {
-      m += 1;
-    }
-    const maxDay = new Date(y, m + 1, 0).getDate();
-    setViewYear(y);
-    setViewMonth(m);
-    setSelectedDay((d) => Math.min(d, maxDay));
-  }, [viewYear, viewMonth]);
+  /* Navegación */
+  const goToPrev = useCallback(() => {
+    setViewMonth((m) => {
+      if (m === 0) {
+        setViewYear((y) => y - 1);
+        return 11;
+      }
+      return m - 1;
+    });
+    setSelectedDay(1);
+  }, []);
+
+  const goToNext = useCallback(() => {
+    setViewMonth((m) => {
+      if (m === 11) {
+        setViewYear((y) => y + 1);
+        return 0;
+      }
+      return m + 1;
+    });
+    setSelectedDay(1);
+  }, []);
 
   const goToToday = useCallback(() => {
     setViewYear(CUR_YEAR);
@@ -141,231 +269,298 @@ export default function CalendarScreen({ navigation }) {
     setSelectedDay(TODAY_DAY);
   }, []);
 
-  const handleDayPress = useCallback(
-    (day) => {
-      const [y, m] = day.dateString.split('-').map(Number);
-      setSelectedDay(day.day);
-      if (y !== viewYear || m - 1 !== viewMonth) {
-        setViewYear(y);
-        setViewMonth(m - 1);
-      }
-    },
-    [viewYear, viewMonth]
-  );
-
-  const currentMonthISO = `${viewYear}-${String(viewMonth + 1).padStart(2, '0')}-01`;
-  const isViewingCurrentMonth = viewYear === CUR_YEAR && viewMonth === CUR_MONTH;
+  const handleDayPress = useCallback((cell) => {
+    if (!cell.inMonth) return;
+    setSelectedDay(cell.day);
+  }, []);
 
   return (
-    <View style={[s.container, { backgroundColor: bg }]}>
-      <View style={{ paddingTop: insets.top }} />
+    <View style={[s.root, { backgroundColor: bg }]}>
+      {/* ── Header ───────────────────────────────────────────────────── */}
+      <View style={[s.topBar, { paddingTop: insets.top, backgroundColor: bg }]}>
+        <LitBar />
+        <View style={s.header}>
+          <TouchableOpacity onPress={goToPrev} style={s.navBtn} activeOpacity={0.7}>
+            <IcoChevLeft c={ink} />
+          </TouchableOpacity>
 
-      {/* Header mes */}
-      <View style={s.header}>
-        <TouchableOpacity style={s.chevBtn} onPress={goToPrevMonth}>
-          <Text style={[s.chev, { color: ink }]}>‹</Text>
-        </TouchableOpacity>
-        <View style={s.monthCenter}>
-          <Text style={[s.month, { color: ink }]}>{_MONTHS_ES_CAP[viewMonth]}</Text>
-          <Text style={[s.year, { color: muted }]}>{viewYear}</Text>
+          <View style={s.monthBlock}>
+            <Text style={[s.monthText, { color: ink }]}>{MONTHS_CAP[viewMonth]}</Text>
+            <Text style={[s.yearText, { color: muted }]}>{viewYear}</Text>
+          </View>
+
+          <TouchableOpacity onPress={goToNext} style={s.navBtn} activeOpacity={0.7}>
+            <IcoChevRight c={ink} />
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            onPress={goToToday}
+            style={[s.todayBtn, isCurrentMonth && s.todayBtnMuted]}
+            activeOpacity={0.8}
+          >
+            <Text style={s.todayBtnText}>Hoy</Text>
+          </TouchableOpacity>
         </View>
-        <TouchableOpacity
-          style={[s.todayBtn, isViewingCurrentMonth && s.todayBtnMuted]}
-          onPress={goToToday}
-        >
-          <Text style={s.todayBtnText}>Hoy</Text>
-        </TouchableOpacity>
       </View>
 
-      {/* Calendario */}
-      <Calendar
-        key={currentMonthISO}
-        current={currentMonthISO}
-        markedDates={markedDates}
-        markingType="multi-dot"
-        onDayPress={handleDayPress}
-        hideArrows
-        renderHeader={() => null}
-        theme={{
-          backgroundColor: 'transparent',
-          calendarBackground: 'transparent',
-          dayTextColor: ink,
-          textDisabledColor: muted,
-          todayTextColor: '#fff',
-          selectedDayTextColor: '#fff',
-          selectedDayBackgroundColor: Colors.brand.primary,
-          dotColor: Colors.brand.primary,
-          textSectionTitleColor: muted,
-          textDayFontSize: 15,
-        }}
-      />
+      {/* ── Grid del calendario ──────────────────────────────────────── */}
+      <View style={s.grid}>
+        {/* Cabecera: L M M J V S D */}
+        <View style={s.gridRow}>
+          {DAY_HEADERS.map((h, i) => (
+            <View key={i} style={s.dayHeaderCell}>
+              <Text style={[s.dayHeaderText, { color: muted }]}>{h}</Text>
+            </View>
+          ))}
+        </View>
 
-      {/* Leyenda */}
-      <View style={s.legend}>
-        {[
-          { c: 'white', l: 'Pascua/Navidad' },
-          { c: 'purple', l: 'Adviento/Cuaresma' },
-          { c: 'red', l: 'Mártir' },
-          { c: 'gold', l: 'Solemnidad' },
-        ].map((it) => (
-          <View key={it.l} style={s.legendItem}>
-            <LitDot color={it.c} size={7} />
-            <Text style={[s.legendText, { color: muted }]}>{it.l}</Text>
+        {/* 6 semanas */}
+        {Array.from({ length: 6 }, (_, w) => (
+          <View key={w} style={s.gridRow}>
+            {monthGrid.slice(w * 7, w * 7 + 7).map((cell, d) => (
+              <DayCell
+                key={d}
+                cell={cell}
+                isSelected={cell.inMonth && cell.day === selectedDay}
+                ink={ink}
+                muted={muted}
+                onPress={handleDayPress}
+              />
+            ))}
           </View>
         ))}
       </View>
 
-      {/* Panel del día seleccionado */}
+      {/* Espaciador flex */}
+      <View style={s.spacer} />
+
+      {/* ── Panel del día seleccionado ───────────────────────────────── */}
       <View
         style={[
           s.panel,
           {
             backgroundColor: surface,
             borderTopColor: border,
-            paddingBottom: insets.bottom + 14,
+            paddingBottom: insets.bottom + 16,
           },
         ]}
       >
-        <View style={s.panelHandle} />
-        <View style={s.panelDateRow}>
-          <Text style={[s.panelDate, { color: muted }]}>
-            {selectedCell
-              ? _WEEKDAYS_ES[selectedCell.dow]
-              : _WEEKDAYS_ES[new Date(viewYear, viewMonth, selectedDay).getDay()]}{' '}
-            · {selectedDay} de {_MONTHS_ES[viewMonth]}
-          </Text>
-          {selectedISO === TODAY_ISO && (
-            <View style={s.todayPill}>
-              <Text style={s.todayPillText}>Hoy</Text>
-            </View>
-          )}
-        </View>
-        <Text style={[s.panelName, { color: ink }]}>{selectedCell?.name ?? 'Feria'}</Text>
-        <View style={s.panelBadgeRow}>
-          <LitBadge
-            color={selectedCell?.color ?? 'green'}
-            style={{
-              backgroundColor:
-                (Colors.liturgical[selectedCell?.color ?? 'green'] ??
-                  Colors.liturgical.green) + '20',
-            }}
-          >
-            <Text
-              style={{
-                color:
-                  Colors.liturgical[selectedCell?.color ?? 'green'] ??
-                  Colors.liturgical.green,
-                fontSize: 11,
-                fontWeight: '600',
-              }}
-            >
-              {LITURGICAL_LABELS[selectedCell?.color ?? 'green']?.name ?? 'Verde'}
+        {/* Franja de color litúrgico */}
+        <View style={[s.panelStripe, { backgroundColor: selLitColor }]} />
+
+        <View style={s.panelContent}>
+          {/* Fecha + pill Hoy */}
+          <View style={s.panelDateRow}>
+            <Text style={[s.panelDate, { color: muted }]}>
+              {selWeekday.slice(0, 3).toUpperCase()} · {selectedDay} de{' '}
+              {MONTHS_MIN[viewMonth]}
             </Text>
-          </LitBadge>
-          <Text style={[s.panelGrade, { color: muted }]}>
-            {selectedCell?.grade ?? 'Feria'}
+            {selectedISO === TODAY_ISO && (
+              <View style={s.todayPill}>
+                <Text style={s.todayPillText}>HOY</Text>
+              </View>
+            )}
+          </View>
+
+          {/* Nombre de la celebración */}
+          <Text style={[s.panelName, { color: ink }]} numberOfLines={2}>
+            {selectedCell?.name ?? 'Feria'}
           </Text>
+
+          {/* Meta: color + grado + temporada */}
+          <View style={s.panelMeta}>
+            <View
+              style={[
+                s.colorPill,
+                { backgroundColor: selLitColor + '22', borderColor: selLitColor + '55' },
+              ]}
+            >
+              <View style={[s.colorDot, { backgroundColor: selLitColor }]} />
+              <Text style={[s.colorPillText, { color: selLitColor }]}>
+                {selLabel.name}
+              </Text>
+            </View>
+            {selGrade !== 'Feria' && (
+              <Text style={[s.metaText, { color: muted }]}>· {selGrade}</Text>
+            )}
+            {selLabel.meaning ? (
+              <Text style={[s.metaText, { color: muted }]} numberOfLines={1}>
+                · {selLabel.meaning}
+              </Text>
+            ) : null}
+          </View>
+
+          {/* CTA lecturas */}
+          <TouchableOpacity
+            style={[
+              s.readingsCard,
+              { borderColor: selLitColor + '44', backgroundColor: selLitColor + '09' },
+            ]}
+            onPress={() =>
+              navigation.navigate('Lecturas', {
+                date: selectedISO,
+                color: selColor,
+                celebration: selectedCell?.name ?? null,
+              })
+            }
+            activeOpacity={0.82}
+          >
+            <View style={[s.readingsIcon, { backgroundColor: selLitColor + '20' }]}>
+              <IcoBook color={selLitColor} size={20} />
+            </View>
+            <View style={s.readingsBody}>
+              <Text style={[s.readingsTitle, { color: ink }]}>Lecturas del día</Text>
+              <Text style={[s.readingsSub, { color: muted }]}>{readingsSub}</Text>
+            </View>
+            <View style={[s.readingsArrow, { backgroundColor: selLitColor + '18' }]}>
+              <IcoChevRight c={selLitColor} size={18} />
+            </View>
+          </TouchableOpacity>
         </View>
-        <TouchableOpacity
-          style={s.panelBtn}
-          onPress={() =>
-            navigation.navigate('Lecturas', {
-              date: selectedISO,
-              color: selectedCell?.color ?? 'green',
-              celebration: selectedCell?.name ?? null,
-            })
-          }
-          activeOpacity={0.8}
-        >
-          <Text style={s.panelBtnText}>Ver lecturas →</Text>
-        </TouchableOpacity>
       </View>
     </View>
   );
 }
 
-const s = StyleSheet.create({
-  container: { flex: 1 },
+/* ── Estilos ─────────────────────────────────────────────────────────────── */
 
+const s = StyleSheet.create({
+  root: { flex: 1 },
+
+  /* Header */
+  topBar: {},
+  litBar: { flexDirection: 'row', height: 4 },
+  litSeg: { flex: 1 },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 20,
+    paddingHorizontal: 16,
     paddingVertical: 10,
+    gap: 4,
   },
-  chevBtn: { padding: 6 },
-  chev: { fontSize: 28, lineHeight: 32 },
-  monthCenter: { alignItems: 'center' },
-  month: {
+  navBtn: { padding: 8 },
+  monthBlock: { flex: 1, alignItems: 'center' },
+  monthText: {
     fontFamily: 'CormorantGaramond-SemiBoldItalic',
     fontSize: 22,
     lineHeight: 25,
   },
-  year: { fontSize: 12, fontWeight: '500', letterSpacing: 1 },
+  yearText: { fontSize: 12, fontWeight: '500', letterSpacing: 1 },
   todayBtn: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
+    paddingHorizontal: 14,
+    paddingVertical: 7,
     borderRadius: 999,
     backgroundColor: Colors.brand.primary,
+    marginLeft: 4,
   },
-  todayBtnMuted: { opacity: 0.4 },
-  todayBtnText: { color: '#fff', fontWeight: '600', fontSize: 12 },
+  todayBtnMuted: { opacity: 0.35 },
+  todayBtnText: { color: '#fff', fontWeight: '700', fontSize: 12, letterSpacing: 0.3 },
 
-  legend: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 14,
-    paddingHorizontal: 20,
-    paddingVertical: 10,
+  /* Grid */
+  grid: { paddingHorizontal: GRID_H_PAD },
+  gridRow: { flexDirection: 'row' },
+  dayHeaderCell: {
+    width: CELL_SIZE,
+    height: 28,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  legendItem: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  legendText: { fontSize: 11, fontWeight: '500' },
+  dayHeaderText: { fontSize: 11, fontWeight: '700', letterSpacing: 0.8 },
 
+  /* Celdas */
+  dayCell: {
+    width: CELL_SIZE,
+    height: CELL_SIZE,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 3,
+  },
+  dayCellCircle: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  dayCellSelected: { backgroundColor: Colors.brand.primary },
+  dayCellToday: { borderWidth: 1.5, borderColor: Colors.brand.primary },
+  dayNum: { fontSize: 15, fontWeight: '400' },
+  dayNumFaded: { opacity: 0.22 },
+  dayCellDot: { width: 4, height: 4, borderRadius: 999 },
+  dayCellDotEmpty: { width: 4, height: 4 },
+
+  spacer: { flex: 1 },
+
+  /* Panel inferior */
   panel: {
-    marginTop: 'auto',
     borderTopWidth: 0.5,
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
-    padding: 20,
-    paddingTop: 14,
+    overflow: 'hidden',
   },
-  panelHandle: {
-    width: 40,
-    height: 4,
-    borderRadius: 999,
-    backgroundColor: Colors.border.default,
-    alignSelf: 'center',
-    marginBottom: 14,
-  },
-  panelDateRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 6 },
-  panelDate: {
-    fontSize: 12,
-    fontWeight: '600',
-    letterSpacing: 1,
-    textTransform: 'uppercase',
-  },
+  panelStripe: { height: 4 },
+  panelContent: { padding: 20, paddingTop: 16 },
+
+  panelDateRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 4 },
+  panelDate: { fontSize: 11, fontWeight: '700', letterSpacing: 1.2 },
   todayPill: {
     paddingHorizontal: 8,
     paddingVertical: 2,
     borderRadius: 999,
     backgroundColor: Colors.brand.primary,
   },
-  todayPillText: { color: '#fff', fontSize: 10, fontWeight: '600', letterSpacing: 1 },
+  todayPillText: { color: '#fff', fontSize: 10, fontWeight: '700', letterSpacing: 0.8 },
+
   panelName: {
     fontFamily: 'CormorantGaramond-SemiBoldItalic',
-    fontSize: 22,
-    lineHeight: 26,
+    fontSize: 26,
+    lineHeight: 30,
     marginBottom: 10,
   },
-  panelBadgeRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 14 },
-  panelGrade: { fontSize: 12 },
-  panelBtn: {
-    width: '100%',
-    paddingVertical: 13,
-    borderRadius: 12,
-    backgroundColor: Colors.brand.primary,
+
+  panelMeta: {
+    flexDirection: 'row',
     alignItems: 'center',
+    flexWrap: 'wrap',
+    gap: 6,
+    marginBottom: 16,
   },
-  panelBtnText: { color: '#fff', fontWeight: '600', fontSize: 14 },
+  colorPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    paddingHorizontal: 9,
+    paddingVertical: 4,
+    borderRadius: 999,
+    borderWidth: 1,
+  },
+  colorDot: { width: 6, height: 6, borderRadius: 999 },
+  colorPillText: { fontSize: 11, fontWeight: '700', letterSpacing: 0.3 },
+  metaText: { fontSize: 12, fontWeight: '400' },
+
+  readingsCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 14,
+    borderWidth: 1.5,
+    borderRadius: 16,
+    padding: 14,
+  },
+  readingsIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  readingsBody: { flex: 1 },
+  readingsTitle: { fontSize: 15, fontWeight: '700', marginBottom: 3 },
+  readingsSub: { fontSize: 11, lineHeight: 16 },
+  readingsArrow: {
+    width: 32,
+    height: 32,
+    borderRadius: 999,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
 });

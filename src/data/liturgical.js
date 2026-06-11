@@ -90,19 +90,76 @@ const _activeSeasonName = (() => {
 })();
 const _sm = _SEASON_META[_activeSeasonName] ?? _SEASON_META['Tiempo Ordinario'];
 
-// Semana litúrgica actual (número romano: I, II, … XXXIV)
-const _liturgicalWeek = (() => {
-  function _roman(n) {
-    const vals = [1, 4, 5, 9, 10, 40, 50, 90, 100];
-    const syms = ['I', 'IV', 'V', 'IX', 'X', 'XL', 'L', 'XC', 'C'];
-    let s = '';
-    for (let i = vals.length - 1; i >= 0; i--)
-      while (n >= vals[i]) {
-        s += syms[i];
-        n -= vals[i];
-      }
-    return s;
+// ── Número romano ─────────────────────────────────────────────────────────────
+function _roman(n) {
+  const vals = [1, 4, 5, 9, 10, 40, 50, 90, 100];
+  const syms = ['I', 'IV', 'V', 'IX', 'X', 'XL', 'L', 'XC', 'C'];
+  let s = '';
+  for (let i = vals.length - 1; i >= 0; i--)
+    while (n >= vals[i]) { s += syms[i]; n -= vals[i]; }
+  return s;
+}
+
+// ── Estación litúrgica para cualquier fecha ────────────────────────────────────
+function _seasonNameForDate(date) {
+  const d = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+  const y = d.getFullYear();
+  const e = _easter(y);
+  const baptism = _baptismOfLord(y);
+  const ashWed = _addDays(e, -46);
+  const holySat = _addDays(e, -1);
+  const pent = _addDays(e, 49);
+  const adv = _adventStart(y);
+  if (d >= new Date(y - 1, 11, 25) && d <= baptism) return 'Navidad';
+  if (d >= new Date(y, 11, 25))                      return 'Navidad';
+  if (d >= ashWed && d <= holySat)                   return 'Cuaresma';
+  if (d >= e && d <= pent)                           return 'Tiempo de Pascua';
+  if (d >= adv && d <= new Date(y, 11, 24))          return 'Adviento';
+  return 'Tiempo Ordinario';
+}
+
+// ── Nombre del domingo para cualquier fecha ────────────────────────────────────
+function _sundayNameForDate(date) {
+  const d = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+  const y = d.getFullYear();
+  const season = _seasonNameForDate(d);
+  const e = _easter(y);
+  const ashWed = _addDays(e, -46);
+  const adv = _adventStart(y);
+  const christKing = _addDays(adv, -7);
+  const baptism = _baptismOfLord(y);
+  // Domingo actual de esa semana
+  const thisSunday = new Date(y, d.getMonth(), d.getDate() - d.getDay());
+
+  let w = '';
+  if (season === 'Tiempo Ordinario') {
+    if (thisSunday < ashWed) {
+      w = _roman(Math.max(1, Math.floor(_daysBetween(baptism, thisSunday) / 7) + 1));
+    } else {
+      w = _roman(Math.max(1, 34 - Math.round(_daysBetween(thisSunday, christKing) / 7)));
+    }
+    return `${w} Domingo del Tiempo Ordinario`;
   }
+  if (season === 'Cuaresma') {
+    w = _roman(Math.min(6, Math.max(1, Math.floor(_daysBetween(ashWed, d) / 7) + 1)));
+    if (w === 'VI') return 'Domingo de Ramos';
+    return `${w} Domingo de Cuaresma`;
+  }
+  if (season === 'Tiempo de Pascua') {
+    w = _roman(Math.min(7, Math.max(1, Math.floor(_daysBetween(e, d) / 7) + 1)));
+    if (w === 'I')  return 'Domingo de Resurrección';
+    if (w === 'II') return 'Domingo de la Divina Misericordia';
+    return `${w} Domingo de Pascua`;
+  }
+  if (season === 'Adviento') {
+    w = _roman(Math.min(4, Math.max(1, Math.floor(_daysBetween(adv, d) / 7) + 1)));
+    return `${w} Domingo de Adviento`;
+  }
+  return 'Domingo del Tiempo de Navidad';
+}
+
+// ── Semana litúrgica actual ────────────────────────────────────────────────────
+const _liturgicalWeek = (() => {
   const t = new Date();
   t.setHours(0, 0, 0, 0);
   const dow = t.getDay();
@@ -110,15 +167,13 @@ const _liturgicalWeek = (() => {
   const e = _easter(_y);
   const ashWed = _addDays(e, -46);
   const adv = _adventStart(_y);
-  const christKing = _addDays(adv, -7); // último domingo antes de Adviento = semana 34
+  const christKing = _addDays(adv, -7);
 
   if (_activeSeasonName === 'Tiempo Ordinario') {
     if (thisSunday < ashWed) {
-      // Primer período (ene-feb): forward desde Bautismo del Señor
       const baptism = _baptismOfLord(_y);
       return _roman(Math.max(1, Math.floor(_daysBetween(baptism, thisSunday) / 7) + 1));
     }
-    // Segundo período (post-Pentecostés): backward desde Cristo Rey (sem. 34)
     return _roman(Math.max(1, 34 - Math.round(_daysBetween(thisSunday, christKing) / 7)));
   }
   if (_activeSeasonName === 'Cuaresma')
@@ -127,7 +182,7 @@ const _liturgicalWeek = (() => {
     return _roman(Math.min(7, Math.max(1, Math.floor(_daysBetween(e, t) / 7) + 1)));
   if (_activeSeasonName === 'Adviento')
     return _roman(Math.min(4, Math.max(1, Math.floor(_daysBetween(adv, t) / 7) + 1)));
-  return ''; // Navidad: sin número de semana
+  return '';
 })();
 
 // Ciclo litúrgico: A=Mateo, B=Marcos, C=Lucas.
@@ -150,6 +205,20 @@ export const CYCLE = {
   fullLabel: `Año litúrgico ${_LITURGICAL_YEAR} · Ciclo ${_CYCLE_LETTER} (${_CYCLE_GOSPEL})`,
 };
 
+const _isSunday = _w === 0;
+
+const _todayCelebration = (() => {
+  if (_isSunday) return _sundayNameForDate(_n);
+  switch (_activeSeasonName) {
+    case 'Tiempo Ordinario':  return 'Feria del Tiempo Ordinario';
+    case 'Adviento':          return 'Feria de Adviento';
+    case 'Cuaresma':          return 'Feria de Cuaresma';
+    case 'Tiempo de Pascua':  return 'Feria del Tiempo de Pascua';
+    case 'Navidad':           return 'Feria del Tiempo de Navidad';
+    default:                  return _sm.celebration;
+  }
+})();
+
 export const TODAY = {
   date: `${_WEEKDAYS[_w]}, ${_d} de ${_MONTHS[_m]}`,
   dateShort: `${_d} ${_MONTHS_SHORT[_m]}`,
@@ -160,9 +229,9 @@ export const TODAY = {
   season: _activeSeasonName,
   week: _liturgicalWeek,
   seasonColor: _sm.color,
-  celebration: _sm.celebration,
+  celebration: _todayCelebration,
   celebrationShort: _activeSeasonName,
-  grade: 'Feria',
+  grade: _isSunday ? 'Domingo' : 'Feria',
   liturgicalColor: _sm.color,
   liturgicalColorLabel: _sm.label,
   cycle: CYCLE.fullLabel,
@@ -523,14 +592,15 @@ export function buildMonthGrid(year, month) {
       y === today.getFullYear();
 
     const feast = inMonth ? feasts[day] : null;
+    const isDomingo = dow === 0 && inMonth;
     return {
       day,
       inMonth,
       dow,
       color: feast?.color ?? (inMonth ? _seasonColorForDate(d) : 'green'),
       solemn: feast?.grade === 'Solemnidad',
-      name: feast?.name ?? null,
-      grade: feast?.grade ?? (dow === 0 ? 'Domingo' : 'Feria'),
+      name: feast?.name ?? (isDomingo ? _sundayNameForDate(d) : null),
+      grade: feast?.grade ?? (isDomingo ? 'Domingo' : 'Feria'),
       isToday,
     };
   });

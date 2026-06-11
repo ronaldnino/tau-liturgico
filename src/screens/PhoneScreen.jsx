@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import {
   View,
   Text,
@@ -10,16 +10,75 @@ import {
   Platform,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import Svg, { Path } from 'react-native-svg';
 import { Colors } from '../theme';
-import { Tau, PrimaryBtn } from '../components';
+import { Tau } from '../components';
 import { useAuthStore } from '../store';
 import AuthService from '../services/auth';
+
+const LIT_COLORS = Object.values(Colors.liturgical);
 
 const COUNTRIES = [
   { code: '+58', flag: '🇻🇪', name: 'Venezuela' },
   { code: '+34', flag: '🇪🇸', name: 'España' },
   { code: '+54', flag: '🇦🇷', name: 'Argentina' },
+  { code: '+57', flag: '🇨🇴', name: 'Colombia' },
+  { code: '+52', flag: '🇲🇽', name: 'México' },
+  { code: '+51', flag: '🇵🇪', name: 'Perú' },
+  { code: '+1', flag: '🇺🇸', name: 'EE.UU.' },
 ];
+
+function IcoBack({ c = Colors.ink.primary, size = 22 }) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <Path
+        d="M19 12H5M5 12l7 7M5 12l7-7"
+        stroke={c}
+        strokeWidth={2}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </Svg>
+  );
+}
+
+function IcoChevronDown({ c = Colors.ink.muted, size = 15 }) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <Path
+        d="M6 9l6 6 6-6"
+        stroke={c}
+        strokeWidth={2.2}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </Svg>
+  );
+}
+
+function LitBar() {
+  return (
+    <View style={s.litBar}>
+      {LIT_COLORS.map((c) => (
+        <View key={c} style={[s.litSeg, { backgroundColor: c }]} />
+      ))}
+    </View>
+  );
+}
+
+function StepTrack({ step }) {
+  return (
+    <View style={s.stepTrack}>
+      <View style={[s.stepSeg, { backgroundColor: Colors.brand.primary }]} />
+      <View
+        style={[
+          s.stepSeg,
+          { backgroundColor: step >= 2 ? Colors.brand.primary : Colors.border.default },
+        ]}
+      />
+    </View>
+  );
+}
 
 export default function PhoneScreen({ navigation }) {
   const insets = useSafeAreaInsets();
@@ -29,16 +88,17 @@ export default function PhoneScreen({ navigation }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const { setPhone: savePhone, resetOnboarding } = useAuthStore();
+  const inputRef = useRef(null);
 
   const digits = phone.replace(/\D/g, '');
   const isValid = digits.length >= 7;
 
   const handleNext = async () => {
-    if (!isValid) return;
+    if (!isValid || loading) return;
     setLoading(true);
     setError('');
     try {
-      const full = `${country.code} ${phone}`;
+      const full = `${country.code}${phone.replace(/\s/g, '')}`;
       await AuthService.requestOtp(full);
       savePhone(full);
       navigation.navigate('Otp', { phone: full });
@@ -54,153 +114,258 @@ export default function PhoneScreen({ navigation }) {
       style={{ flex: 1 }}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
-      <ScrollView
-        style={s.container}
-        contentContainerStyle={[s.content, { paddingTop: insets.top + 14 }]}
-        keyboardShouldPersistTaps="handled"
-      >
+      <View style={[s.root, { paddingTop: insets.top }]}>
+        <LitBar />
+
         {/* Nav */}
         <View style={s.nav}>
-          <TouchableOpacity onPress={resetOnboarding} style={s.backBtn}>
-            <Text style={s.backArrow}>‹</Text>
-          </TouchableOpacity>
-          <Text style={s.step}>Paso 1 de 2</Text>
-          <View style={{ width: 34 }} />
-        </View>
-
-        {/* Contenido */}
-        <Tau size={48} color={Colors.brand.primary} style={s.tau} />
-        <Text style={s.title}>Tu número{'\n'}de teléfono</Text>
-        <Text style={s.body}>Te enviaremos un código de verificación por SMS.</Text>
-
-        {/* Campo */}
-        <View style={s.fieldRow}>
           <TouchableOpacity
-            onPress={() => setPickerOpen(!pickerOpen)}
-            style={s.countryBtn}
+            onPress={resetOnboarding}
+            style={s.backBtn}
+            activeOpacity={0.7}
           >
-            <Text style={s.flag}>{country.flag}</Text>
-            <Text style={s.code}>{country.code}</Text>
-            <Text style={{ color: Colors.ink.muted, fontSize: 12 }}>▾</Text>
+            <IcoBack />
           </TouchableOpacity>
-          <TextInput
-            value={phone}
-            onChangeText={setPhone}
-            placeholder="000 000 0000"
-            keyboardType="phone-pad"
-            style={s.phoneInput}
-            placeholderTextColor={Colors.ink.soft}
-          />
+          <StepTrack step={1} />
+          <View style={s.navSpacer} />
         </View>
 
-        {pickerOpen && (
-          <View style={s.picker}>
-            {COUNTRIES.map((c) => (
-              <TouchableOpacity
-                key={c.code}
-                onPress={() => {
-                  setCountry(c);
-                  setPickerOpen(false);
-                }}
-                style={[
-                  s.pickerRow,
-                  c.code !== COUNTRIES[0].code && {
-                    borderTopWidth: 0.5,
-                    borderTopColor: Colors.border.divider,
-                  },
-                ]}
-              >
-                <Text style={s.flag}>{c.flag}</Text>
-                <Text style={[s.pickerName]}>{c.name}</Text>
-                <Text style={s.pickerCode}>{c.code}</Text>
-              </TouchableOpacity>
-            ))}
+        <ScrollView
+          style={s.scroll}
+          contentContainerStyle={s.content}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
+        >
+          {/* Encabezado */}
+          <Tau size={36} color={Colors.brand.primary} style={s.tauIcon} />
+          <Text style={s.title}>Tu número{'\n'}de teléfono</Text>
+          <Text style={s.body}>Te enviaremos un código de verificación por SMS.</Text>
+
+          {/* Campo de teléfono */}
+          <View style={[s.fieldRow, pickerOpen && s.fieldRowOpen]}>
+            <TouchableOpacity
+              onPress={() => {
+                setPickerOpen((v) => !v);
+                inputRef.current?.blur();
+              }}
+              style={[s.countryBtn, pickerOpen && s.countryBtnOpen]}
+              activeOpacity={0.7}
+            >
+              <Text style={s.flag}>{country.flag}</Text>
+              <Text style={s.code}>{country.code}</Text>
+              <IcoChevronDown c={pickerOpen ? Colors.brand.primary : Colors.ink.muted} />
+            </TouchableOpacity>
+
+            <TextInput
+              ref={inputRef}
+              value={phone}
+              onChangeText={(v) => {
+                setPhone(v);
+                setError('');
+              }}
+              placeholder="000 000 0000"
+              keyboardType="phone-pad"
+              style={s.phoneInput}
+              placeholderTextColor={Colors.ink.soft}
+              returnKeyType="done"
+              onSubmitEditing={handleNext}
+            />
           </View>
-        )}
 
-        {error ? <Text style={s.error}>{error}</Text> : null}
+          {/* Picker de países */}
+          {pickerOpen && (
+            <View style={s.picker}>
+              {COUNTRIES.map((c, i) => (
+                <TouchableOpacity
+                  key={c.code}
+                  onPress={() => {
+                    setCountry(c);
+                    setPickerOpen(false);
+                    inputRef.current?.focus();
+                  }}
+                  style={[s.pickerRow, i > 0 && s.pickerRowDivider]}
+                  activeOpacity={0.7}
+                >
+                  <Text style={s.flag}>{c.flag}</Text>
+                  <Text style={s.pickerName}>{c.name}</Text>
+                  <Text style={s.pickerCode}>{c.code}</Text>
+                  {c.code === country.code && (
+                    <View
+                      style={[s.checkDot, { backgroundColor: Colors.brand.primary }]}
+                    />
+                  )}
+                </TouchableOpacity>
+              ))}
+            </View>
+          )}
 
-        <Text style={s.disclaimer}>
-          Solo usamos tu número para verificar tu identidad. No lo compartimos con
-          terceros.
-        </Text>
+          {error ? <Text style={s.errorText}>{error}</Text> : null}
 
-        <PrimaryBtn onPress={handleNext} disabled={!isValid || loading} style={s.cta}>
-          {loading ? 'Enviando…' : 'Recibir código por SMS'}
-        </PrimaryBtn>
-      </ScrollView>
+          <Text style={s.disclaimer}>
+            Solo usamos tu número para verificar tu identidad. No lo compartimos con
+            terceros.
+          </Text>
+        </ScrollView>
+
+        {/* CTA fijo */}
+        <View style={[s.footer, { paddingBottom: insets.bottom + 16 }]}>
+          <TouchableOpacity
+            onPress={handleNext}
+            disabled={!isValid || loading}
+            style={[s.cta, (!isValid || loading) && s.ctaDisabled]}
+            activeOpacity={0.85}
+          >
+            <Text style={s.ctaText}>
+              {loading ? 'Enviando…' : 'Recibir código por SMS'}
+            </Text>
+          </TouchableOpacity>
+        </View>
+      </View>
     </KeyboardAvoidingView>
   );
 }
 
 const s = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#fff' },
-  content: { paddingHorizontal: 28, paddingBottom: 40 },
+  root: { flex: 1, backgroundColor: Colors.surface.primary },
+
+  litBar: { flexDirection: 'row', height: 4 },
+  litSeg: { flex: 1 },
 
   nav: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 32,
+    paddingHorizontal: 20,
+    paddingVertical: 14,
   },
-  backBtn: { padding: 6 },
-  backArrow: { fontSize: 28, color: Colors.ink.primary, lineHeight: 32 },
-  step: { fontSize: 12, fontWeight: '500', color: Colors.ink.muted, letterSpacing: 1 },
+  backBtn: { padding: 4 },
+  navSpacer: { width: 30 },
 
-  tau: { marginBottom: 24 },
+  stepTrack: {
+    flexDirection: 'row',
+    gap: 6,
+  },
+  stepSeg: {
+    width: 36,
+    height: 3,
+    borderRadius: 999,
+  },
+
+  scroll: { flex: 1 },
+  content: { paddingHorizontal: 28, paddingBottom: 20 },
+
+  tauIcon: { marginBottom: 20, marginTop: 8 },
   title: {
     fontFamily: 'CormorantGaramond-SemiBoldItalic',
-    fontSize: 32,
-    lineHeight: 37,
+    fontSize: 36,
+    lineHeight: 41,
     color: Colors.ink.primary,
     marginBottom: 10,
   },
-  body: { fontSize: 15, lineHeight: 23, color: Colors.ink.muted, marginBottom: 32 },
+  body: {
+    fontSize: 15,
+    lineHeight: 23,
+    color: Colors.ink.muted,
+    marginBottom: 32,
+  },
 
-  fieldRow: { flexDirection: 'row', gap: 10, marginBottom: 16 },
+  fieldRow: {
+    flexDirection: 'row',
+    gap: 10,
+    marginBottom: 4,
+  },
+  fieldRowOpen: { marginBottom: 0 },
+
   countryBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
     paddingHorizontal: 14,
-    paddingVertical: 14,
-    borderRadius: 12,
-    borderWidth: 1,
+    paddingVertical: 0,
+    borderRadius: 14,
+    borderWidth: 1.5,
     borderColor: Colors.border.default,
+    minHeight: 54,
   },
-  flag: { fontSize: 18 },
-  code: { fontSize: 16, fontWeight: '500', color: Colors.ink.primary },
+  countryBtnOpen: {
+    borderColor: Colors.brand.primary,
+    borderBottomLeftRadius: 0,
+    borderBottomRightRadius: 0,
+  },
+
+  flag: { fontSize: 20 },
+  code: { fontSize: 15, fontWeight: '600', color: Colors.ink.primary },
+
   phoneInput: {
     flex: 1,
     paddingHorizontal: 16,
     paddingVertical: 14,
-    borderRadius: 12,
-    borderWidth: 1,
+    borderRadius: 14,
+    borderWidth: 1.5,
     borderColor: Colors.border.default,
     fontSize: 18,
     fontWeight: '500',
     color: Colors.ink.primary,
+    minHeight: 54,
   },
 
   picker: {
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: Colors.border.default,
+    borderLeftWidth: 1.5,
+    borderRightWidth: 1.5,
+    borderBottomWidth: 1.5,
+    borderColor: Colors.brand.primary,
+    borderBottomLeftRadius: 14,
+    borderBottomRightRadius: 14,
     overflow: 'hidden',
     marginBottom: 16,
-    backgroundColor: '#fff',
+    backgroundColor: Colors.surface.primary,
   },
   pickerRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
-    padding: 12,
+    paddingVertical: 13,
     paddingHorizontal: 16,
   },
+  pickerRowDivider: {
+    borderTopWidth: 0.5,
+    borderTopColor: Colors.border.divider,
+  },
   pickerName: { flex: 1, fontSize: 15, color: Colors.ink.primary },
-  pickerCode: { fontSize: 14, color: Colors.ink.muted },
+  pickerCode: { fontSize: 13, color: Colors.ink.muted, fontWeight: '500' },
+  checkDot: { width: 8, height: 8, borderRadius: 999 },
 
-  error: { color: Colors.liturgical.red, fontSize: 13, marginBottom: 12 },
-  disclaimer: { fontSize: 12, lineHeight: 18, color: Colors.ink.soft, marginBottom: 32 },
-  cta: {},
+  errorText: {
+    color: Colors.liturgical.red,
+    fontSize: 13,
+    marginTop: 10,
+    marginBottom: 4,
+  },
+  disclaimer: {
+    fontSize: 12,
+    lineHeight: 18,
+    color: Colors.ink.soft,
+    marginTop: 20,
+  },
+
+  footer: {
+    paddingHorizontal: 28,
+    paddingTop: 12,
+    borderTopWidth: 0.5,
+    borderTopColor: Colors.border.divider,
+    backgroundColor: Colors.surface.primary,
+  },
+  cta: {
+    backgroundColor: Colors.brand.primary,
+    borderRadius: 14,
+    paddingVertical: 16,
+    alignItems: 'center',
+  },
+  ctaDisabled: { opacity: 0.4 },
+  ctaText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
+    letterSpacing: 0.2,
+  },
 });
