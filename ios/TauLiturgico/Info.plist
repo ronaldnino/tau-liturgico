@@ -43,6 +43,10 @@
 		<key>NSAllowsLocalNetworking</key>
 		<true/>
 	</dict>
+	<key>NSCameraUsageDescription</key>
+	<string>Usamos la cámara para que puedas subir tu foto de perfil.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Usamos tu galería para que puedas elegir una foto de perfil.</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string>Esta app no usa tu ubicación.</string>
 	<key>UILaunchStoryboardName</key>

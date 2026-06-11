@@ -97,6 +97,35 @@ export const useSettingsStore = create(
   )
 );
 
+// ── Profile ────────────────────────────────────────────────────
+export const useProfileStore = create(
+  persist(
+    (set) => ({
+      hasCompletedProfile: false,
+      displayName: '',
+      country: '',
+      diocese: '',
+      parish: '',
+      photoURL: '',
+
+      setProfile: (data) => set({ ...data, hasCompletedProfile: true }),
+      clearProfile: () =>
+        set({
+          hasCompletedProfile: false,
+          displayName: '',
+          country: '',
+          diocese: '',
+          parish: '',
+          photoURL: '',
+        }),
+    }),
+    {
+      name: 'tau-profile',
+      storage: createJSONStorage(() => AsyncStorage),
+    }
+  )
+);
+
 // ── Notes ──────────────────────────────────────────────────────
 export const useNotesStore = create(
   persist(

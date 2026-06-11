@@ -4,10 +4,11 @@ import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import Svg, { Path, Circle, Rect, Line } from 'react-native-svg';
-import { useAuthStore, useSettingsStore } from '../store';
+import { useAuthStore, useSettingsStore, useProfileStore } from '../store';
 import { Colors } from '../theme';
 
 import OnboardingScreen from '../screens/OnboardingScreen';
+import ProfileSetupScreen from '../screens/ProfileSetupScreen';
 import PhoneScreen from '../screens/PhoneScreen';
 import OtpScreen from '../screens/OtpScreen';
 import SyncScreen from '../screens/SyncScreen';
@@ -27,8 +28,24 @@ const SW = 1.6;
 function IconHoy({ color }) {
   return (
     <Svg width={IC} height={IC} viewBox="0 0 24 24" fill="none">
-      <Line x1="4" y1="7" x2="20" y2="7" stroke={color} strokeWidth={SW + 0.4} strokeLinecap="round" />
-      <Line x1="12" y1="7" x2="12" y2="19" stroke={color} strokeWidth={SW + 0.4} strokeLinecap="round" />
+      <Line
+        x1="4"
+        y1="7"
+        x2="20"
+        y2="7"
+        stroke={color}
+        strokeWidth={SW + 0.4}
+        strokeLinecap="round"
+      />
+      <Line
+        x1="12"
+        y1="7"
+        x2="12"
+        y2="19"
+        stroke={color}
+        strokeWidth={SW + 0.4}
+        strokeLinecap="round"
+      />
     </Svg>
   );
 }
@@ -42,8 +59,24 @@ function IconCalendario({ color }) {
       {/* Banda superior */}
       <Rect x="3" y="4" width="18" height="6" rx="2.5" fill={color} />
       {/* Argollas */}
-      <Line x1="8" y1="2" x2="8" y2="6" stroke={color} strokeWidth={SW + 0.4} strokeLinecap="round" />
-      <Line x1="16" y1="2" x2="16" y2="6" stroke={color} strokeWidth={SW + 0.4} strokeLinecap="round" />
+      <Line
+        x1="8"
+        y1="2"
+        x2="8"
+        y2="6"
+        stroke={color}
+        strokeWidth={SW + 0.4}
+        strokeLinecap="round"
+      />
+      <Line
+        x1="16"
+        y1="2"
+        x2="16"
+        y2="6"
+        stroke={color}
+        strokeWidth={SW + 0.4}
+        strokeLinecap="round"
+      />
       {/* Puntos de días: fila 1 */}
       <Circle cx="8" cy="14" r="1.1" fill={color} />
       <Circle cx="12" cy="14" r="1.1" fill={color} />
@@ -76,11 +109,43 @@ function IconLecturas({ color }) {
       {/* Lomo */}
       <Line x1="12" y1="6" x2="12" y2="18" stroke={color} strokeWidth={SW} />
       {/* Líneas de texto izquierda */}
-      <Line x1="6" y1="10.5" x2="10.5" y2="9.8" stroke={color} strokeWidth={SW - 0.6} strokeLinecap="round" />
-      <Line x1="6" y1="13" x2="10.5" y2="12.3" stroke={color} strokeWidth={SW - 0.6} strokeLinecap="round" />
+      <Line
+        x1="6"
+        y1="10.5"
+        x2="10.5"
+        y2="9.8"
+        stroke={color}
+        strokeWidth={SW - 0.6}
+        strokeLinecap="round"
+      />
+      <Line
+        x1="6"
+        y1="13"
+        x2="10.5"
+        y2="12.3"
+        stroke={color}
+        strokeWidth={SW - 0.6}
+        strokeLinecap="round"
+      />
       {/* Líneas de texto derecha */}
-      <Line x1="13.5" y1="9.8" x2="18" y2="10.5" stroke={color} strokeWidth={SW - 0.6} strokeLinecap="round" />
-      <Line x1="13.5" y1="12.3" x2="18" y2="13" stroke={color} strokeWidth={SW - 0.6} strokeLinecap="round" />
+      <Line
+        x1="13.5"
+        y1="9.8"
+        x2="18"
+        y2="10.5"
+        stroke={color}
+        strokeWidth={SW - 0.6}
+        strokeLinecap="round"
+      />
+      <Line
+        x1="13.5"
+        y1="12.3"
+        x2="18"
+        y2="13"
+        stroke={color}
+        strokeWidth={SW - 0.6}
+        strokeLinecap="round"
+      />
     </Svg>
   );
 }
@@ -104,9 +169,33 @@ function IconNotas({ color }) {
         strokeLinejoin="round"
       />
       {/* Renglones */}
-      <Line x1="8.5" y1="11" x2="15.5" y2="11" stroke={color} strokeWidth={SW - 0.4} strokeLinecap="round" />
-      <Line x1="8.5" y1="14" x2="15.5" y2="14" stroke={color} strokeWidth={SW - 0.4} strokeLinecap="round" />
-      <Line x1="8.5" y1="17" x2="13" y2="17" stroke={color} strokeWidth={SW - 0.4} strokeLinecap="round" />
+      <Line
+        x1="8.5"
+        y1="11"
+        x2="15.5"
+        y2="11"
+        stroke={color}
+        strokeWidth={SW - 0.4}
+        strokeLinecap="round"
+      />
+      <Line
+        x1="8.5"
+        y1="14"
+        x2="15.5"
+        y2="14"
+        stroke={color}
+        strokeWidth={SW - 0.4}
+        strokeLinecap="round"
+      />
+      <Line
+        x1="8.5"
+        y1="17"
+        x2="13"
+        y2="17"
+        stroke={color}
+        strokeWidth={SW - 0.4}
+        strokeLinecap="round"
+      />
     </Svg>
   );
 }
@@ -190,6 +279,7 @@ function AuthStack() {
 // -- Root─────────────────────────────────────────────────────
 export default function AppNavigator() {
   const { isAuthenticated, hasCompletedOnboarding } = useAuthStore();
+  const { hasCompletedProfile } = useProfileStore();
   const { darkMode } = useSettingsStore();
   const scheme = useColorScheme();
   const theme = darkMode === 'auto' ? scheme : darkMode;
@@ -201,6 +291,8 @@ export default function AppNavigator() {
           <Stack.Screen name="Onboarding" component={OnboardingScreen} />
         ) : !isAuthenticated ? (
           <Stack.Screen name="Auth" component={AuthStack} />
+        ) : !hasCompletedProfile ? (
+          <Stack.Screen name="ProfileSetup" component={ProfileSetupScreen} />
         ) : (
           <Stack.Screen name="Main" component={MainTabs} />
         )}
