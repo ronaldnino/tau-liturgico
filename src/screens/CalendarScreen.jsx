@@ -155,9 +155,16 @@ function LitBar() {
 /* ── Celda del día ──────────────────────────────────────────────────────── */
 
 function DayCell({ cell, isSelected, ink, muted, onPress }) {
-  const { day, inMonth, isToday, color, solemn } = cell;
+  const { day, inMonth, isToday, color, solemn, grade } = cell;
   const litColor = Colors.liturgical[color] ?? Colors.liturgical.green;
-  const dotColor = solemn ? Colors.liturgical.gold : litColor;
+
+  // Jerarquía visual por tamaño del punto; el color siempre es el litúrgico real
+  const dotSize = solemn ? 6 : grade === 'Domingo' ? 5 : 4;
+  // Días blancos: borde visible en lugar de relleno invisible sobre fondo claro
+  const isWhite = color === 'white';
+  const dotStyle = isWhite
+    ? { width: dotSize, height: dotSize, backgroundColor: 'transparent', borderWidth: 1.5, borderColor: Colors.liturgical.white }
+    : { width: dotSize, height: dotSize, backgroundColor: litColor };
 
   const numColor = isSelected
     ? '#fff'
@@ -186,7 +193,7 @@ function DayCell({ cell, isSelected, ink, muted, onPress }) {
         </Text>
       </View>
       {inMonth ? (
-        <View style={[s.dayCellDot, { backgroundColor: dotColor }]} />
+        <View style={[s.dayCellDot, dotStyle]} />
       ) : (
         <View style={s.dayCellDotEmpty} />
       )}
@@ -362,12 +369,46 @@ export default function CalendarScreen({ navigation }) {
             )}
           </View>
 
-          {/* Nombre de la celebración */}
-          <Text style={[s.panelName, { color: ink }]} numberOfLines={2}>
-            {selectedCell?.name ?? 'Feria'}
-          </Text>
+          {/* Celebración(es) del día */}
+          {selectedCell?.celebrations?.length > 1 ? (
+            // Múltiples celebraciones: lista con jerarquía visual
+            <View style={s.celebList}>
+              {selectedCell.celebrations.map((cel, i) => {
+                const celColor = Colors.liturgical[cel.color] ?? Colors.liturgical.green;
+                const isPrimary = i === 0;
+                return (
+                  <View
+                    key={i}
+                    style={[
+                      s.celebRow,
+                      { borderLeftColor: celColor },
+                      !isPrimary && { marginTop: 6, opacity: 0.85 },
+                    ]}
+                  >
+                    <Text
+                      style={[
+                        isPrimary ? s.celebNamePrimary : s.celebNameSecondary,
+                        { color: ink },
+                      ]}
+                      numberOfLines={2}
+                    >
+                      {cel.name}
+                    </Text>
+                    <View style={[s.celebGradePill, { backgroundColor: celColor + '18', borderColor: celColor + '45' }]}>
+                      <Text style={[s.celebGradeText, { color: celColor }]}>{cel.grade}</Text>
+                    </View>
+                  </View>
+                );
+              })}
+            </View>
+          ) : (
+            // Celebración única o feria: título prominente
+            <Text style={[s.panelName, { color: ink }]} numberOfLines={2}>
+              {selectedCell?.name ?? 'Feria'}
+            </Text>
+          )}
 
-          {/* Meta: color + grado + temporada */}
+          {/* Meta: color litúrgico + temporada */}
           <View style={s.panelMeta}>
             <View
               style={[
@@ -380,7 +421,7 @@ export default function CalendarScreen({ navigation }) {
                 {selLabel.name}
               </Text>
             </View>
-            {selGrade !== 'Feria' && (
+            {selectedCell?.celebrations?.length <= 1 && selGrade !== 'Feria' && (
               <Text style={[s.metaText, { color: muted }]}>· {selGrade}</Text>
             )}
             {selLabel.meaning ? (
@@ -517,6 +558,39 @@ const s = StyleSheet.create({
     lineHeight: 30,
     marginBottom: 10,
   },
+
+  /* Lista de celebraciones múltiples */
+  celebList: { marginBottom: 10, gap: 2 },
+  celebRow: {
+    borderLeftWidth: 3,
+    paddingLeft: 10,
+    paddingVertical: 6,
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+    gap: 8,
+  },
+  celebNamePrimary: {
+    fontFamily: 'CormorantGaramond-SemiBoldItalic',
+    fontSize: 22,
+    lineHeight: 26,
+    flex: 1,
+  },
+  celebNameSecondary: {
+    fontSize: 14,
+    fontWeight: '500',
+    lineHeight: 20,
+    flex: 1,
+  },
+  celebGradePill: {
+    paddingHorizontal: 7,
+    paddingVertical: 3,
+    borderRadius: 999,
+    borderWidth: 1,
+    alignSelf: 'flex-start',
+    marginTop: 3,
+  },
+  celebGradeText: { fontSize: 9, fontWeight: '800', letterSpacing: 0.6 },
 
   panelMeta: {
     flexDirection: 'row',

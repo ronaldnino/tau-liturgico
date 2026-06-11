@@ -556,18 +556,24 @@ function _computeSeasons() {
 
 export const SEASONS = _computeSeasons();
 
+// Prioridad litúrgica: Solemnidad > Fiesta > Domingo/Memoria > Feria
+const _GRADE_PRIORITY = { Solemnidad: 3, Fiesta: 2, Domingo: 1, Memoria: 1, Feria: 0 };
+
 // Genera una grilla de 6 semanas (42 días) para cualquier mes, empezando en lunes
 export function buildMonthGrid(year, month) {
-  // Recopilar fiestas del mes (fijas + móviles)
+  // Acumular TODAS las celebraciones del día en arrays (no sobrescribir)
   const feasts = {};
   _FIXED_FEASTS.forEach(({ m, d, name, color, solemn }) => {
     if (m === month) {
-      feasts[d] = { name, color, grade: solemn ? 'Solemnidad' : 'Memoria' };
+      if (!feasts[d]) feasts[d] = [];
+      feasts[d].push({ name, color, grade: solemn ? 'Solemnidad' : 'Memoria' });
     }
   });
   _moveableFeasts(year).forEach(({ date, name, color, solemn }) => {
     if (date.getMonth() === month && date.getFullYear() === year) {
-      feasts[date.getDate()] = { name, color, grade: solemn ? 'Solemnidad' : 'Fiesta' };
+      const d = date.getDate();
+      if (!feasts[d]) feasts[d] = [];
+      feasts[d].push({ name, color, grade: solemn ? 'Solemnidad' : 'Fiesta' });
     }
   });
 
@@ -591,16 +597,26 @@ export function buildMonthGrid(year, month) {
       m === today.getMonth() &&
       y === today.getFullYear();
 
-    const feast = inMonth ? feasts[day] : null;
+    // Ordenar celebraciones por prioridad (mayor primero)
+    const dayFeasts = inMonth && feasts[day]
+      ? [...feasts[day]].sort((a, b) => (_GRADE_PRIORITY[b.grade] ?? 0) - (_GRADE_PRIORITY[a.grade] ?? 0))
+      : [];
+
+    const primary = dayFeasts[0] ?? null;
     const isDomingo = dow === 0 && inMonth;
+    const sundayName = isDomingo ? _sundayNameForDate(d) : null;
+
     return {
       day,
       inMonth,
       dow,
-      color: feast?.color ?? (inMonth ? _seasonColorForDate(d) : 'green'),
-      solemn: feast?.grade === 'Solemnidad',
-      name: feast?.name ?? (isDomingo ? _sundayNameForDate(d) : null),
-      grade: feast?.grade ?? (isDomingo ? 'Domingo' : 'Feria'),
+      color: primary?.color ?? (inMonth ? _seasonColorForDate(d) : 'green'),
+      solemn: primary?.grade === 'Solemnidad',
+      name: primary?.name ?? sundayName,
+      grade: primary?.grade ?? (isDomingo ? 'Domingo' : 'Feria'),
+      celebrations: dayFeasts.length > 0
+        ? dayFeasts
+        : (sundayName ? [{ name: sundayName, color: inMonth ? _seasonColorForDate(d) : 'green', grade: 'Domingo' }] : []),
       isToday,
     };
   });
