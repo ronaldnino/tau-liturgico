@@ -1,3 +1,4 @@
+import { Platform } from 'react-native';
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -73,7 +74,7 @@ export const useSettingsStore = create(
     (set) => ({
       darkMode: 'auto', // 'light' | 'dark' | 'auto'
       textSize: 'M', // 'S' | 'M' | 'L'
-      ttsSpeed: 1,
+      ttsSpeed: Platform.OS === 'android' ? 0.25 : 1,
       ttsVoiceId: null,
       elevenlabsApiKey: '',
       elevenlabsVoiceId: 'onwK4e9ZLuTAKqWW03F9', // Daniel — voz por defecto de ElevenLabs
