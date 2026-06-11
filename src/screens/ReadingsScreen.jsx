@@ -415,9 +415,10 @@ function useTTSPlayer(speed, onFinish) {
       const absPos = charOffsetRef.current + charIndex;
       // Anclar resaltado con posicion real del motor (mas preciso que interpolacion)
       if (charIndex > 0) _applyHighlight(absPos);
-      // Calibrar estimador solo con muestras confiables; promedio conservador
-      if (charIndex > 10 && elapsed > 300 && absPos > 0) {
-        const measured = absPos / elapsed;
+      // Calibrar con la tasa relativa al utterance actual; usar charIndex (no absPos)
+      // porque absPos incluye el charOffset del punto de reanudacion y sobreestima la tasa
+      if (charIndex > 10 && elapsed > 300) {
+        const measured = charIndex / elapsed;
         charsPerMsRef.current = charsPerMsRef.current * 0.75 + measured * 0.25;
       }
     };
@@ -530,11 +531,14 @@ function useTTSPlayer(speed, onFinish) {
     } catch (_) {
       return;
     }
-    const elapsed = Date.now() - t0Ref.current;
-    const charPos = Math.min(
-      totalCharsRef.current,
-      charOffsetRef.current + Math.round(elapsed * charsPerMsRef.current)
-    );
+    // Usar la posicion del ultimo resaltado real como punto de reanudacion;
+    // es mas preciso que la estimacion temporal porque esta anclado a eventos reales del motor
+    const charPos = lastHighlightPosRef.current > charOffsetRef.current
+      ? lastHighlightPosRef.current
+      : Math.min(
+          totalCharsRef.current,
+          charOffsetRef.current + Math.round((Date.now() - t0Ref.current) * charsPerMsRef.current)
+        );
     pausePosRef.current = { idx: activeIdxRef.current, charPos };
     stoppingRef.current = true;
     clearInterval(timerRef.current);
