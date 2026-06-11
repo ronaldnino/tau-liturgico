@@ -27,6 +27,7 @@ import { useAuthStore } from '../store';
 
 const { width: W } = Dimensions.get('window');
 const SLIDES = [{ key: 'welcome' }, { key: 'calendar' }, { key: 'readings' }];
+const VIEWABILITY_CONFIG = { viewAreaCoveragePercentThreshold: 50 };
 
 // ── Iconos SVG ─────────────────────────────────────────────────────
 function IcoChevron({ c = '#fff', size = 20 }) {
@@ -302,7 +303,7 @@ function Slide({ slideKey, index, scrollX }) {
 export default function OnboardingScreen() {
   const insets = useSafeAreaInsets();
   const { completeOnboarding } = useAuthStore();
-  const scrollRef = useRef(null);
+  const listRef = useRef(null);
   const [index, setIndex] = useState(0);
   const scrollX = useSharedValue(0);
 
@@ -312,11 +313,15 @@ export default function OnboardingScreen() {
     },
   });
 
+  const onViewableItemsChanged = useCallback(({ viewableItems }) => {
+    if (viewableItems.length > 0) setIndex(viewableItems[0].index ?? 0);
+  }, []);
+
   const isLast = index === SLIDES.length - 1;
 
   const next = useCallback(() => {
     if (isLast) { completeOnboarding(); return; }
-    scrollRef.current?.scrollTo({ x: (index + 1) * W, animated: true });
+    listRef.current?.scrollToIndex({ index: index + 1, animated: true });
   }, [isLast, index, completeOnboarding]);
 
   const skip = useCallback(() => { completeOnboarding(); }, [completeOnboarding]);
@@ -350,22 +355,23 @@ export default function OnboardingScreen() {
 
   return (
     <Animated.View style={[s.root, rootStyle]}>
-      <Animated.ScrollView
-        ref={scrollRef}
+      <Animated.FlatList
+        ref={listRef}
+        data={SLIDES}
+        keyExtractor={(item) => item.key}
+        renderItem={({ item, index: i }) => (
+          <Slide slideKey={item.key} index={i} scrollX={scrollX} />
+        )}
         horizontal
         pagingEnabled
         showsHorizontalScrollIndicator={false}
         onScroll={scrollHandler}
         scrollEventThrottle={16}
-        onMomentumScrollEnd={(e) => {
-          setIndex(Math.round(e.nativeEvent.contentOffset.x / W));
-        }}
+        onViewableItemsChanged={onViewableItemsChanged}
+        viewabilityConfig={VIEWABILITY_CONFIG}
+        getItemLayout={(_, i) => ({ length: W, offset: W * i, index: i })}
         style={{ flex: 1 }}
-      >
-        {SLIDES.map((item, i) => (
-          <Slide key={item.key} slideKey={item.key} index={i} scrollX={scrollX} />
-        ))}
-      </Animated.ScrollView>
+      />
 
       {/* Barra de navegación inferior */}
       <View style={[s.nav, { paddingBottom: insets.bottom + 16 }]}>
