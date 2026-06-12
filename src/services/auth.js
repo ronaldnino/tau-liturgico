@@ -21,8 +21,14 @@ const AuthService = {
   deleteToken: () => Keychain.resetGenericPassword({ service: SERVICE }),
 
   requestOtp: async (phone) => {
-    _confirmation = await auth().signInWithPhoneNumber(phone);
-    return { ok: true };
+    if (__DEV__) auth().settings.appVerificationDisabledForTesting = true;
+    try {
+      _confirmation = await auth().signInWithPhoneNumber(phone);
+      return { ok: true };
+    } catch (e) {
+      if (__DEV__) console.warn('[OTP ERROR]', JSON.stringify({ code: e.code, msg: e.message, native: e.nativeErrorCode }));
+      throw e;
+    }
   },
 
   verifyOtp: async (_phone, code) => {

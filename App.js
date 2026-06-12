@@ -34,7 +34,7 @@ function EnvBadge() {
 
 export default function App() {
   useEffect(() => {
-    initAppCheck();
+    if (!__DEV__) initAppCheck();
   }, []);
 
   return (

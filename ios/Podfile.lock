@@ -1018,9 +1018,9 @@ PODS:
   - React-Mapbuffer (0.74.5):
     - glog
     - React-debug
-  - react-native-config (1.6.1):
-    - react-native-config/App (= 1.6.1)
-  - react-native-config/App (1.6.1):
+  - react-native-config (1.5.1):
+    - react-native-config/App (= 1.5.1)
+  - react-native-config/App (1.5.1):
     - React-Core
   - react-native-image-picker (8.2.1):
     - DoubleConversion
@@ -1655,7 +1655,7 @@ SPEC CHECKSUMS:
   React-jsitracing: f8367edacc50bb3f9f056a5aeafb8cee5849fafb
   React-logger: 780b9ee9cec7d44eabc4093de90107c379078cb6
   React-Mapbuffer: f544f00b98dbdd8cbae96dd2bdb8b47f719976e0
-  react-native-config: 8ebcf99c9ed605aea6ecea5ecb80416c63f0fbdc
+  react-native-config: 136f9755ccc991cc6438053a44363259ad4c7813
   react-native-image-picker: 7abd47bc29c5100aec221b4afdc9e2970c063fe9
   react-native-safe-area-context: df9763c5de6fa38883028e243a0b60123acb8858
   React-nativeconfig: ba9a2e54e2f0882cf7882698825052793ed4c851

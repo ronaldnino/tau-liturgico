@@ -4,7 +4,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Path, Circle } from 'react-native-svg';
 import { Colors } from '../theme';
 import { Tau, TauWordmark } from '../components';
-import { useAuthStore, useLiturgicalStore } from '../store';
+import { useAuthStore, useLiturgicalStore, useProfileStore } from '../store';
+import { getProfile } from '../services/profile';
 
 function IcoNoSignal({ c = Colors.brand.primary, size = 40 }) {
   return (
@@ -63,6 +64,7 @@ export default function SyncScreen({ route }) {
   const token = route.params?.token;
   const { setToken } = useAuthStore();
   const { sync } = useLiturgicalStore();
+  const { setProfile } = useProfileStore();
 
   const [progress, setProgress] = useState(0);
   const [syncFailed, setSyncFailed] = useState(false);
@@ -97,13 +99,20 @@ export default function SyncScreen({ route }) {
   }, [syncDone, progressDone, token, setToken]);
 
   useEffect(() => {
-    sync()
-      .then(() => {
-        if (mounted.current) setSyncDone(true);
-      })
-      .catch(() => {
+    const run = async () => {
+      try {
+        await sync();
+        // Recuperar perfil existente para usuarios que regresan
+        const profile = await getProfile().catch(() => null);
+        if (mounted.current) {
+          if (profile) setProfile(profile);
+          setSyncDone(true);
+        }
+      } catch {
         if (mounted.current) setSyncFailed(true);
-      });
+      }
+    };
+    run();
   }, [retryCount]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {

@@ -2,11 +2,15 @@
 
 #import <React/RCTBundleURLProvider.h>
 #import <Firebase.h>
+#import <FirebaseAppCheck/FirebaseAppCheck.h>
 
 @implementation AppDelegate
 
 - (BOOL)application:(UIApplication *)application didFinishLaunchingWithOptions:(NSDictionary *)launchOptions
 {
+#if DEBUG
+  [FIRAppCheck setAppCheckProviderFactory:[FIRAppCheckDebugProviderFactory new]];
+#endif
   [FIRApp configure];
   self.moduleName = @"TauLiturgico";
   // You can add your custom initial props in the dictionary below.

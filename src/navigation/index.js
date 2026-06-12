@@ -1,5 +1,6 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useColorScheme } from 'react-native';
+import auth from '@react-native-firebase/auth';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
@@ -278,11 +279,23 @@ function AuthStack() {
 
 // -- Root─────────────────────────────────────────────────────
 export default function AppNavigator() {
-  const { isAuthenticated, hasCompletedOnboarding } = useAuthStore();
-  const { hasCompletedProfile } = useProfileStore();
+  const { isAuthenticated, hasCompletedOnboarding, logout } = useAuthStore();
+  const { hasCompletedProfile, clearProfile } = useProfileStore();
   const { darkMode } = useSettingsStore();
   const scheme = useColorScheme();
   const theme = darkMode === 'auto' ? scheme : darkMode;
+
+  // Si Zustand dice "autenticado" pero Firebase no tiene sesión activa
+  // (ocurre al cambiar de ambiente), limpiamos el estado local.
+  useEffect(() => {
+    const unsub = auth().onAuthStateChanged((user) => {
+      if (!user && isAuthenticated) {
+        clearProfile();
+        logout();
+      }
+    });
+    return unsub;
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
     <NavigationContainer>

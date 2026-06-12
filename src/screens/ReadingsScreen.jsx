@@ -440,10 +440,14 @@ function useTTSPlayer(speed, onFinish) {
       stoppingRef.current = false;
     };
 
-    Tts.addEventListener('tts-start', onStart);
-    Tts.addEventListener('tts-progress', onProgress);
-    Tts.addEventListener('tts-finish', onFinishEvt);
-    Tts.addEventListener('tts-cancel', onCancel);
+    // NativeEventEmitter.removeListener fue eliminado en RN 0.73+;
+    // usar las suscripciones devueltas por addEventListener y llamar .remove()
+    const subs = [
+      Tts.addEventListener('tts-start', onStart),
+      Tts.addEventListener('tts-progress', onProgress),
+      Tts.addEventListener('tts-finish', onFinishEvt),
+      Tts.addEventListener('tts-cancel', onCancel),
+    ];
 
     // Fijar idioma español para que Android no use voz en inglés por defecto
     Tts.setDefaultLanguage('es-419').catch(() =>
@@ -451,10 +455,7 @@ function useTTSPlayer(speed, onFinish) {
     );
 
     return () => {
-      Tts.removeEventListener('tts-start', onStart);
-      Tts.removeEventListener('tts-progress', onProgress);
-      Tts.removeEventListener('tts-finish', onFinishEvt);
-      Tts.removeEventListener('tts-cancel', onCancel);
+      subs.forEach((s) => s?.remove());
       clearInterval(timerRef.current);
       stoppingRef.current = true;
       Tts.stop();
