@@ -1,12 +1,35 @@
 import auth from '@react-native-firebase/auth';
+import appCheck from '@react-native-firebase/app-check';
+import Config from 'react-native-config';
 
-const PROJECT_ID = 'taoliturgico';
+const PROJECT_ID = Config.FIREBASE_PROJECT_ID || 'taoliturgico';
+const STORAGE_BUCKET = Config.FIREBASE_STORAGE_BUCKET || 'taoliturgico.firebasestorage.app';
 const FIRESTORE_BASE = `https://firestore.googleapis.com/v1/projects/${PROJECT_ID}/databases/(default)/documents`;
 
 async function getToken() {
   const user = auth().currentUser;
   if (!user) throw new Error('No autenticado');
   return user.getIdToken();
+}
+
+async function getAppCheckToken() {
+  try {
+    const { token } = await appCheck().getToken();
+    return token;
+  } catch (_) {
+    return null;
+  }
+}
+
+async function authHeaders(extra = {}) {
+  const user = auth().currentUser;
+  if (!user) throw new Error('No autenticado');
+  const [authToken, acToken] = await Promise.all([user.getIdToken(), getAppCheckToken()]);
+  return {
+    Authorization: `Bearer ${authToken}`,
+    ...(acToken ? { 'X-Firebase-AppCheck': acToken } : {}),
+    ...extra,
+  };
 }
 
 function toFirestoreFields(data) {
@@ -34,20 +57,16 @@ function fromFirestoreFields(fields = {}) {
 export async function saveProfile(data) {
   const user = auth().currentUser;
   if (!user) throw new Error('No autenticado');
-  const token = await user.getIdToken();
   const fields = toFirestoreFields({
     ...data,
     uid: user.uid,
     phone: user.phoneNumber ?? '',
     updatedAt: new Date().toISOString(),
   });
+  const headers = await authHeaders({ 'Content-Type': 'application/json' });
   const res = await fetch(
     `${FIRESTORE_BASE}/users/${user.uid}?updateMask.fieldPaths=${Object.keys(fields).join('&updateMask.fieldPaths=')}`,
-    {
-      method: 'PATCH',
-      headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ fields }),
-    }
+    { method: 'PATCH', headers, body: JSON.stringify({ fields }) }
   );
   if (!res.ok) {
     const body = await res.text();
@@ -58,40 +77,28 @@ export async function saveProfile(data) {
 export async function getProfile() {
   const user = auth().currentUser;
   if (!user) return null;
-  const token = await user.getIdToken();
-  const res = await fetch(`${FIRESTORE_BASE}/users/${user.uid}`, {
-    headers: { Authorization: `Bearer ${token}` },
-  });
+  const headers = await authHeaders();
+  const res = await fetch(`${FIRESTORE_BASE}/users/${user.uid}`, { headers });
   if (res.status === 404) return null;
   if (!res.ok) throw new Error(`Firestore error ${res.status}`);
   const json = await res.json();
   return fromFirestoreFields(json.fields);
 }
 
-const STORAGE_BUCKET = 'taoliturgico.firebasestorage.app';
-
 export async function uploadProfilePhoto(localUri) {
   const user = auth().currentUser;
   if (!user) throw new Error('No autenticado');
-  const token = await user.getIdToken();
 
   const objectPath = `profile_photos/${user.uid}/profile.jpg`;
   const encodedPath = encodeURIComponent(objectPath);
   const uploadUrl = `https://firebasestorage.googleapis.com/v0/b/${STORAGE_BUCKET}/o?uploadType=media&name=${encodedPath}`;
 
-  // fetch() de React Native puede leer URIs file:// como blob
   const fileRes = await fetch(localUri);
   if (!fileRes.ok) throw new Error('No se pudo leer el archivo de imagen');
   const blob = await fileRes.blob();
 
-  const uploadRes = await fetch(uploadUrl, {
-    method: 'POST',
-    headers: {
-      Authorization: `Bearer ${token}`,
-      'Content-Type': 'image/jpeg',
-    },
-    body: blob,
-  });
+  const headers = await authHeaders({ 'Content-Type': 'image/jpeg' });
+  const uploadRes = await fetch(uploadUrl, { method: 'POST', headers, body: blob });
 
   if (!uploadRes.ok) {
     const body = await uploadRes.text();

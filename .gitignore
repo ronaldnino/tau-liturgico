@@ -56,6 +56,10 @@ local.properties
 google-services.json
 GoogleService-Info.plist
 
+# Configs por ambiente (contienen API keys nativas de Firebase)
+config/dev/
+config/prod/
+
 # Jest
 coverage/
 

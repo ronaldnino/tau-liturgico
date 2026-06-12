@@ -1,7 +1,8 @@
 import auth from '@react-native-firebase/auth';
 import * as Keychain from 'react-native-keychain';
+import Config from 'react-native-config';
 
-const API_BASE = 'https://api.tauliturgico.com/v1';
+const API_BASE = Config.API_BASE || 'https://api.tauliturgico.com/v1';
 const SERVICE = 'tau_jwt';
 
 // Guardado a nivel de módulo: Firebase devuelve un objeto confirmation
