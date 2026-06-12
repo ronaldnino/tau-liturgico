@@ -10,7 +10,7 @@ export default function LitDot({ color = 'green', size = 8, style }) {
           width: size,
           height: size,
           borderRadius: size / 2,
-          backgroundColor: Colors.liturgical[color] ?? Colors.liturgical.white,
+          backgroundColor: Colors.liturgicalUI[color] ?? Colors.liturgicalUI.white,
           flexShrink: 0,
         },
         style,

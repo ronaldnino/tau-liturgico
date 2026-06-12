@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useRef } from 'react';
 import {
   View,
   Text,
@@ -7,6 +7,8 @@ import {
   StyleSheet,
   useColorScheme,
   RefreshControl,
+  Animated,
+  Easing,
 } from 'react-native';
 import Svg, { Path, Line } from 'react-native-svg';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -24,6 +26,9 @@ import {
 const _n = new Date();
 const TODAY_ISO = `${_n.getFullYear()}-${String(_n.getMonth() + 1).padStart(2, '0')}-${String(_n.getDate()).padStart(2, '0')}`;
 const LIT_COLORS = Object.values(Colors.liturgical);
+
+// Orden cronológico del año litúrgico para la barra proporcional
+const SEASON_ORDER = ['Adviento', 'Navidad', 'Cuaresma', 'Tiempo de Pascua', 'Tiempo Ordinario'];
 
 /* ── Iconos SVG ─────────────────────────────────────────────────────────── */
 
@@ -103,6 +108,159 @@ function _typeShort(type) {
   return type.slice(0, 3);
 }
 
+/* ── Año litúrgico — acordeón horizontal ─────────────────────────────────── */
+
+const _COLLAPSED = 1;
+const _EXPANDED = 7;
+const _SHORT = {
+  Adviento: 'Adv',
+  Navidad: 'Nav',
+  Cuaresma: 'Cua',
+  'Tiempo de Pascua': 'Pas',
+  'Tiempo Ordinario': 'Ord',
+};
+
+function LitYearCard({ seasons, dark }) {
+  const ordered = SEASON_ORDER.map((n) => seasons.find((s) => s.name === n)).filter(Boolean);
+  const defaultIdx = Math.max(0, ordered.findIndex((s) => s.active));
+
+  const [expandedIdx, setExpandedIdx] = useState(defaultIdx);
+
+  // Un Animated.Value de flex por segmento — todos arrancan en _COLLAPSED
+  const flexAnims = useRef(ordered.map(() => new Animated.Value(_COLLAPSED))).current;
+
+  // Shimmer suave sobre el segmento expandido
+  const shimmer = useRef(new Animated.Value(0)).current;
+
+  // Animación de entrada: el segmento activo se expande al montar
+  useEffect(() => {
+    const delay = setTimeout(() => {
+      Animated.spring(flexAnims[defaultIdx], {
+        toValue: _EXPANDED,
+        useNativeDriver: false,
+        tension: 42,
+        friction: 7,
+      }).start();
+    }, 250);
+    return () => clearTimeout(delay);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Loop de shimmer
+  useEffect(() => {
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(shimmer, {
+          toValue: 1,
+          duration: 2200,
+          easing: Easing.inOut(Easing.ease),
+          useNativeDriver: true,
+        }),
+        Animated.timing(shimmer, {
+          toValue: 0,
+          duration: 2200,
+          easing: Easing.inOut(Easing.ease),
+          useNativeDriver: true,
+        }),
+      ])
+    ).start();
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const expand = useCallback(
+    (idx) => {
+      if (idx === expandedIdx) return;
+      setExpandedIdx(idx);
+      Animated.parallel(
+        flexAnims.map((anim, i) =>
+          Animated.spring(anim, {
+            toValue: i === idx ? _EXPANDED : _COLLAPSED,
+            useNativeDriver: false,
+            tension: 42,
+            friction: 7,
+          })
+        )
+      ).start();
+    },
+    [expandedIdx, flexAnims]
+  );
+
+  const shimmerOpacity = shimmer.interpolate({ inputRange: [0, 1], outputRange: [0, 0.1] });
+
+  return (
+    <View style={[lc.card, !dark && lc.shadow]}>
+      <View style={lc.row}>
+        {ordered.map((s, i) => {
+          const isExp = expandedIdx === i;
+          const sColor = Colors.liturgicalUI[s.color];
+
+          const segBg = sColor;
+          const textPrimary = '#fff';
+          const textMuted   = 'rgba(255,255,255,0.65)';
+          const trackBg     = 'rgba(255,255,255,0.25)';
+          const trackFg     = '#fff';
+          const dotCol      = 'rgba(255,255,255,0.7)';
+
+          return (
+            <Animated.View
+              key={s.name}
+              style={[lc.segment, { flex: flexAnims[i] }]}
+            >
+              <TouchableOpacity
+                style={[lc.segInner, { backgroundColor: segBg, opacity: isExp ? 1 : 0.55 }]}
+                onPress={() => expand(i)}
+                activeOpacity={0.85}
+              >
+                {isExp ? (
+                  <>
+                    <Animated.View
+                      pointerEvents="none"
+                      style={[
+                        StyleSheet.absoluteFill,
+                        { backgroundColor: '#fff', opacity: shimmerOpacity },
+                      ]}
+                    />
+                    <View style={lc.expContent}>
+                      <Text style={[lc.expEyebrow, { color: textMuted }]}>
+                        {'AÑO LITÚRGICO · ' + CYCLE.label}
+                      </Text>
+                      <Text style={[lc.expName, { color: textPrimary }]} numberOfLines={2}>
+                        {s.name}
+                      </Text>
+                      <Text style={[lc.expRange, { color: textMuted }]} numberOfLines={1}>
+                        {s.range}
+                      </Text>
+                      <View style={[lc.expTrack, { backgroundColor: trackBg }]}>
+                        <View
+                          style={[
+                            lc.expFill,
+                            { width: `${Math.max(s.progress * 100, 2)}%`, backgroundColor: trackFg },
+                          ]}
+                        />
+                      </View>
+                      <View style={lc.expStats}>
+                        <Text style={[lc.expDays, { color: textPrimary }]}>{s.days}</Text>
+                        <Text style={[lc.expPct, { color: textMuted }]}>
+                          {Math.round(s.progress * 100)}%
+                        </Text>
+                      </View>
+                    </View>
+                  </>
+                ) : (
+                  <View style={lc.colContent}>
+                    <View style={[lc.colDot, { backgroundColor: dotCol }]} />
+                    <Text style={[lc.colLabel, { color: dotCol }]}>
+                      {_SHORT[s.name] ?? s.name.slice(0, 3)}
+                    </Text>
+                  </View>
+                )}
+              </TouchableOpacity>
+            </Animated.View>
+          );
+        })}
+      </View>
+    </View>
+  );
+}
+
 /* ── Barra litúrgica ────────────────────────────────────────────────────── */
 
 function LitBar() {
@@ -147,7 +305,7 @@ export default function TodayScreen({ navigation }) {
   const muted = dark ? Colors.dark.inkMuted : Colors.ink.muted;
   const border = dark ? Colors.dark.border : Colors.border.default;
 
-  const litColor = Colors.liturgical[TODAY.liturgicalColor] ?? Colors.liturgical.green;
+  const litColor = Colors.liturgicalUI[TODAY.liturgicalColor] ?? Colors.liturgicalUI.green;
   const isSunday = _n.getDay() === 0;
   const readingsSub = isSunday ? '1ª · Sal · 2ª · Ev' : '1ª · Sal · Ev';
 
@@ -311,58 +469,7 @@ export default function TodayScreen({ navigation }) {
       {/* ── Tiempos litúrgicos ───────────────────────────────────────── */}
       <View style={s.sectionPad}>
         <SectionTitle>Tiempos litúrgicos</SectionTitle>
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={s.seasonsScroll}
-        >
-          {SEASONS.map((season) => {
-            const sColor = Colors.liturgical[season.color] ?? Colors.liturgical.green;
-            return (
-              <View
-                key={season.name}
-                style={[
-                  s.seasonCard,
-                  {
-                    backgroundColor: surface,
-                    borderWidth: season.active ? 1.5 : 0.5,
-                    borderColor: season.active ? sColor : border,
-                  },
-                ]}
-              >
-                <View
-                  style={[
-                    s.seasonStripe,
-                    { backgroundColor: sColor, opacity: season.active ? 1 : 0.45 },
-                  ]}
-                />
-                <View style={s.seasonBody}>
-                  <Text style={[s.seasonRange, { color: muted }]}>{season.range}</Text>
-                  <Text style={[s.seasonName, { color: ink }]}>{season.name}</Text>
-                  <View
-                    style={[
-                      s.progressTrack,
-                      { backgroundColor: dark ? 'rgba(255,255,255,0.08)' : '#EFF1F4' },
-                    ]}
-                  >
-                    <View
-                      style={[
-                        s.progressFill,
-                        {
-                          width: `${Math.max(season.progress * 100, 2)}%`,
-                          backgroundColor: sColor,
-                        },
-                      ]}
-                    />
-                  </View>
-                  <Text style={[s.seasonDays, { color: season.active ? sColor : muted }]}>
-                    {season.days}
-                  </Text>
-                </View>
-              </View>
-            );
-          })}
-        </ScrollView>
+        <LitYearCard seasons={SEASONS} dark={dark} />
       </View>
 
       {/* ── Próximas celebraciones ───────────────────────────────────── */}
@@ -378,7 +485,7 @@ export default function TodayScreen({ navigation }) {
             const parts = u.date.split(' ');
             const dow = parts[0];
             const day = parts[1];
-            const uColor = Colors.liturgical[u.color] ?? Colors.liturgical.green;
+            const uColor = Colors.liturgicalUI[u.color] ?? Colors.liturgicalUI.green;
             return (
               <TouchableOpacity
                 key={i}
@@ -579,28 +686,6 @@ const s = StyleSheet.create({
     lineHeight: 20,
   },
 
-  /* Tiempos litúrgicos */
-  seasonsScroll: { gap: 10, paddingBottom: 4 },
-  seasonCard: { width: 190, borderRadius: 14, overflow: 'hidden', flexShrink: 0 },
-  seasonStripe: { height: 4 },
-  seasonBody: { padding: 14, paddingTop: 12 },
-  seasonRange: {
-    fontSize: 10,
-    fontWeight: '700',
-    letterSpacing: 1,
-    textTransform: 'uppercase',
-    marginBottom: 4,
-  },
-  seasonName: {
-    fontFamily: 'CormorantGaramond-SemiBoldItalic',
-    fontSize: 17,
-    lineHeight: 21,
-    marginBottom: 14,
-  },
-  progressTrack: { height: 3, borderRadius: 999, overflow: 'hidden', marginBottom: 8 },
-  progressFill: { height: '100%', borderRadius: 999 },
-  seasonDays: { fontSize: 12, fontWeight: '600' },
-
   /* Próximas celebraciones */
   upcomingList: { borderRadius: 14, borderWidth: 0.5, overflow: 'hidden' },
   upcomingItem: {
@@ -639,7 +724,7 @@ const s = StyleSheet.create({
   solemnLabel: {
     fontSize: 10,
     fontWeight: '700',
-    color: Colors.liturgical.gold,
+    color: Colors.liturgicalUI.gold,
     letterSpacing: 1,
     textTransform: 'uppercase',
     marginTop: 2,
@@ -652,5 +737,88 @@ const s = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     flexShrink: 0,
+  },
+});
+
+/* ── Estilos LitYearCard ─────────────────────────────────────────────────── */
+
+const lc = StyleSheet.create({
+  card: { borderRadius: 20, overflow: 'hidden' },
+  shadow: {
+    shadowColor: '#000',
+    shadowOpacity: 0.1,
+    shadowRadius: 16,
+    shadowOffset: { width: 0, height: 5 },
+    elevation: 5,
+  },
+  row: { flexDirection: 'row', height: 160 },
+
+  /* Segmento */
+  segment: { overflow: 'hidden' },
+  segInner: { flex: 1 },
+
+  /* Segmento expandido */
+  expContent: {
+    flex: 1,
+    padding: 16,
+    justifyContent: 'center',
+  },
+  expEyebrow: {
+    fontSize: 9,
+    fontWeight: '700',
+    letterSpacing: 1.4,
+    textTransform: 'uppercase',
+    color: 'rgba(255,255,255,0.65)',
+    marginBottom: 6,
+  },
+  expName: {
+    fontFamily: 'CormorantGaramond-SemiBoldItalic',
+    fontSize: 26,
+    lineHeight: 30,
+    color: '#fff',
+    marginBottom: 4,
+  },
+  expRange: {
+    fontSize: 11,
+    color: 'rgba(255,255,255,0.65)',
+    marginBottom: 14,
+  },
+  expTrack: {
+    height: 3,
+    borderRadius: 999,
+    overflow: 'hidden',
+    marginBottom: 8,
+  },
+  expFill: {
+    height: '100%',
+    borderRadius: 999,
+  },
+  expStats: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  expDays: { fontSize: 12, fontWeight: '600' },
+  expPct: { fontSize: 11 },
+
+  /* Segmento colapsado */
+  colContent: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 5,
+  },
+  colDot: {
+    width: 5,
+    height: 5,
+    borderRadius: 999,
+    backgroundColor: 'rgba(255,255,255,0.7)',
+  },
+  colLabel: {
+    fontSize: 8,
+    fontWeight: '800',
+    letterSpacing: 0.5,
+    color: 'rgba(255,255,255,0.7)',
+    textTransform: 'uppercase',
   },
 });

@@ -303,7 +303,7 @@ const s = StyleSheet.create({
 
   loader: { marginBottom: 16 },
   errorText: {
-    color: Colors.liturgical.red,
+    color: Colors.liturgicalUI.red,
     fontSize: 13,
     marginBottom: 16,
     textAlign: 'center',

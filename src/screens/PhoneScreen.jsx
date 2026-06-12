@@ -336,7 +336,7 @@ const s = StyleSheet.create({
   checkDot: { width: 8, height: 8, borderRadius: 999 },
 
   errorText: {
-    color: Colors.liturgical.red,
+    color: Colors.liturgicalUI.red,
     fontSize: 13,
     marginTop: 10,
     marginBottom: 4,

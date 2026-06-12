@@ -156,15 +156,11 @@ function LitBar() {
 
 function DayCell({ cell, isSelected, ink, muted, onPress }) {
   const { day, inMonth, isToday, color, solemn, grade } = cell;
-  const litColor = Colors.liturgical[color] ?? Colors.liturgical.green;
+  const litColor = Colors.liturgicalUI[color] ?? Colors.liturgicalUI.green;
 
   // Jerarquía visual por tamaño del punto; el color siempre es el litúrgico real
   const dotSize = solemn ? 6 : grade === 'Domingo' ? 5 : 4;
-  // Días blancos: borde visible en lugar de relleno invisible sobre fondo claro
-  const isWhite = color === 'white';
-  const dotStyle = isWhite
-    ? { width: dotSize, height: dotSize, backgroundColor: 'transparent', borderWidth: 1.5, borderColor: Colors.liturgical.white }
-    : { width: dotSize, height: dotSize, backgroundColor: litColor };
+  const dotStyle = { width: dotSize, height: dotSize, backgroundColor: litColor };
 
   const numColor = isSelected
     ? '#fff'
@@ -235,7 +231,7 @@ export default function CalendarScreen({ navigation }) {
 
   /* Datos del panel */
   const selColor = selectedCell?.color ?? 'green';
-  const selLitColor = Colors.liturgical[selColor] ?? Colors.liturgical.green;
+  const selLitColor = Colors.liturgicalUI[selColor] ?? Colors.liturgicalUI.green;
   const selLabel = LITURGICAL_LABELS[selColor] ?? {
     name: 'Verde',
     meaning: 'Tiempo Ordinario',
@@ -374,7 +370,7 @@ export default function CalendarScreen({ navigation }) {
             // Múltiples celebraciones: lista con jerarquía visual
             <View style={s.celebList}>
               {selectedCell.celebrations.map((cel, i) => {
-                const celColor = Colors.liturgical[cel.color] ?? Colors.liturgical.green;
+                const celColor = Colors.liturgicalUI[cel.color] ?? Colors.liturgicalUI.green;
                 const isPrimary = i === 0;
                 return (
                   <View

@@ -789,7 +789,7 @@ export default function ReadingsScreen({ navigation, route }) {
             s.headerStripe,
             {
               backgroundColor:
-                Colors.liturgical[headerColorKey] ?? Colors.liturgical.green,
+                Colors.liturgicalUI[headerColorKey] ?? Colors.liturgicalUI.green,
             },
           ]}
         />
@@ -811,7 +811,7 @@ export default function ReadingsScreen({ navigation, route }) {
                   s.headerDot,
                   {
                     backgroundColor:
-                      Colors.liturgical[headerColorKey] ?? Colors.liturgical.green,
+                      Colors.liturgicalUI[headerColorKey] ?? Colors.liturgicalUI.green,
                   },
                 ]}
               />
@@ -831,16 +831,16 @@ export default function ReadingsScreen({ navigation, route }) {
               s.litPill,
               {
                 backgroundColor:
-                  (Colors.liturgical[headerColorKey] ?? Colors.liturgical.green) + '20',
+                  (Colors.liturgicalUI[headerColorKey] ?? Colors.liturgicalUI.green) + '20',
                 borderColor:
-                  (Colors.liturgical[headerColorKey] ?? Colors.liturgical.green) + '55',
+                  (Colors.liturgicalUI[headerColorKey] ?? Colors.liturgicalUI.green) + '55',
               },
             ]}
           >
             <Text
               style={[
                 s.litPillText,
-                { color: Colors.liturgical[headerColorKey] ?? Colors.liturgical.green },
+                { color: Colors.liturgicalUI[headerColorKey] ?? Colors.liturgicalUI.green },
               ]}
             >
               {headerColorLabel}
@@ -918,7 +918,7 @@ export default function ReadingsScreen({ navigation, route }) {
               s.refDivider,
               {
                 backgroundColor:
-                  Colors.liturgical[headerColorKey] ?? Colors.liturgical.green,
+                  Colors.liturgicalUI[headerColorKey] ?? Colors.liturgicalUI.green,
               },
             ]}
           />
@@ -930,9 +930,9 @@ export default function ReadingsScreen({ navigation, route }) {
                 s.introBox,
                 {
                   backgroundColor:
-                    (Colors.liturgical[headerColorKey] ?? Colors.liturgical.green) + '18',
+                    (Colors.liturgicalUI[headerColorKey] ?? Colors.liturgicalUI.green) + '18',
                   borderLeftColor:
-                    Colors.liturgical[headerColorKey] ?? Colors.liturgical.green,
+                    Colors.liturgicalUI[headerColorKey] ?? Colors.liturgicalUI.green,
                 },
               ]}
             >
@@ -958,7 +958,7 @@ export default function ReadingsScreen({ navigation, route }) {
                 style={[
                   s.closingText,
                   {
-                    color: Colors.liturgical[headerColorKey] ?? Colors.liturgical.green,
+                    color: Colors.liturgicalUI[headerColorKey] ?? Colors.liturgicalUI.green,
                   },
                 ]}
               >
@@ -1082,7 +1082,7 @@ export default function ReadingsScreen({ navigation, route }) {
           </Text>
           {ttsError ? (
             <Text
-              style={[s.ttsErrorText, { color: Colors.liturgical.red }]}
+              style={[s.ttsErrorText, { color: Colors.liturgicalUI.red }]}
               numberOfLines={2}
             >
               {ttsError}

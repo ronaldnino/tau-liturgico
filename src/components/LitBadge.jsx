@@ -4,7 +4,7 @@ import Colors from '../theme/colors';
 import LitDot from './LitDot';
 
 export default function LitBadge({ color = 'green', children, style }) {
-  const litColor = Colors.liturgical[color] ?? Colors.liturgical.white;
+  const litColor = Colors.liturgicalUI[color] ?? Colors.liturgicalUI.white;
   return (
     <View style={[styles.badge, { backgroundColor: litColor + '18' }, style]}>
       <LitDot color={color} size={7} />

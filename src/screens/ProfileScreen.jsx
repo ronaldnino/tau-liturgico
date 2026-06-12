@@ -34,7 +34,7 @@ const TABS = [
     id: 'elevenlabs',
     label: 'ElevenLabs',
     Icon: IcoStar,
-    color: Colors.liturgical.gold,
+    color: Colors.liturgicalUI.gold,
     premium: true,
   },
   { id: 'app', label: 'App', Icon: IcoGear, color: '#0A84FF' },
@@ -553,7 +553,7 @@ export default function ProfileScreen() {
   const muted = dark ? Colors.dark.inkMuted : Colors.ink.muted;
   const border = dark ? Colors.dark.border : Colors.border.default;
 
-  const seasonColor = Colors.liturgical[TODAY.seasonColor] ?? Colors.liturgical.green;
+  const seasonColor = Colors.liturgicalUI[TODAY.seasonColor] ?? Colors.liturgicalUI.green;
 
   const loadVoices = () => {
     setVoicesLoading(true);
@@ -681,8 +681,8 @@ export default function ProfileScreen() {
                         s.tabPremiumDot,
                         {
                           backgroundColor: hasEleven
-                            ? Colors.liturgical.green
-                            : Colors.liturgical.gold,
+                            ? Colors.liturgicalUI.green
+                            : Colors.liturgicalUI.gold,
                         },
                       ]}
                     />
@@ -1154,12 +1154,12 @@ function TabVoz({
         style={[
           t.promoCard,
           {
-            borderColor: Colors.liturgical.gold + '60',
-            backgroundColor: Colors.liturgical.gold + '0D',
+            borderColor: Colors.liturgicalUI.gold + '60',
+            backgroundColor: Colors.liturgicalUI.gold + '0D',
           },
         ]}
       >
-        <IcoStar c={Colors.liturgical.gold} size={16} />
+        <IcoStar c={Colors.liturgicalUI.gold} size={16} />
         <View style={{ flex: 1 }}>
           <Text style={[t.promoTitle, { color: ink }]}>
             ¿Quieres una voz más natural?
@@ -1168,7 +1168,7 @@ function TabVoz({
             Activa ElevenLabs para síntesis de voz IA de alta calidad.
           </Text>
         </View>
-        <IcoChevron c={Colors.liturgical.gold} size={14} />
+        <IcoChevron c={Colors.liturgicalUI.gold} size={14} />
       </TouchableOpacity>
     </View>
   );
@@ -1202,8 +1202,8 @@ function TabElevenLabs({
         style={[
           t.premiumBanner,
           {
-            borderColor: Colors.liturgical.gold + '70',
-            backgroundColor: Colors.liturgical.gold + '12',
+            borderColor: Colors.liturgicalUI.gold + '70',
+            backgroundColor: Colors.liturgicalUI.gold + '12',
           },
         ]}
       >
@@ -1211,10 +1211,10 @@ function TabElevenLabs({
           <View
             style={[
               t.premiumIconWrap,
-              { backgroundColor: Colors.liturgical.gold + '25' },
+              { backgroundColor: Colors.liturgicalUI.gold + '25' },
             ]}
           >
-            <IcoStar c={Colors.liturgical.gold} size={22} />
+            <IcoStar c={Colors.liturgicalUI.gold} size={22} />
           </View>
           <View style={{ flex: 1 }}>
             <View style={t.premiumTitleRow}>
@@ -1223,12 +1223,12 @@ function TabElevenLabs({
                 style={[
                   t.recommendedPill,
                   {
-                    backgroundColor: Colors.liturgical.gold + '22',
-                    borderColor: Colors.liturgical.gold + '50',
+                    backgroundColor: Colors.liturgicalUI.gold + '22',
+                    borderColor: Colors.liturgicalUI.gold + '50',
                   },
                 ]}
               >
-                <Text style={[t.recommendedText, { color: Colors.liturgical.gold }]}>
+                <Text style={[t.recommendedText, { color: Colors.liturgicalUI.gold }]}>
                   RECOMENDADO
                 </Text>
               </View>
@@ -1240,7 +1240,7 @@ function TabElevenLabs({
         </View>
 
         <View
-          style={[t.compareDivider, { backgroundColor: Colors.liturgical.gold + '30' }]}
+          style={[t.compareDivider, { backgroundColor: Colors.liturgicalUI.gold + '30' }]}
         />
 
         <View style={t.compareRow}>
@@ -1252,7 +1252,7 @@ function TabElevenLabs({
             muted={muted}
           />
           <View
-            style={[t.compareCenter, { backgroundColor: Colors.liturgical.gold + '30' }]}
+            style={[t.compareCenter, { backgroundColor: Colors.liturgicalUI.gold + '30' }]}
           />
           <CompareCol
             title="ElevenLabs"
@@ -1269,13 +1269,13 @@ function TabElevenLabs({
           style={[
             t.activeCard,
             {
-              backgroundColor: Colors.liturgical.green + '10',
-              borderColor: Colors.liturgical.green + '40',
+              backgroundColor: Colors.liturgicalUI.green + '10',
+              borderColor: Colors.liturgicalUI.green + '40',
             },
           ]}
         >
-          <IcoCheck c={Colors.liturgical.green} size={16} />
-          <Text style={[t.activeText, { color: Colors.liturgical.green }]}>
+          <IcoCheck c={Colors.liturgicalUI.green} size={16} />
+          <Text style={[t.activeText, { color: Colors.liturgicalUI.green }]}>
             ElevenLabs activo
           </Text>
         </View>
@@ -1394,14 +1394,14 @@ function TabElevenLabs({
 function CompareCol({ title, items, bad, ink, muted }) {
   return (
     <View style={t.compareCol}>
-      <Text style={[t.compareTitle, { color: bad ? muted : Colors.liturgical.green }]}>
+      <Text style={[t.compareTitle, { color: bad ? muted : Colors.liturgicalUI.green }]}>
         {title}
       </Text>
       {items.map((item) => (
         <View key={item} style={t.compareItem}>
           <Text
             style={{
-              color: bad ? Colors.liturgical.red : Colors.liturgical.green,
+              color: bad ? Colors.liturgicalUI.red : Colors.liturgicalUI.green,
               fontSize: 13,
             }}
           >
@@ -1418,7 +1418,7 @@ function CompareCol({ title, items, bad, ink, muted }) {
 
 function TabApp({ dailyReminder, setDailyReminder, onLogout, ctx }) {
   const { ink, muted, border, surface } = ctx;
-  const seasonColor = Colors.liturgical[TODAY.seasonColor] ?? Colors.liturgical.green;
+  const seasonColor = Colors.liturgicalUI[TODAY.seasonColor] ?? Colors.liturgicalUI.green;
   const ABOUT = [
     {
       label: 'Versión',
@@ -1544,14 +1544,14 @@ function TabApp({ dailyReminder, setDailyReminder, onLogout, ctx }) {
         onPress={onLogout}
         style={[
           t.logoutBtn,
-          { backgroundColor: surface, borderColor: Colors.liturgical.red + '35' },
+          { backgroundColor: surface, borderColor: Colors.liturgicalUI.red + '35' },
         ]}
         activeOpacity={0.7}
       >
-        <View style={[t.logoutIcon, { backgroundColor: Colors.liturgical.red + '15' }]}>
-          <IcoPower c={Colors.liturgical.red} size={17} />
+        <View style={[t.logoutIcon, { backgroundColor: Colors.liturgicalUI.red + '15' }]}>
+          <IcoPower c={Colors.liturgicalUI.red} size={17} />
         </View>
-        <Text style={[t.logoutText, { color: Colors.liturgical.red }]}>
+        <Text style={[t.logoutText, { color: Colors.liturgicalUI.red }]}>
           Cerrar sesión
         </Text>
       </TouchableOpacity>

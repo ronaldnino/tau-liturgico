@@ -288,7 +288,7 @@ export default function NotesScreen() {
 function Composer({ draft, setDraft, onSave, onCancel, ctx }) {
   const { surface, ink, muted, border } = ctx;
   const meta = _todayNote();
-  const litColor = Colors.liturgical[meta.color] ?? Colors.liturgical.green;
+  const litColor = Colors.liturgicalUI[meta.color] ?? Colors.liturgicalUI.green;
 
   return (
     <View style={[co.wrap, { backgroundColor: surface, borderBottomColor: border }]}>
@@ -347,7 +347,7 @@ function Composer({ draft, setDraft, onSave, onCancel, ctx }) {
 
 function NoteCard({ note, ctx, onDelete }) {
   const { surface, ink, muted, border } = ctx;
-  const litColor = Colors.liturgical[note.color] ?? Colors.border.default;
+  const litColor = Colors.liturgicalUI[note.color] ?? Colors.border.default;
 
   return (
     <View
@@ -391,7 +391,7 @@ function NoteCard({ note, ctx, onDelete }) {
 
 function BookmarkCard({ bookmark, ctx }) {
   const { surface, ink, muted, border } = ctx;
-  const litColor = Colors.liturgical[bookmark.color] ?? Colors.brand.primary;
+  const litColor = Colors.liturgicalUI[bookmark.color] ?? Colors.brand.primary;
 
   return (
     <View
@@ -412,12 +412,12 @@ function BookmarkCard({ bookmark, ctx }) {
             style={[
               nc.solemnPill,
               {
-                borderColor: Colors.liturgical.gold + '60',
-                backgroundColor: Colors.liturgical.gold + '15',
+                borderColor: Colors.liturgicalUI.gold + '60',
+                backgroundColor: Colors.liturgicalUI.gold + '15',
               },
             ]}
           >
-            <Text style={[nc.solemnText, { color: Colors.liturgical.gold }]}>
+            <Text style={[nc.solemnText, { color: Colors.liturgicalUI.gold }]}>
               Solemnidad
             </Text>
           </View>

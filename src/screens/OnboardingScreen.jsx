@@ -163,21 +163,21 @@ function IlluCalendar() {
   return (
     <>
       <View style={s.dayCard}>
-        <View style={[s.dayStripe, { backgroundColor: Colors.liturgical.red }]} />
+        <View style={[s.dayStripe, { backgroundColor: Colors.liturgicalUI.red }]} />
         <View style={s.dayCardInner}>
           <Text style={s.dayCardDate}>MIÉRCOLES · 7 DE MAYO</Text>
           <Text style={s.dayCardName}>San Estanislao,{'\n'}obispo y mártir</Text>
           <View style={s.dayCardMeta}>
-            <View style={[s.metaDot, { backgroundColor: Colors.liturgical.red }]} />
+            <View style={[s.metaDot, { backgroundColor: Colors.liturgicalUI.red }]} />
             <Text style={s.metaText}>Rojo · Mártires</Text>
           </View>
         </View>
       </View>
       <View style={s.upcomingRow}>
         {[
-          { name: 'Ascensión', color: Colors.liturgical.white },
-          { name: 'Pentecostés', color: Colors.liturgical.red },
-          { name: 'SS. Trinidad', color: Colors.liturgical.white },
+          { name: 'Ascensión', color: Colors.liturgicalUI.white },
+          { name: 'Pentecostés', color: Colors.liturgicalUI.red },
+          { name: 'SS. Trinidad', color: Colors.liturgicalUI.white },
         ].map((item) => (
           <View key={item.name} style={s.upcomingChip}>
             <View style={[s.upcomingDot, { backgroundColor: item.color }]} />

@@ -58,11 +58,11 @@ const _w = _n.getDay();
 
 // Determinar estación litúrgica activa para el header de Hoy
 const _SEASON_META = {
-  Navidad: { color: 'gold', label: 'Oro · Navidad', celebration: 'Tiempo de Navidad' },
+  Navidad: { color: 'gold', label: 'Dorado · Navidad', celebration: 'Tiempo de Navidad' },
   Cuaresma: { color: 'purple', label: 'Morado · Cuaresma', celebration: 'Cuaresma' },
   'Tiempo de Pascua': {
-    color: 'white',
-    label: 'Blanco · Pascua',
+    color: 'gold',
+    label: 'Dorado · Pascua',
     celebration: 'Tiempo de Pascua',
   },
   'Tiempo Ordinario': {
@@ -356,9 +356,9 @@ function _moveableFeasts(year) {
     f(-7, 'Domingo de Ramos', 'red', true),
     f(-3, 'Jueves Santo', 'white', true),
     f(-2, 'Viernes Santo', 'red', true),
-    f(0, 'Domingo de Pascua', 'white', true),
-    f(7, 'Divina Misericordia', 'white', false),
-    f(39, 'Ascensión del Señor', 'white', true),
+    f(0, 'Domingo de Pascua', 'gold', true),
+    f(7, 'Divina Misericordia', 'gold', false),
+    f(39, 'Ascensión del Señor', 'gold', true),
     f(49, 'Domingo de Pentecostés', 'red', true),
     f(56, 'Santísima Trinidad', 'white', true),
     f(60, 'Corpus Christi', 'white', true),
@@ -481,7 +481,7 @@ function _seasonColorForDate(date) {
   if (d >= prevDec25 && d <= baptism) return 'white';
   if (d >= curDec25) return 'white';
   if (d >= ashWed && d <= holySat) return 'purple';
-  if (d >= e && d <= pent) return 'white';
+  if (d >= e && d <= pent) return 'gold';
   if (d >= adv && d <= new Date(y, 11, 24)) return 'purple';
   return 'green';
 }
@@ -517,6 +517,7 @@ function _seasonEntry(name, color, start, end, today) {
     range: `${_fmt(start)} — ${_fmt(end)}`,
     progress: after ? 1 : before ? 0 : Math.min(1, elapsed / total),
     active,
+    totalDays: total,
     days: active
       ? remaining === 0
         ? 'Hoy termina'
@@ -541,14 +542,23 @@ function _computeSeasons() {
   const holySat = _addDays(easter, -1);
   const pentecost = _addDays(easter, 49);
   const ordStart = _addDays(pentecost, 1);
-  const adventStart = _adventStart(year);
-  const christKing = _addDays(adventStart, -1);
-  const adventEnd = new Date(year, 11, 24);
+
+  // Cristo Rey y fin de Tiempo Ordinario siempre apuntan al Adviento próximo del año actual
+  const nextAdventStart = _adventStart(year);
+  const christKing = _addDays(nextAdventStart, -1);
+
+  // Adviento del año litúrgico en curso:
+  // Entre ene 1 y el inicio del próximo Adviento ya pasó el Adviento anterior (año - 1).
+  // Mostrarlo como completado en lugar del próximo que aún no arranca.
+  const prevAdventEnd = new Date(year - 1, 11, 24);
+  const advYear = today > prevAdventEnd && today < nextAdventStart ? year - 1 : year;
+  const adventStart = _adventStart(advYear);
+  const adventEnd = new Date(advYear, 11, 24);
 
   return [
     _seasonEntry('Navidad', 'gold', navStart, navEnd, today),
     _seasonEntry('Cuaresma', 'purple', ashWed, holySat, today),
-    _seasonEntry('Tiempo de Pascua', 'white', easter, pentecost, today),
+    _seasonEntry('Tiempo de Pascua', 'gold', easter, pentecost, today),
     _seasonEntry('Tiempo Ordinario', 'green', ordStart, christKing, today),
     _seasonEntry('Adviento', 'purple', adventStart, adventEnd, today),
   ];
@@ -630,14 +640,14 @@ export const NOTES_DATA = [
     date: '5 de mayo · 2026',
     weekday: 'Lunes',
     celebration: 'Tiempo de Pascua · Feria',
-    color: 'white',
+    color: 'gold',
     text: 'La vid y los sarmientos — Cristo es la fuente. Sin él, nada podemos hacer.',
   },
   {
     date: '3 de mayo · 2026',
     weekday: 'Domingo',
     celebration: 'IV Domingo de Pascua',
-    color: 'white',
+    color: 'gold',
     text: 'Domingo del Buen Pastor. Vocaciones — orar por los seminaristas de la diócesis.',
   },
   {
@@ -651,16 +661,16 @@ export const NOTES_DATA = [
 
 export const BOOKMARKS_DATA = [
   { date: 'Dom 24 may', name: 'Domingo de Pentecostés', color: 'red', solemn: true },
-  { date: 'Jue 21 may', name: 'Ascensión del Señor', color: 'white', solemn: true },
+  { date: 'Jue 21 may', name: 'Ascensión del Señor', color: 'gold', solemn: true },
   { date: 'Vie 1 may', name: 'San José Obrero', color: 'white' },
   { date: 'Lun 28 abr', name: 'San Pedro Chanel, mártir', color: 'red' },
 ];
 
 export const LITURGICAL_LABELS = {
-  green: { name: 'Verde', meaning: 'Tiempo Ordinario' },
+  green:  { name: 'Verde',  meaning: 'Tiempo Ordinario' },
   purple: { name: 'Morado', meaning: 'Adviento · Cuaresma' },
-  white: { name: 'Blanco', meaning: 'Navidad · Pascua' },
-  red: { name: 'Rojo', meaning: 'Mártires · Pentecostés' },
-  rose: { name: 'Rosa', meaning: 'Gaudete · Laetare' },
-  gold: { name: 'Oro', meaning: 'Solemnidad mayor' },
+  white:  { name: 'Blanco', meaning: 'Fiestas · Santos' },
+  red:    { name: 'Rojo',   meaning: 'Mártires · Pentecostés' },
+  rose:   { name: 'Rosa',   meaning: 'Gaudete · Laetare' },
+  gold:   { name: 'Dorado', meaning: 'Navidad · Pascua' },
 };

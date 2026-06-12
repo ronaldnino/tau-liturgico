@@ -9,7 +9,7 @@ export default function Card({ children, style, accent }) {
         styles.card,
         accent && {
           borderLeftWidth: 4,
-          borderLeftColor: Colors.liturgical[accent] ?? Colors.brand.primary,
+          borderLeftColor: Colors.liturgicalUI[accent] ?? Colors.brand.primary,
         },
         style,
       ]}
