@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+
+    <!-- τ travesaño: arco caligráfico sutil (escala proporcional desde 1024×1024) -->
+    <path
+        android:pathData="M25.3,32.5 Q54,34.2 82.7,32.5"
+        android:fillColor="@android:color/transparent"
+        android:strokeColor="#C8A84B"
+        android:strokeWidth="7.6"
+        android:strokeLineCap="round"/>
+
+    <!-- τ fuste vertical -->
+    <path
+        android:pathData="M54,28.7 L54,86.3"
+        android:fillColor="@android:color/transparent"
+        android:strokeColor="#C8A84B"
+        android:strokeWidth="9.1"
+        android:strokeLineCap="round"/>
+
+</vector>
