@@ -10,15 +10,19 @@ async function initAppCheck() {
   try {
     const provider = appCheck().newReactNativeFirebaseAppCheckProvider();
     provider.configure({
-      android: { provider: __DEV__ ? 'debug' : 'playIntegrity' },
-      apple: { provider: __DEV__ ? 'debug' : 'appAttest' },
+      android: { provider: __DEV__ ? 'debug' : 'playIntegrity', debugToken: 'E1A34351-C3F5-4DF3-9E81-E5C67724548E' },
+      apple:   { provider: __DEV__ ? 'debug' : 'appAttest',    debugToken: 'E1A34351-C3F5-4DF3-9E81-E5C67724548E' },
     });
     await appCheck().initializeAppCheck({
       provider,
       isTokenAutoRefreshEnabled: true,
     });
+    if (__DEV__) {
+      const { token } = await appCheck().getToken();
+      console.log('[AppCheck] debug token:', token);
+    }
   } catch (e) {
-    if (__DEV__) console.warn('[AppCheck] init error:', e.message);
+    console.warn('[AppCheck] init error:', e.message);
   }
 }
 
@@ -34,7 +38,7 @@ function EnvBadge() {
 
 export default function App() {
   useEffect(() => {
-    if (!__DEV__) initAppCheck();
+    initAppCheck();
   }, []);
 
   return (
