@@ -137,7 +137,7 @@ function parseReadings(html) {
 
     // Collect non-empty <p> blocks
     const pMatches = [...part.matchAll(/<p>([\s\S]*?)<\/p>/gi)];
-    const paragraphs = pMatches.map((m) => stripHtml(m[1])).filter((t) => t.length > 0);
+    const paragraphs = pMatches.map((m) => stripHtml(m[1] ?? '')).filter((t) => t.length > 0);
 
     if (paragraphs.length === 0) continue;
 
@@ -181,7 +181,7 @@ function parseVaticanReadings(html) {
 
   if (lecturaSection) {
     const ps = [...lecturaSection.matchAll(/<p[^>]*>([\s\S]*?)<\/p>/gi)]
-      .map((m) => stripHtml(m[1]))
+      .map((m) => stripHtml(m[1] ?? ''))
       .filter((t) => t.length > 0);
 
     const groups = [];
@@ -222,7 +222,7 @@ function parseVaticanReadings(html) {
 
   if (evangelioSection) {
     const ps = [...evangelioSection.matchAll(/<p[^>]*>([\s\S]*?)<\/p>/gi)]
-      .map((m) => stripHtml(m[1]))
+      .map((m) => stripHtml(m[1] ?? ''))
       .filter((t) => t.length > 0);
     if (ps.length >= 2) {
       readings.push({

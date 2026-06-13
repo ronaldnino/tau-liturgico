@@ -482,9 +482,9 @@ export default function TodayScreen({ navigation }) {
         </SectionTitle>
         <View style={[s.upcomingList, { backgroundColor: surface, borderColor: border }]}>
           {UPCOMING.map((u, i) => {
-            const parts = u.date.split(' ');
-            const dow = parts[0];
-            const day = parts[1];
+            const parts = (u.date ?? '').split(' ');
+            const dow = parts[0] ?? '';
+            const day = parts[1] ?? '';
             const uColor = Colors.liturgicalUI[u.color] ?? Colors.liturgicalUI.green;
             return (
               <TouchableOpacity

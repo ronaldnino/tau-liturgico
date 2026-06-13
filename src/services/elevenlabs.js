@@ -75,12 +75,13 @@ export async function synthesize(apiKey, voiceId, text) {
   }
 
   const { audio_base64, alignment } = await res.json();
+  if (!audio_base64) throw new Error('ElevenLabs: respuesta sin audio');
   await RNFS.writeFile(audioPath, audio_base64, 'base64');
 
   const words = _buildWordTimings(
     text,
-    alignment.character_start_times_seconds,
-    alignment.character_end_times_seconds
+    alignment?.character_start_times_seconds ?? [],
+    alignment?.character_end_times_seconds ?? []
   );
   await RNFS.writeFile(metaPath, JSON.stringify({ words }), 'utf8');
 

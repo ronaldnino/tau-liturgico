@@ -82,6 +82,7 @@ export async function getProfile() {
   if (res.status === 404) return null;
   if (!res.ok) throw new Error(`Firestore error ${res.status}`);
   const json = await res.json();
+  if (!json.fields) return null;
   return fromFirestoreFields(json.fields);
 }
 
@@ -107,5 +108,6 @@ export async function uploadProfilePhoto(localUri) {
 
   const json = await uploadRes.json();
   const downloadToken = json.downloadTokens;
+  if (!downloadToken) throw new Error('Storage: no se obtuvo token de descarga');
   return `https://firebasestorage.googleapis.com/v0/b/${STORAGE_BUCKET}/o/${encodedPath}?alt=media&token=${downloadToken}`;
 }

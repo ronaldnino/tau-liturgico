@@ -561,8 +561,9 @@ export default function ProfileScreen() {
       _Tts()
         .voices()
         .then((voices) => {
-          const es = voices.filter((v) => v.language && /^es/i.test(v.language));
-          setSystemVoices(es.length > 0 ? es : voices);
+          const list = Array.isArray(voices) ? voices : [];
+          const es = list.filter((v) => v.language && /^es/i.test(v.language));
+          setSystemVoices(es.length > 0 ? es : list);
           setVoicesLoading(false);
         })
         .catch(() => setVoicesLoading(false));
