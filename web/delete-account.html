@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Eliminar cuenta — τau Litúrgico</title>
+  <meta name="description" content="Solicita la eliminación de tu cuenta y todos tus datos personales en τau Litúrgico."/>
+  <link rel="icon" type="image/svg+xml" href="favicon.svg"/>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="styles.css"/>
+  <style>
+    .delete-hero {
+      padding: 80px 0 48px;
+      border-bottom: 1px solid var(--border);
+    }
+    .delete-hero .icon {
+      width: 56px; height: 56px;
+      background: rgba(198,45,37,.12);
+      border: 1px solid rgba(198,45,37,.3);
+      border-radius: 14px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 26px; margin-bottom: 20px;
+    }
+    .delete-hero h1 {
+      font-family: var(--serif);
+      font-size: clamp(32px, 5vw, 50px);
+      font-weight: 600; color: var(--text); margin-bottom: 12px;
+    }
+    .delete-hero p { color: var(--muted); font-size: 15px; max-width: 560px; }
+
+    .delete-body { padding: 64px 0 96px; }
+    .delete-layout {
+      display: grid;
+      grid-template-columns: 1fr 380px;
+      gap: 64px; align-items: start;
+    }
+
+    /* Info column */
+    .info-block { margin-bottom: 32px; }
+    .info-block h2 {
+      font-family: var(--serif); font-size: 22px;
+      font-weight: 600; color: var(--text); margin-bottom: 10px;
+    }
+    .info-block p { color: var(--muted); font-size: 14px; line-height: 1.75; }
+    .data-list { list-style: none; padding: 0; margin: 12px 0 0; }
+    .data-list li {
+      display: flex; align-items: flex-start; gap: 10px;
+      color: var(--muted); font-size: 14px;
+      padding: 8px 0; border-bottom: 1px solid rgba(255,255,255,.05);
+      line-height: 1.5;
+    }
+    .data-list li:last-child { border-bottom: none; }
+    .data-list li span.dot {
+      width: 7px; height: 7px; border-radius: 50%;
+      background: #C62D25; flex-shrink: 0; margin-top: 6px;
+    }
+    .data-list li span.dot.keep { background: var(--gold); }
+
+    .warning-box {
+      background: rgba(198,45,37,.08);
+      border: 1px solid rgba(198,45,37,.25);
+      border-radius: 12px;
+      padding: 16px 20px;
+      color: var(--muted);
+      font-size: 13px; line-height: 1.65;
+      margin-top: 8px;
+    }
+    .warning-box strong { color: #E87070; }
+
+    /* Form column */
+    .form-card {
+      background: var(--navy-mid);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 32px;
+      position: sticky; top: 84px;
+    }
+    .form-card h3 {
+      font-family: var(--serif); font-size: 22px;
+      font-weight: 600; color: var(--text); margin-bottom: 6px;
+    }
+    .form-card .form-sub {
+      font-size: 13px; color: var(--muted); margin-bottom: 28px;
+    }
+
+    .field { margin-bottom: 20px; }
+    .field label {
+      display: block; font-size: 12px; font-weight: 600;
+      letter-spacing: .8px; text-transform: uppercase;
+      color: var(--muted); margin-bottom: 8px;
+    }
+    .field input[type="tel"],
+    .field input[type="email"] {
+      width: 100%;
+      background: rgba(255,255,255,.05);
+      border: 1.5px solid var(--border);
+      border-radius: 10px;
+      padding: 12px 14px;
+      color: var(--text); font-size: 16px;
+      outline: none;
+      transition: border-color .2s;
+      -webkit-appearance: none;
+    }
+    .field input:focus {
+      border-color: rgba(200,168,75,.5);
+    }
+    .field input::placeholder { color: rgba(143,168,200,.4); }
+
+    .check-label {
+      display: flex; gap: 12px; align-items: flex-start;
+      cursor: pointer; margin-bottom: 24px;
+    }
+    .check-label input[type="checkbox"] {
+      width: 18px; height: 18px; flex-shrink: 0;
+      accent-color: #C62D25; margin-top: 2px;
+    }
+    .check-label span {
+      font-size: 13px; color: var(--muted); line-height: 1.6;
+    }
+    .check-label span strong { color: var(--text); }
+
+    .btn-delete {
+      width: 100%;
+      background: #C62D25;
+      color: #fff;
+      border: none; border-radius: 12px;
+      padding: 14px;
+      font-size: 16px; font-weight: 600;
+      cursor: pointer;
+      transition: background .2s, opacity .2s;
+    }
+    .btn-delete:hover { background: #a82520; }
+    .btn-delete:disabled { opacity: .4; cursor: not-allowed; }
+
+    .form-footer {
+      margin-top: 16px; text-align: center;
+      font-size: 12px; color: rgba(143,168,200,.6);
+    }
+
+    /* States */
+    #success-state {
+      display: none; text-align: center; padding: 16px 0;
+    }
+    #success-state .success-icon {
+      font-size: 48px; margin-bottom: 16px;
+    }
+    #success-state h3 {
+      font-family: var(--serif); font-size: 22px;
+      color: var(--text); margin-bottom: 8px;
+    }
+    #success-state p {
+      font-size: 14px; color: var(--muted); line-height: 1.65;
+    }
+    #error-msg {
+      display: none;
+      background: rgba(198,45,37,.1);
+      border: 1px solid rgba(198,45,37,.3);
+      border-radius: 8px;
+      padding: 10px 14px;
+      font-size: 13px; color: #E87070;
+      margin-bottom: 16px;
+    }
+
+    @media (max-width: 768px) {
+      .delete-layout { grid-template-columns: 1fr; gap: 40px; }
+      .form-card { position: static; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ── Nav ───────────────────────────────────────────────── -->
+<nav>
+  <div class="container nav-inner">
+    <a href="index.html" class="nav-brand">
+      <svg viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M14 19.5 Q32 21.5 50 19.5" stroke="#C8A84B" stroke-width="5" stroke-linecap="round"/>
+        <line x1="32" y1="17" x2="32" y2="52" stroke="#C8A84B" stroke-width="5.5" stroke-linecap="round"/>
+      </svg>
+      τau Litúrgico
+    </a>
+    <nav class="nav-links">
+      <a href="index.html">Inicio</a>
+      <a href="privacy.html">Privacidad</a>
+    </nav>
+  </div>
+</nav>
+
+<!-- ── Hero ──────────────────────────────────────────────── -->
+<div class="delete-hero">
+  <div class="container">
+    <div class="icon">🗑️</div>
+    <h1 class="serif">Eliminar mi cuenta</h1>
+    <p>
+      Puedes solicitar la eliminación permanente de tu cuenta y todos
+      los datos asociados a ella. Procesaremos tu solicitud en un
+      plazo máximo de <strong style="color:var(--text)">30 días</strong>.
+    </p>
+  </div>
+</div>
+
+<!-- ── Body ──────────────────────────────────────────────── -->
+<div class="delete-body">
+  <div class="container">
+    <div class="delete-layout">
+
+      <!-- Info -->
+      <div>
+        <div class="info-block">
+          <h2>¿Qué se eliminará?</h2>
+          <p>Al confirmar la solicitud, eliminaremos permanentemente:</p>
+          <ul class="data-list">
+            <li><span class="dot"></span>Tu cuenta de autenticación (número de teléfono)</li>
+            <li><span class="dot"></span>Tu perfil: nombre, país, diócesis y parroquia</li>
+            <li><span class="dot"></span>Tu foto de perfil</li>
+            <li><span class="dot"></span>Todos los datos almacenados en nuestros servidores</li>
+          </ul>
+        </div>
+
+        <div class="info-block">
+          <h2>¿Qué no podemos eliminar?</h2>
+          <p>Los siguientes datos permanecen en tu dispositivo hasta que desinstales la app:</p>
+          <ul class="data-list">
+            <li><span class="dot keep"></span>Notas y reflexiones (guardadas solo localmente)</li>
+            <li><span class="dot keep"></span>Preferencias de la app (modo oscuro, tamaño de texto)</li>
+            <li><span class="dot keep"></span>Caché de audio de las lecturas</li>
+          </ul>
+          <p style="margin-top:12px">
+            Para eliminar estos datos, desinstala la app o ve a
+            <em>Ajustes del dispositivo → Aplicaciones → τau Litúrgico → Borrar datos</em>.
+          </p>
+        </div>
+
+        <div class="info-block">
+          <div class="warning-box">
+            <strong>⚠️ Esta acción es irreversible.</strong> Una vez eliminada tu cuenta,
+            no podrás recuperar tus datos. Si vuelves a instalar la app, necesitarás
+            registrarte de nuevo con tu número de teléfono.
+          </div>
+        </div>
+
+        <div class="info-block">
+          <h2>¿Tienes otra consulta?</h2>
+          <p>
+            Escríbenos directamente a
+            <a href="mailto:ronaldninodev@gmail.com">ronaldninodev@gmail.com</a>
+            y te responderemos en menos de 48 horas.
+          </p>
+        </div>
+      </div>
+
+      <!-- Form -->
+      <div class="form-card">
+        <div id="form-state">
+          <h3>Solicitar eliminación</h3>
+          <p class="form-sub">Completa el formulario y te confirmaremos la eliminación por correo.</p>
+
+          <div id="error-msg"></div>
+
+          <form id="delete-form">
+            <div class="field">
+              <label for="phone">Número de teléfono registrado</label>
+              <input type="tel" id="phone" name="phone"
+                     placeholder="+502 1234 5678" required
+                     autocomplete="tel"/>
+            </div>
+
+            <div class="field">
+              <label for="email">Correo de confirmación (opcional)</label>
+              <input type="email" id="email" name="email"
+                     placeholder="tu@correo.com"
+                     autocomplete="email"/>
+            </div>
+
+            <label class="check-label">
+              <input type="checkbox" id="confirm" required/>
+              <span>
+                Entiendo que la eliminación es <strong>permanente e irreversible</strong>
+                y que perderé acceso a mi cuenta y datos en la nube.
+              </span>
+            </label>
+
+            <button type="submit" class="btn-delete" id="submit-btn">
+              Solicitar eliminación de cuenta
+            </button>
+          </form>
+
+          <p class="form-footer">
+            Tu solicitud se procesará en un plazo máximo de 30 días.
+          </p>
+        </div>
+
+        <div id="success-state">
+          <div class="success-icon">✅</div>
+          <h3>Solicitud recibida</h3>
+          <p>
+            Hemos recibido tu solicitud de eliminación.<br/>
+            Procesaremos la eliminación de tu cuenta y datos en
+            un plazo máximo de <strong style="color:var(--text)">30 días</strong>.<br/><br/>
+            Si proporcionaste un correo, te notificaremos cuando
+            el proceso esté completo.
+          </p>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- ── Footer ──────────────────────────────────────────────── -->
+<footer>
+  <div class="container">
+    <div class="footer-inner">
+      <span class="footer-brand serif">τau Litúrgico</span>
+      <nav class="footer-links">
+        <a href="index.html">Inicio</a>
+        <a href="privacy.html">Política de privacidad</a>
+        <a href="mailto:ronaldninodev@gmail.com">Contacto</a>
+      </nav>
+      <p class="footer-copy">© 2026 τau Litúrgico. Todos los derechos reservados.</p>
+    </div>
+  </div>
+</footer>
+
+<script>
+  const form     = document.getElementById('delete-form');
+  const btn      = document.getElementById('submit-btn');
+  const errMsg   = document.getElementById('error-msg');
+  const formState    = document.getElementById('form-state');
+  const successState = document.getElementById('success-state');
+
+  // Reemplaza esta URL con tu endpoint de Formspree:
+  // 1. Regístrate gratis en https://formspree.io
+  // 2. Crea un nuevo formulario → copia el endpoint
+  // 3. Pega aquí: 'https://formspree.io/f/TU_FORM_ID'
+  const FORMSPREE_ENDPOINT = 'https://formspree.io/f/mrevoybk';
+
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    errMsg.style.display = 'none';
+    btn.disabled = true;
+    btn.textContent = 'Enviando…';
+
+    const phone = document.getElementById('phone').value.trim();
+    const email = document.getElementById('email').value.trim();
+
+    try {
+      const res = await fetch(FORMSPREE_ENDPOINT, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+        body: JSON.stringify({
+          phone,
+          email: email || '(no proporcionado)',
+          subject: `Solicitud de eliminación — ${phone}`,
+          _subject: `[τau Litúrgico] Eliminar cuenta: ${phone}`,
+        }),
+      });
+
+      if (res.ok) {
+        formState.style.display    = 'none';
+        successState.style.display = 'block';
+      } else {
+        throw new Error('Error en el servidor');
+      }
+    } catch {
+      errMsg.textContent = 'No se pudo enviar la solicitud. Escríbenos directamente a ronaldninodev@gmail.com';
+      errMsg.style.display = 'block';
+      btn.disabled = false;
+      btn.textContent = 'Solicitar eliminación de cuenta';
+    }
+  });
+</script>
+
+</body>
+</html>
