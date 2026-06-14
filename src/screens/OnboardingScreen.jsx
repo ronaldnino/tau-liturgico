@@ -1,11 +1,5 @@
 import React, { useRef, useState, useCallback, useEffect } from 'react';
-import {
-  View,
-  Text,
-  TouchableOpacity,
-  StyleSheet,
-  Dimensions,
-} from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Dimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Path } from 'react-native-svg';
 import Animated, {
@@ -86,7 +80,11 @@ function NavDot({ index, scrollX }) {
     return {
       width: interpolate(scrollX.value, inputRange, [6, 22, 6], Extrapolation.CLAMP),
       opacity: interpolate(scrollX.value, inputRange, [0.3, 1, 0.3], Extrapolation.CLAMP),
-      backgroundColor: interpolateColor(scrollX.value, [0, W * 0.6], ['#ffffff', Colors.brand.primary]),
+      backgroundColor: interpolateColor(
+        scrollX.value,
+        [0, W * 0.6],
+        ['#ffffff', Colors.brand.primary]
+      ),
     };
   });
   return <Animated.View style={[s.dot, style]} />;
@@ -106,7 +104,7 @@ function IlluWelcome() {
     floatY.value = withRepeat(
       withTiming(-16, { duration: 3000, easing: Easing.inOut(Easing.ease) }),
       -1,
-      true,
+      true
     );
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
   const tauFloatStyle = useAnimatedStyle(() => ({
@@ -146,7 +144,9 @@ function FeatureRow({ label, delay }) {
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
   const style = useAnimatedStyle(() => ({
     opacity: progress.value,
-    transform: [{ translateX: interpolate(progress.value, [0, 1], [16, 0], Extrapolation.CLAMP) }],
+    transform: [
+      { translateX: interpolate(progress.value, [0, 1], [16, 0], Extrapolation.CLAMP) },
+    ],
   }));
   return (
     <Animated.View style={[s.featureRow, style]}>
@@ -205,7 +205,10 @@ function IlluReadings() {
         <View
           style={[
             s.readingTypePill,
-            { backgroundColor: Colors.brand.primary + '18', borderColor: Colors.brand.primary + '44' },
+            {
+              backgroundColor: Colors.brand.primary + '18',
+              borderColor: Colors.brand.primary + '44',
+            },
           ]}
         >
           <Text style={[s.readingTypeText, { color: Colors.brand.primary }]}>Ev</Text>
@@ -231,7 +234,12 @@ function IlluReadings() {
       </View>
       <View style={s.playerMini}>
         <View style={s.progressTrack}>
-          <View style={[s.progressFill, { width: '38%', backgroundColor: Colors.brand.primary }]} />
+          <View
+            style={[
+              s.progressFill,
+              { width: '38%', backgroundColor: Colors.brand.primary },
+            ]}
+          />
         </View>
         <View style={s.playerRow}>
           <Text style={s.playerTime}>0:42</Text>
@@ -249,7 +257,14 @@ function Slide({ slideKey, index, scrollX }) {
     return {
       opacity: interpolate(scrollX.value, inputRange, [0.5, 1, 0.5], Extrapolation.CLAMP),
       transform: [
-        { scale: interpolate(scrollX.value, inputRange, [0.91, 1, 0.91], Extrapolation.CLAMP) },
+        {
+          scale: interpolate(
+            scrollX.value,
+            inputRange,
+            [0.91, 1, 0.91],
+            Extrapolation.CLAMP
+          ),
+        },
       ],
     };
   });
@@ -259,7 +274,14 @@ function Slide({ slideKey, index, scrollX }) {
     return {
       opacity: interpolate(scrollX.value, inputRange, [0, 1, 0], Extrapolation.CLAMP),
       transform: [
-        { translateY: interpolate(scrollX.value, inputRange, [32, 0, -32], Extrapolation.CLAMP) },
+        {
+          translateY: interpolate(
+            scrollX.value,
+            inputRange,
+            [32, 0, -32],
+            Extrapolation.CLAMP
+          ),
+        },
       ],
     };
   });
@@ -320,18 +342,23 @@ export default function OnboardingScreen() {
   const isLast = index === SLIDES.length - 1;
 
   const next = useCallback(() => {
-    if (isLast) { completeOnboarding(); return; }
+    if (isLast) {
+      completeOnboarding();
+      return;
+    }
     listRef.current?.scrollToIndex({ index: index + 1, animated: true });
   }, [isLast, index, completeOnboarding]);
 
-  const skip = useCallback(() => { completeOnboarding(); }, [completeOnboarding]);
+  const skip = useCallback(() => {
+    completeOnboarding();
+  }, [completeOnboarding]);
 
   // Fondo del root transiciona suave de oscuro a claro al pasar slide 0 → 1
   const rootStyle = useAnimatedStyle(() => ({
     backgroundColor: interpolateColor(
       scrollX.value,
       [0, W * 0.7],
-      [Colors.dark.bg, Colors.surface.editorial],
+      [Colors.dark.bg, Colors.surface.editorial]
     ),
   }));
 
@@ -340,7 +367,7 @@ export default function OnboardingScreen() {
     color: interpolateColor(
       scrollX.value,
       [0, W * 0.7],
-      ['rgba(255,255,255,0.65)', Colors.ink.muted],
+      ['rgba(255,255,255,0.65)', Colors.ink.muted]
     ),
   }));
 
@@ -349,7 +376,7 @@ export default function OnboardingScreen() {
     backgroundColor: interpolateColor(
       Math.min(scrollX.value, W),
       [0, W * 0.5],
-      ['rgba(255,255,255,0.18)', Colors.brand.primary],
+      ['rgba(255,255,255,0.18)', Colors.brand.primary]
     ),
   }));
 

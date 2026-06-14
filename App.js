@@ -10,8 +10,14 @@ async function initAppCheck() {
   try {
     const provider = appCheck().newReactNativeFirebaseAppCheckProvider();
     provider.configure({
-      android: { provider: __DEV__ ? 'debug' : 'playIntegrity', debugToken: 'E1A34351-C3F5-4DF3-9E81-E5C67724548E' },
-      apple:   { provider: __DEV__ ? 'debug' : 'appAttest',    debugToken: 'E1A34351-C3F5-4DF3-9E81-E5C67724548E' },
+      android: {
+        provider: __DEV__ ? 'debug' : 'playIntegrity',
+        debugToken: 'E1A34351-C3F5-4DF3-9E81-E5C67724548E',
+      },
+      apple: {
+        provider: __DEV__ ? 'debug' : 'appAttest',
+        debugToken: 'E1A34351-C3F5-4DF3-9E81-E5C67724548E',
+      },
     });
     await appCheck().initializeAppCheck({
       provider,

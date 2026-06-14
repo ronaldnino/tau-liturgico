@@ -15,6 +15,8 @@ export const VOICE_SETTINGS = {
   use_speaker_boost: true,
 };
 
+// Hash FNV-1a: los operadores bit a bit forman parte del algoritmo.
+/* eslint-disable no-bitwise */
 function _fnv1a(str) {
   let h = 2166136261;
   for (let i = 0; i < str.length; i++) {
@@ -22,6 +24,7 @@ function _fnv1a(str) {
   }
   return h.toString(16);
 }
+/* eslint-enable no-bitwise */
 
 function _buildWordTimings(text, startTimes, endTimes) {
   const words = [];

@@ -3,14 +3,9 @@ import appCheck from '@react-native-firebase/app-check';
 import Config from 'react-native-config';
 
 const PROJECT_ID = Config.FIREBASE_PROJECT_ID || 'taoliturgico';
-const STORAGE_BUCKET = Config.FIREBASE_STORAGE_BUCKET || 'taoliturgico.firebasestorage.app';
+const STORAGE_BUCKET =
+  Config.FIREBASE_STORAGE_BUCKET || 'taoliturgico.firebasestorage.app';
 const FIRESTORE_BASE = `https://firestore.googleapis.com/v1/projects/${PROJECT_ID}/databases/(default)/documents`;
-
-async function getToken() {
-  const user = auth().currentUser;
-  if (!user) throw new Error('No autenticado');
-  return user.getIdToken();
-}
 
 async function getAppCheckToken() {
   try {

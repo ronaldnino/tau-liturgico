@@ -71,7 +71,12 @@ export default function ProfileSetupScreen() {
   const [saving, setSaving] = useState(false);
 
   const pickPhoto = useCallback(() => {
-    const imgOptions = { mediaType: 'photo', quality: 0.8, maxWidth: 512, maxHeight: 512 };
+    const imgOptions = {
+      mediaType: 'photo',
+      quality: 0.8,
+      maxWidth: 512,
+      maxHeight: 512,
+    };
 
     const handleCameraResult = (res) => {
       if (res.errorCode === 'camera_unavailable') {
@@ -105,11 +110,9 @@ export default function ProfileSetupScreen() {
       try {
         launchCamera(imgOptions, handleCameraResult);
       } catch (_) {
-        Alert.alert(
-          'Cámara no disponible',
-          'Usa la galería para seleccionar una foto.',
-          [{ text: 'OK' }]
-        );
+        Alert.alert('Cámara no disponible', 'Usa la galería para seleccionar una foto.', [
+          { text: 'OK' },
+        ]);
       }
     };
 
@@ -154,7 +157,10 @@ export default function ProfileSetupScreen() {
       await saveProfile(profileData);
       setProfile(profileData);
     } catch (e) {
-      Alert.alert('Error al guardar', e.message ?? 'No se pudo guardar tu perfil. Verifica tu conexión.');
+      Alert.alert(
+        'Error al guardar',
+        e.message ?? 'No se pudo guardar tu perfil. Verifica tu conexión.'
+      );
     } finally {
       setSaving(false);
     }

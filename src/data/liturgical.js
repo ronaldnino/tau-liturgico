@@ -96,7 +96,10 @@ function _roman(n) {
   const syms = ['I', 'IV', 'V', 'IX', 'X', 'XL', 'L', 'XC', 'C'];
   let s = '';
   for (let i = vals.length - 1; i >= 0; i--)
-    while (n >= vals[i]) { s += syms[i]; n -= vals[i]; }
+    while (n >= vals[i]) {
+      s += syms[i];
+      n -= vals[i];
+    }
   return s;
 }
 
@@ -111,10 +114,10 @@ function _seasonNameForDate(date) {
   const pent = _addDays(e, 49);
   const adv = _adventStart(y);
   if (d >= new Date(y - 1, 11, 25) && d <= baptism) return 'Navidad';
-  if (d >= new Date(y, 11, 25))                      return 'Navidad';
-  if (d >= ashWed && d <= holySat)                   return 'Cuaresma';
-  if (d >= e && d <= pent)                           return 'Tiempo de Pascua';
-  if (d >= adv && d <= new Date(y, 11, 24))          return 'Adviento';
+  if (d >= new Date(y, 11, 25)) return 'Navidad';
+  if (d >= ashWed && d <= holySat) return 'Cuaresma';
+  if (d >= e && d <= pent) return 'Tiempo de Pascua';
+  if (d >= adv && d <= new Date(y, 11, 24)) return 'Adviento';
   return 'Tiempo Ordinario';
 }
 
@@ -147,7 +150,7 @@ function _sundayNameForDate(date) {
   }
   if (season === 'Tiempo de Pascua') {
     w = _roman(Math.min(7, Math.max(1, Math.floor(_daysBetween(e, d) / 7) + 1)));
-    if (w === 'I')  return 'Domingo de Resurrección';
+    if (w === 'I') return 'Domingo de Resurrección';
     if (w === 'II') return 'Domingo de la Divina Misericordia';
     return `${w} Domingo de Pascua`;
   }
@@ -210,12 +213,18 @@ const _isSunday = _w === 0;
 const _todayCelebration = (() => {
   if (_isSunday) return _sundayNameForDate(_n);
   switch (_activeSeasonName) {
-    case 'Tiempo Ordinario':  return 'Feria del Tiempo Ordinario';
-    case 'Adviento':          return 'Feria de Adviento';
-    case 'Cuaresma':          return 'Feria de Cuaresma';
-    case 'Tiempo de Pascua':  return 'Feria del Tiempo de Pascua';
-    case 'Navidad':           return 'Feria del Tiempo de Navidad';
-    default:                  return _sm.celebration;
+    case 'Tiempo Ordinario':
+      return 'Feria del Tiempo Ordinario';
+    case 'Adviento':
+      return 'Feria de Adviento';
+    case 'Cuaresma':
+      return 'Feria de Cuaresma';
+    case 'Tiempo de Pascua':
+      return 'Feria del Tiempo de Pascua';
+    case 'Navidad':
+      return 'Feria del Tiempo de Navidad';
+    default:
+      return _sm.celebration;
   }
 })();
 
@@ -608,9 +617,12 @@ export function buildMonthGrid(year, month) {
       y === today.getFullYear();
 
     // Ordenar celebraciones por prioridad (mayor primero)
-    const dayFeasts = inMonth && feasts[day]
-      ? [...feasts[day]].sort((a, b) => (_GRADE_PRIORITY[b.grade] ?? 0) - (_GRADE_PRIORITY[a.grade] ?? 0))
-      : [];
+    const dayFeasts =
+      inMonth && feasts[day]
+        ? [...feasts[day]].sort(
+            (a, b) => (_GRADE_PRIORITY[b.grade] ?? 0) - (_GRADE_PRIORITY[a.grade] ?? 0)
+          )
+        : [];
 
     const primary = dayFeasts[0] ?? null;
     const isDomingo = dow === 0 && inMonth;
@@ -624,9 +636,18 @@ export function buildMonthGrid(year, month) {
       solemn: primary?.grade === 'Solemnidad',
       name: primary?.name ?? sundayName,
       grade: primary?.grade ?? (isDomingo ? 'Domingo' : 'Feria'),
-      celebrations: dayFeasts.length > 0
-        ? dayFeasts
-        : (sundayName ? [{ name: sundayName, color: inMonth ? _seasonColorForDate(d) : 'green', grade: 'Domingo' }] : []),
+      celebrations:
+        dayFeasts.length > 0
+          ? dayFeasts
+          : sundayName
+            ? [
+                {
+                  name: sundayName,
+                  color: inMonth ? _seasonColorForDate(d) : 'green',
+                  grade: 'Domingo',
+                },
+              ]
+            : [],
       isToday,
     };
   });
@@ -667,10 +688,10 @@ export const BOOKMARKS_DATA = [
 ];
 
 export const LITURGICAL_LABELS = {
-  green:  { name: 'Verde',  meaning: 'Tiempo Ordinario' },
+  green: { name: 'Verde', meaning: 'Tiempo Ordinario' },
   purple: { name: 'Morado', meaning: 'Adviento · Cuaresma' },
-  white:  { name: 'Blanco', meaning: 'Fiestas · Santos' },
-  red:    { name: 'Rojo',   meaning: 'Mártires · Pentecostés' },
-  rose:   { name: 'Rosa',   meaning: 'Gaudete · Laetare' },
-  gold:   { name: 'Dorado', meaning: 'Navidad · Pascua' },
+  white: { name: 'Blanco', meaning: 'Fiestas · Santos' },
+  red: { name: 'Rojo', meaning: 'Mártires · Pentecostés' },
+  rose: { name: 'Rosa', meaning: 'Gaudete · Laetare' },
+  gold: { name: 'Dorado', meaning: 'Navidad · Pascua' },
 };

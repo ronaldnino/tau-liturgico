@@ -23,11 +23,17 @@ function IcoPencil({ c, size = 16 }) {
     <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
       <Path
         d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"
-        stroke={c} strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round"
+        stroke={c}
+        strokeWidth={1.8}
+        strokeLinecap="round"
+        strokeLinejoin="round"
       />
       <Path
         d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5Z"
-        stroke={c} strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round"
+        stroke={c}
+        strokeWidth={1.8}
+        strokeLinecap="round"
+        strokeLinejoin="round"
       />
     </Svg>
   );
@@ -38,7 +44,10 @@ function IcoBookmark({ c, size = 14 }) {
     <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
       <Path
         d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"
-        stroke={c} strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round"
+        stroke={c}
+        strokeWidth={1.8}
+        strokeLinecap="round"
+        strokeLinejoin="round"
       />
     </Svg>
   );
@@ -50,7 +59,10 @@ function IcoTrash({ c, size = 15 }) {
       <Rect x="3" y="6" width="18" height="2" rx="1" fill={c} />
       <Path
         d="M8 6V4h8v2M6 8l1 13h10l1-13"
-        stroke={c} strokeWidth={1.7} strokeLinecap="round" strokeLinejoin="round"
+        stroke={c}
+        strokeWidth={1.7}
+        strokeLinecap="round"
+        strokeLinejoin="round"
       />
     </Svg>
   );
@@ -61,7 +73,10 @@ function IcoChevron({ c, size = 14, up = false }) {
     <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
       <Polyline
         points={up ? '18 15 12 9 6 15' : '6 9 12 15 18 9'}
-        stroke={c} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"
+        stroke={c}
+        strokeWidth={2}
+        strokeLinecap="round"
+        strokeLinejoin="round"
       />
     </Svg>
   );
@@ -72,11 +87,17 @@ function IcoBook({ c, size = 13 }) {
     <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
       <Path
         d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"
-        stroke={c} strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round"
+        stroke={c}
+        strokeWidth={1.8}
+        strokeLinecap="round"
+        strokeLinejoin="round"
       />
       <Path
         d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"
-        stroke={c} strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round"
+        stroke={c}
+        strokeWidth={1.8}
+        strokeLinecap="round"
+        strokeLinejoin="round"
       />
     </Svg>
   );
@@ -85,8 +106,18 @@ function IcoBook({ c, size = 13 }) {
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 const _MONTHS = [
-  'enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio',
-  'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre',
+  'enero',
+  'febrero',
+  'marzo',
+  'abril',
+  'mayo',
+  'junio',
+  'julio',
+  'agosto',
+  'septiembre',
+  'octubre',
+  'noviembre',
+  'diciembre',
 ];
 const _DAYS = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
 
@@ -94,9 +125,9 @@ const _DAYS = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 
 const LIT_BAR_COLORS = Object.values(Colors.liturgicalUI);
 
 const _TYPE_SHORT = {
-  'Primera Lectura':    '1ª Lectura',
+  'Primera Lectura': '1ª Lectura',
   'Salmo Responsorial': 'Salmo',
-  'Santo Evangelio':    'Evangelio',
+  'Santo Evangelio': 'Evangelio',
 };
 
 function _todayMeta() {
@@ -129,11 +160,11 @@ export default function NotesScreen() {
   const { readings: storeReadings } = useLiturgicalStore();
   const dark = darkMode === 'dark' || (darkMode === 'auto' && scheme === 'dark');
 
-  const bg      = dark ? Colors.dark.bg      : Colors.surface.secondary;
+  const bg = dark ? Colors.dark.bg : Colors.surface.secondary;
   const surface = dark ? Colors.dark.surface : Colors.surface.primary;
-  const ink     = dark ? Colors.dark.ink     : Colors.ink.primary;
-  const muted   = dark ? Colors.dark.inkMuted : Colors.ink.muted;
-  const border  = dark ? Colors.dark.border  : Colors.border.default;
+  const ink = dark ? Colors.dark.ink : Colors.ink.primary;
+  const muted = dark ? Colors.dark.inkMuted : Colors.ink.muted;
+  const border = dark ? Colors.dark.border : Colors.border.default;
 
   const [activeTab, setActiveTab] = useState(0);
   const [composing, setComposing] = useState(false);
@@ -141,8 +172,14 @@ export default function NotesScreen() {
 
   const todayReadings = storeReadings?.length ? storeReadings : STATIC_READINGS;
 
-  const openComposer  = () => { setDraft(''); setComposing(true); };
-  const closeComposer = () => { setDraft(''); setComposing(false); };
+  const openComposer = () => {
+    setDraft('');
+    setComposing(true);
+  };
+  const closeComposer = () => {
+    setDraft('');
+    setComposing(false);
+  };
 
   const saveNote = () => {
     if (!draft.trim()) return;
@@ -150,12 +187,12 @@ export default function NotesScreen() {
       ..._todayMeta(),
       text: draft.trim(),
       readings: todayReadings.map((r) => ({
-        type:     r.type,
-        ref:      r.ref,
-        intro:    r.intro    ?? null,
+        type: r.type,
+        ref: r.ref,
+        intro: r.intro ?? null,
         response: r.response ?? null,
-        text:     r.text,
-        closing:  r.closing  ?? null,
+        text: r.text,
+        closing: r.closing ?? null,
       })),
     });
     closeComposer();
@@ -177,7 +214,11 @@ export default function NotesScreen() {
       <View
         style={[
           s.header,
-          { paddingTop: insets.top + 12, backgroundColor: surface, borderBottomColor: border },
+          {
+            paddingTop: insets.top + 12,
+            backgroundColor: surface,
+            borderBottomColor: border,
+          },
         ]}
       >
         <Text style={[s.title, { color: ink }]}>Notas</Text>
@@ -203,15 +244,18 @@ export default function NotesScreen() {
       {/* ── Pestañas ────────────────────────────────────────────── */}
       <View style={[s.tabBar, { backgroundColor: surface, borderBottomColor: border }]}>
         {[
-          { label: 'Notas',       count: notes.length },
-          { label: 'Marcadores',  count: bookmarks.length },
+          { label: 'Notas', count: notes.length },
+          { label: 'Marcadores', count: bookmarks.length },
         ].map((tab, i) => {
           const active = activeTab === i;
           return (
             <TouchableOpacity
               key={tab.label}
               style={[s.tab, active && { borderBottomColor: Colors.brand.primary }]}
-              onPress={() => { setActiveTab(i); setComposing(false); }}
+              onPress={() => {
+                setActiveTab(i);
+                setComposing(false);
+              }}
               activeOpacity={0.7}
             >
               <View style={s.tabLabelRow}>
@@ -225,7 +269,12 @@ export default function NotesScreen() {
                   {tab.label}
                 </Text>
                 {tab.count > 0 && (
-                  <View style={[s.tabCount, { backgroundColor: active ? Colors.brand.primary : border }]}>
+                  <View
+                    style={[
+                      s.tabCount,
+                      { backgroundColor: active ? Colors.brand.primary : border },
+                    ]}
+                  >
                     <Text style={[s.tabCountText, { color: active ? '#fff' : muted }]}>
                       {tab.count}
                     </Text>
@@ -295,7 +344,7 @@ export default function NotesScreen() {
 
 function Composer({ draft, setDraft, onSave, onCancel, readings, ctx }) {
   const { surface, ink, muted, border } = ctx;
-  const meta     = _todayMeta();
+  const meta = _todayMeta();
   const litColor = Colors.liturgicalUI[meta.color] ?? Colors.liturgicalUI.green;
 
   return (
@@ -320,10 +369,15 @@ function Composer({ draft, setDraft, onSave, onCancel, readings, ctx }) {
           <View style={co.readingsBlock}>
             <View style={co.readingsLabelRow}>
               <IcoBook c={muted} size={11} />
-              <Text style={[co.readingsLabel, { color: muted }]}>Lecturas vinculadas</Text>
+              <Text style={[co.readingsLabel, { color: muted }]}>
+                Lecturas vinculadas
+              </Text>
             </View>
             {readings.map((r) => (
-              <View key={r.type} style={[co.readingRow, { borderLeftColor: litColor + '70' }]}>
+              <View
+                key={r.type}
+                style={[co.readingRow, { borderLeftColor: litColor + '70' }]}
+              >
                 <Text style={[co.readingRowType, { color: litColor }]}>
                   {_TYPE_SHORT[r.type] ?? r.type}
                 </Text>
@@ -385,7 +439,10 @@ function ReadingsSection({ readings, litColor, ctx }) {
       {/* Cabecera — toca para expandir/colapsar la sección */}
       <TouchableOpacity
         style={rd.header}
-        onPress={() => { setExpanded((v) => !v); setOpenIdx(null); }}
+        onPress={() => {
+          setExpanded((v) => !v);
+          setOpenIdx(null);
+        }}
         activeOpacity={0.7}
         hitSlop={8}
       >
@@ -394,7 +451,8 @@ function ReadingsSection({ readings, litColor, ctx }) {
         <View style={rd.headerTypes}>
           {readings.map((r, i) => (
             <Text key={r.type} style={[rd.headerType, { color: muted }]}>
-              {i > 0 ? '· ' : ''}{_TYPE_SHORT[r.type] ?? r.type}
+              {i > 0 ? '· ' : ''}
+              {_TYPE_SHORT[r.type] ?? r.type}
             </Text>
           ))}
         </View>
@@ -409,7 +467,10 @@ function ReadingsSection({ readings, litColor, ctx }) {
             return (
               <View
                 key={r.type}
-                style={[rd.reading, i > 0 && { borderTopColor: border, borderTopWidth: 0.5 }]}
+                style={[
+                  rd.reading,
+                  i > 0 && { borderTopColor: border, borderTopWidth: 0.5 },
+                ]}
               >
                 {/* Fila del título — toca para ver el texto */}
                 <TouchableOpacity
@@ -433,7 +494,9 @@ function ReadingsSection({ readings, litColor, ctx }) {
                       <Text style={[rd.intro, { color: muted }]}>{r.intro}</Text>
                     ) : null}
                     {r.response ? (
-                      <Text style={[rd.response, { color: litColor }]}>R. {r.response}</Text>
+                      <Text style={[rd.response, { color: litColor }]}>
+                        R. {r.response}
+                      </Text>
                     ) : null}
                     <Text style={[rd.bodyText, { color: ink }]}>{r.text}</Text>
                     {r.closing ? (
@@ -457,7 +520,12 @@ function NoteCard({ note, ctx, onDelete }) {
   const litColor = Colors.liturgicalUI[note.color] ?? Colors.liturgicalUI.green;
 
   return (
-    <View style={[nc.card, { backgroundColor: surface, borderColor: border, borderLeftColor: litColor }]}>
+    <View
+      style={[
+        nc.card,
+        { backgroundColor: surface, borderColor: border, borderLeftColor: litColor },
+      ]}
+    >
       {/* Cabecera: celebración + borrar */}
       <View style={nc.header}>
         <View style={nc.headerLeft}>
@@ -466,7 +534,12 @@ function NoteCard({ note, ctx, onDelete }) {
             {note.celebration ?? note.date}
           </Text>
         </View>
-        <TouchableOpacity onPress={onDelete} style={nc.deleteBtn} activeOpacity={0.6} hitSlop={12}>
+        <TouchableOpacity
+          onPress={onDelete}
+          style={nc.deleteBtn}
+          activeOpacity={0.6}
+          hitSlop={12}
+        >
           <IcoTrash c={muted} />
         </TouchableOpacity>
       </View>
@@ -496,7 +569,12 @@ function BookmarkCard({ bookmark, ctx }) {
   const litColor = Colors.liturgicalUI[bookmark.color] ?? Colors.liturgicalUI.green;
 
   return (
-    <View style={[nc.card, { backgroundColor: surface, borderColor: border, borderLeftColor: litColor }]}>
+    <View
+      style={[
+        nc.card,
+        { backgroundColor: surface, borderColor: border, borderLeftColor: litColor },
+      ]}
+    >
       <View style={nc.header}>
         <View style={nc.headerLeft}>
           <View style={[nc.dot, { backgroundColor: litColor }]} />
@@ -505,8 +583,18 @@ function BookmarkCard({ bookmark, ctx }) {
           </Text>
         </View>
         {bookmark.solemn && (
-          <View style={[nc.solemnPill, { borderColor: Colors.liturgicalUI.gold + '60', backgroundColor: Colors.liturgicalUI.gold + '15' }]}>
-            <Text style={[nc.solemnText, { color: Colors.liturgicalUI.gold }]}>Solemnidad</Text>
+          <View
+            style={[
+              nc.solemnPill,
+              {
+                borderColor: Colors.liturgicalUI.gold + '60',
+                backgroundColor: Colors.liturgicalUI.gold + '15',
+              },
+            ]}
+          >
+            <Text style={[nc.solemnText, { color: Colors.liturgicalUI.gold }]}>
+              Solemnidad
+            </Text>
           </View>
         )}
       </View>
@@ -516,7 +604,9 @@ function BookmarkCard({ bookmark, ctx }) {
       ) : null}
 
       {bookmark.text ? (
-        <Text style={[nc.text, { color: ink }]} numberOfLines={3}>{bookmark.text}</Text>
+        <Text style={[nc.text, { color: ink }]} numberOfLines={3}>
+          {bookmark.text}
+        </Text>
       ) : null}
 
       {bookmark.ref ? (
@@ -673,7 +763,12 @@ const nc = StyleSheet.create({
     fontSize: 16,
     lineHeight: 24,
   },
-  solemnPill: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 999, borderWidth: 1 },
+  solemnPill: {
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 999,
+    borderWidth: 1,
+  },
   solemnText: { fontSize: 9, fontWeight: '800', letterSpacing: 0.8 },
   refRow: {
     flexDirection: 'row',
@@ -716,7 +811,12 @@ const rd = StyleSheet.create({
     gap: 8,
   },
   readingMeta: { flex: 1, gap: 2 },
-  readingType: { fontSize: 9, fontWeight: '700', letterSpacing: 1, textTransform: 'uppercase' },
+  readingType: {
+    fontSize: 9,
+    fontWeight: '700',
+    letterSpacing: 1,
+    textTransform: 'uppercase',
+  },
   readingRef: { fontSize: 13, fontWeight: '600' },
 
   readingBody: { marginTop: 10, gap: 6 },

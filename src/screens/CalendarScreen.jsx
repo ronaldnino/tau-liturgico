@@ -370,7 +370,8 @@ export default function CalendarScreen({ navigation }) {
             // Múltiples celebraciones: lista con jerarquía visual
             <View style={s.celebList}>
               {selectedCell.celebrations.map((cel, i) => {
-                const celColor = Colors.liturgicalUI[cel.color] ?? Colors.liturgicalUI.green;
+                const celColor =
+                  Colors.liturgicalUI[cel.color] ?? Colors.liturgicalUI.green;
                 const isPrimary = i === 0;
                 return (
                   <View
@@ -390,8 +391,18 @@ export default function CalendarScreen({ navigation }) {
                     >
                       {cel.name}
                     </Text>
-                    <View style={[s.celebGradePill, { backgroundColor: celColor + '18', borderColor: celColor + '45' }]}>
-                      <Text style={[s.celebGradeText, { color: celColor }]}>{cel.grade}</Text>
+                    <View
+                      style={[
+                        s.celebGradePill,
+                        {
+                          backgroundColor: celColor + '18',
+                          borderColor: celColor + '45',
+                        },
+                      ]}
+                    >
+                      <Text style={[s.celebGradeText, { color: celColor }]}>
+                        {cel.grade}
+                      </Text>
                     </View>
                   </View>
                 );

@@ -539,7 +539,7 @@ export default function ProfileScreen() {
   const [showApiKey, setShowApiKey] = useState(false);
   const [systemVoices, setSystemVoices] = useState([]);
   const [voiceOpen, setVoiceOpen] = useState(false);
-  const [voicesLoading, setVoicesLoading] = useState(false);
+  const [voicesLoading, setVoicesLoading] = useState(true); // carga al montar
 
   const { notes } = useNotesStore();
   const { phone, logout } = useAuthStore();
@@ -555,25 +555,28 @@ export default function ProfileScreen() {
 
   const seasonColor = Colors.liturgicalUI[TODAY.seasonColor] ?? Colors.liturgicalUI.green;
 
+  // Fetch puro: sin setState síncrono (incluso un throw de _Tts se maneja en el
+  // .catch asíncrono), para poder llamarlo desde el efecto de montaje sin avisos.
+  const fetchVoices = () => {
+    Promise.resolve()
+      .then(() => _Tts().voices())
+      .then((voices) => {
+        const list = Array.isArray(voices) ? voices : [];
+        const es = list.filter((v) => v.language && /^es/i.test(v.language));
+        setSystemVoices(es.length > 0 ? es : list);
+        setVoicesLoading(false);
+      })
+      .catch(() => setVoicesLoading(false));
+  };
+
+  // Reintento manual desde la UI: aquí sí mostramos el spinner antes de recargar
   const loadVoices = () => {
     setVoicesLoading(true);
-    try {
-      _Tts()
-        .voices()
-        .then((voices) => {
-          const list = Array.isArray(voices) ? voices : [];
-          const es = list.filter((v) => v.language && /^es/i.test(v.language));
-          setSystemVoices(es.length > 0 ? es : list);
-          setVoicesLoading(false);
-        })
-        .catch(() => setVoicesLoading(false));
-    } catch (_) {
-      setVoicesLoading(false);
-    }
+    fetchVoices();
   };
 
   useEffect(() => {
-    loadVoices();
+    fetchVoices();
     try {
       if (ttsVoiceId)
         _Tts()
@@ -702,9 +705,7 @@ export default function ProfileScreen() {
 
       {/* ── Contenido de cada pestaña ──────────────────────────────────── */}
       <View style={s.tabContent}>
-        {activeTab === 'perfil' && (
-          <TabPerfil profileStore={profileStore} ctx={ctx} />
-        )}
+        {activeTab === 'perfil' && <TabPerfil profileStore={profileStore} ctx={ctx} />}
         {activeTab === 'apariencia' && (
           <TabApariencia darkMode={darkMode} setDarkMode={setDarkMode} ctx={ctx} />
         )}
@@ -772,7 +773,10 @@ function TabPerfil({ profileStore, ctx }) {
         return;
       }
       if (res.errorCode === 'permission') {
-        Alert.alert('Permiso denegado', 'Ve a Configuración y permite acceso a la cámara.');
+        Alert.alert(
+          'Permiso denegado',
+          'Ve a Configuración y permite acceso a la cámara.'
+        );
         return;
       }
       if (!res.didCancel && !res.errorCode && res.assets?.[0]?.uri) {
@@ -790,15 +794,21 @@ function TabPerfil({ profileStore, ctx }) {
       {
         text: 'Cámara',
         onPress: () => {
-          try { launchCamera(opts, handleCam); }
-          catch (_) { Alert.alert('Cámara no disponible', 'Usa la galería.'); }
+          try {
+            launchCamera(opts, handleCam);
+          } catch (_) {
+            Alert.alert('Cámara no disponible', 'Usa la galería.');
+          }
         },
       },
       {
         text: 'Galería',
         onPress: () => {
-          try { launchImageLibrary(opts, handleGallery); }
-          catch (_) { Alert.alert('Error', 'No se pudo abrir la galería.'); }
+          try {
+            launchImageLibrary(opts, handleGallery);
+          } catch (_) {
+            Alert.alert('Error', 'No se pudo abrir la galería.');
+          }
         },
       },
       { text: 'Cancelar', style: 'cancel' },
@@ -830,7 +840,10 @@ function TabPerfil({ profileStore, ctx }) {
       setProfile(data);
       Alert.alert('Guardado', 'Tu perfil ha sido actualizado correctamente.');
     } catch (e) {
-      Alert.alert('Error al guardar', e.message ?? 'Verifica tu conexión e intenta de nuevo.');
+      Alert.alert(
+        'Error al guardar',
+        e.message ?? 'Verifica tu conexión e intenta de nuevo.'
+      );
     } finally {
       setSaving(false);
     }
@@ -855,7 +868,12 @@ function TabPerfil({ profileStore, ctx }) {
             <IcoUser c={Colors.brand.primary + '80'} size={44} />
           </View>
         )}
-        <View style={[tp.cameraBadge, { backgroundColor: Colors.brand.primary, borderColor: surface }]}>
+        <View
+          style={[
+            tp.cameraBadge,
+            { backgroundColor: Colors.brand.primary, borderColor: surface },
+          ]}
+        >
           <IcoPencil c="#fff" size={12} />
         </View>
       </TouchableOpacity>
@@ -926,9 +944,23 @@ function TabPerfil({ profileStore, ctx }) {
   );
 }
 
-function ProfileField({ label, value, onChangeText, placeholder, border, ink, muted, last }) {
+function ProfileField({
+  label,
+  value,
+  onChangeText,
+  placeholder,
+  border,
+  ink,
+  muted,
+  last,
+}) {
   return (
-    <View style={[tp.fieldRow, !last && { borderBottomWidth: 0.5, borderBottomColor: border }]}>
+    <View
+      style={[
+        tp.fieldRow,
+        !last && { borderBottomWidth: 0.5, borderBottomColor: border },
+      ]}
+    >
       <Text style={[tp.fieldLabel, { color: muted }]}>{label}</Text>
       <TextInput
         value={value}
@@ -1253,7 +1285,10 @@ function TabElevenLabs({
             muted={muted}
           />
           <View
-            style={[t.compareCenter, { backgroundColor: Colors.liturgicalUI.gold + '30' }]}
+            style={[
+              t.compareCenter,
+              { backgroundColor: Colors.liturgicalUI.gold + '30' },
+            ]}
           />
           <CompareCol
             title="ElevenLabs"

@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback, useRef } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import {
   View,
   Text,
@@ -28,7 +28,13 @@ const TODAY_ISO = `${_n.getFullYear()}-${String(_n.getMonth() + 1).padStart(2, '
 const LIT_COLORS = Object.values(Colors.liturgical);
 
 // Orden cronológico del año litúrgico para la barra proporcional
-const SEASON_ORDER = ['Adviento', 'Navidad', 'Cuaresma', 'Tiempo de Pascua', 'Tiempo Ordinario'];
+const SEASON_ORDER = [
+  'Adviento',
+  'Navidad',
+  'Cuaresma',
+  'Tiempo de Pascua',
+  'Tiempo Ordinario',
+];
 
 /* ── Iconos SVG ─────────────────────────────────────────────────────────── */
 
@@ -121,16 +127,21 @@ const _SHORT = {
 };
 
 function LitYearCard({ seasons, dark }) {
-  const ordered = SEASON_ORDER.map((n) => seasons.find((s) => s.name === n)).filter(Boolean);
-  const defaultIdx = Math.max(0, ordered.findIndex((s) => s.active));
+  const ordered = SEASON_ORDER.map((n) => seasons.find((s) => s.name === n)).filter(
+    Boolean
+  );
+  const defaultIdx = Math.max(
+    0,
+    ordered.findIndex((s) => s.active)
+  );
 
   const [expandedIdx, setExpandedIdx] = useState(defaultIdx);
 
   // Un Animated.Value de flex por segmento — todos arrancan en _COLLAPSED
-  const flexAnims = useRef(ordered.map(() => new Animated.Value(_COLLAPSED))).current;
+  const [flexAnims] = useState(() => ordered.map(() => new Animated.Value(_COLLAPSED)));
 
   // Shimmer suave sobre el segmento expandido
-  const shimmer = useRef(new Animated.Value(0)).current;
+  const [shimmer] = useState(() => new Animated.Value(0));
 
   // Animación de entrada: el segmento activo se expande al montar
   useEffect(() => {
@@ -183,7 +194,10 @@ function LitYearCard({ seasons, dark }) {
     [expandedIdx, flexAnims]
   );
 
-  const shimmerOpacity = shimmer.interpolate({ inputRange: [0, 1], outputRange: [0, 0.1] });
+  const shimmerOpacity = shimmer.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0, 0.1],
+  });
 
   return (
     <View style={[lc.card, !dark && lc.shadow]}>
@@ -194,18 +208,18 @@ function LitYearCard({ seasons, dark }) {
 
           const segBg = sColor;
           const textPrimary = '#fff';
-          const textMuted   = 'rgba(255,255,255,0.65)';
-          const trackBg     = 'rgba(255,255,255,0.25)';
-          const trackFg     = '#fff';
-          const dotCol      = 'rgba(255,255,255,0.7)';
+          const textMuted = 'rgba(255,255,255,0.65)';
+          const trackBg = 'rgba(255,255,255,0.25)';
+          const trackFg = '#fff';
+          const dotCol = 'rgba(255,255,255,0.7)';
 
           return (
-            <Animated.View
-              key={s.name}
-              style={[lc.segment, { flex: flexAnims[i] }]}
-            >
+            <Animated.View key={s.name} style={[lc.segment, { flex: flexAnims[i] }]}>
               <TouchableOpacity
-                style={[lc.segInner, { backgroundColor: segBg, opacity: isExp ? 1 : 0.55 }]}
+                style={[
+                  lc.segInner,
+                  { backgroundColor: segBg, opacity: isExp ? 1 : 0.55 },
+                ]}
                 onPress={() => expand(i)}
                 activeOpacity={0.85}
               >
@@ -222,7 +236,10 @@ function LitYearCard({ seasons, dark }) {
                       <Text style={[lc.expEyebrow, { color: textMuted }]}>
                         {'AÑO LITÚRGICO · ' + CYCLE.label}
                       </Text>
-                      <Text style={[lc.expName, { color: textPrimary }]} numberOfLines={2}>
+                      <Text
+                        style={[lc.expName, { color: textPrimary }]}
+                        numberOfLines={2}
+                      >
                         {s.name}
                       </Text>
                       <Text style={[lc.expRange, { color: textMuted }]} numberOfLines={1}>
@@ -232,7 +249,10 @@ function LitYearCard({ seasons, dark }) {
                         <View
                           style={[
                             lc.expFill,
-                            { width: `${Math.max(s.progress * 100, 2)}%`, backgroundColor: trackFg },
+                            {
+                              width: `${Math.max(s.progress * 100, 2)}%`,
+                              backgroundColor: trackFg,
+                            },
                           ]}
                         />
                       </View>
@@ -305,7 +325,8 @@ export default function TodayScreen({ navigation }) {
   const muted = dark ? Colors.dark.inkMuted : Colors.ink.muted;
   const border = dark ? Colors.dark.border : Colors.border.default;
 
-  const litColor = Colors.liturgicalUI[TODAY.liturgicalColor] ?? Colors.liturgicalUI.green;
+  const litColor =
+    Colors.liturgicalUI[TODAY.liturgicalColor] ?? Colors.liturgicalUI.green;
   const isSunday = _n.getDay() === 0;
   const readingsSub = isSunday ? '1ª · Sal · 2ª · Ev' : '1ª · Sal · Ev';
 

@@ -308,7 +308,7 @@ function useElevenLabsPlayer(apiKey, voiceId, speed, onFinish) {
     setProgress(0);
     setWordRange({ start: -1, end: -1 });
     setTtsError(null);
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  }, []);
 
   const toggle = useCallback(
     (idx, text) => {
@@ -534,12 +534,14 @@ function useTTSPlayer(speed, onFinish) {
     }
     // Usar la posicion del ultimo resaltado real como punto de reanudacion;
     // es mas preciso que la estimacion temporal porque esta anclado a eventos reales del motor
-    const charPos = lastHighlightPosRef.current > charOffsetRef.current
-      ? lastHighlightPosRef.current
-      : Math.min(
-          totalCharsRef.current,
-          charOffsetRef.current + Math.round((Date.now() - t0Ref.current) * charsPerMsRef.current)
-        );
+    const charPos =
+      lastHighlightPosRef.current > charOffsetRef.current
+        ? lastHighlightPosRef.current
+        : Math.min(
+            totalCharsRef.current,
+            charOffsetRef.current +
+              Math.round((Date.now() - t0Ref.current) * charsPerMsRef.current)
+          );
     pausePosRef.current = { idx: activeIdxRef.current, charPos };
     stoppingRef.current = true;
     clearInterval(timerRef.current);
@@ -555,7 +557,9 @@ function useTTSPlayer(speed, onFinish) {
     lastHighlightPosRef.current = 0;
     charOffsetRef.current = 0;
     _stopTimer();
-    try { _Tts().stop(); } catch (_) {}
+    try {
+      _Tts().stop();
+    } catch (_) {}
     setPlayerState('idle');
     setActiveIdx(0);
     setProgress(0);
@@ -635,16 +639,22 @@ export default function ReadingsScreen({ navigation, route }) {
 
   const [activeReading, setActiveReading] = useState(0);
 
+  // Reset a la primera lectura cuando cambia la fecha. Patrón de estado derivado
+  // (ajuste en render) en lugar de setState síncrono dentro de un efecto.
+  const [resetDateKey, setResetDateKey] = useState(targetDateISO);
+  if (resetDateKey !== targetDateISO) {
+    setResetDateKey(targetDateISO);
+    setActiveReading(0);
+  }
+
   const autoAdvanceRef = useRef(false);
-  const handleFinish = useCallback(() => {
-    setActiveReading((prev) => {
-      if (prev < READINGS.length - 1) {
-        autoAdvanceRef.current = true;
-        return prev + 1;
-      }
-      return prev;
-    });
-  }, [READINGS.length]);
+  // Función plana: useAudioPlayer la guarda en un ref (no requiere identidad estable)
+  const handleFinish = () => {
+    if (activeReading < READINGS.length - 1) {
+      autoAdvanceRef.current = true;
+      setActiveReading(activeReading + 1);
+    }
+  };
 
   const {
     isPlaying,
@@ -657,10 +667,9 @@ export default function ReadingsScreen({ navigation, route }) {
     stop,
   } = useAudioPlayer(elevenlabsApiKey, elevenlabsVoiceId, ttsSpeed, handleFinish);
 
-  // Cuando cambia la fecha: detener el player y volver a la primera lectura
+  // Cuando cambia la fecha: detener el player (el reset de lectura va en render)
   useEffect(() => {
     stop();
-    setActiveReading(0);
   }, [targetDateISO]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Dispara reproducción automática tras auto-avance
@@ -717,7 +726,8 @@ export default function ReadingsScreen({ navigation, route }) {
       .catch((e) => setDateResult({ iso, readings: null, error: e.message }));
   }, [targetDateISO]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const handleRetry = useCallback(() => {
+  // Función plana: solo se usa como onPress, no necesita identidad estable
+  const handleRetry = () => {
     if (isToday) {
       sync().catch(() => {});
       return;
@@ -733,7 +743,7 @@ export default function ReadingsScreen({ navigation, route }) {
       .catch((e) =>
         setDateResult({ iso: targetDateISO, readings: null, error: e.message })
       );
-  }, [isToday, targetDateISO, sync, cacheReading]);
+  };
 
   // Encabezado según si es hoy u otra fecha
   const datePending = !isToday && !!targetDateISO && !currentResult;
@@ -831,16 +841,20 @@ export default function ReadingsScreen({ navigation, route }) {
               s.litPill,
               {
                 backgroundColor:
-                  (Colors.liturgicalUI[headerColorKey] ?? Colors.liturgicalUI.green) + '20',
+                  (Colors.liturgicalUI[headerColorKey] ?? Colors.liturgicalUI.green) +
+                  '20',
                 borderColor:
-                  (Colors.liturgicalUI[headerColorKey] ?? Colors.liturgicalUI.green) + '55',
+                  (Colors.liturgicalUI[headerColorKey] ?? Colors.liturgicalUI.green) +
+                  '55',
               },
             ]}
           >
             <Text
               style={[
                 s.litPillText,
-                { color: Colors.liturgicalUI[headerColorKey] ?? Colors.liturgicalUI.green },
+                {
+                  color: Colors.liturgicalUI[headerColorKey] ?? Colors.liturgicalUI.green,
+                },
               ]}
             >
               {headerColorLabel}
@@ -930,7 +944,8 @@ export default function ReadingsScreen({ navigation, route }) {
                 s.introBox,
                 {
                   backgroundColor:
-                    (Colors.liturgicalUI[headerColorKey] ?? Colors.liturgicalUI.green) + '18',
+                    (Colors.liturgicalUI[headerColorKey] ?? Colors.liturgicalUI.green) +
+                    '18',
                   borderLeftColor:
                     Colors.liturgicalUI[headerColorKey] ?? Colors.liturgicalUI.green,
                 },
@@ -958,7 +973,8 @@ export default function ReadingsScreen({ navigation, route }) {
                 style={[
                   s.closingText,
                   {
-                    color: Colors.liturgicalUI[headerColorKey] ?? Colors.liturgicalUI.green,
+                    color:
+                      Colors.liturgicalUI[headerColorKey] ?? Colors.liturgicalUI.green,
                   },
                 ]}
               >

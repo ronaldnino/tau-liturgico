@@ -26,7 +26,11 @@ const AuthService = {
       _confirmation = await auth().signInWithPhoneNumber(phone);
       return { ok: true };
     } catch (e) {
-      if (__DEV__) console.warn('[OTP ERROR]', JSON.stringify({ code: e.code, msg: e.message, native: e.nativeErrorCode }));
+      if (__DEV__)
+        console.warn(
+          '[OTP ERROR]',
+          JSON.stringify({ code: e.code, msg: e.message, native: e.nativeErrorCode })
+        );
       throw e;
     }
   },

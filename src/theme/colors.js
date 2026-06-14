@@ -27,23 +27,23 @@ const Colors = {
 
   // Colores litúrgicos canónicos (valor semántico real)
   liturgical: {
-    green:  '#186420',
+    green: '#186420',
     purple: '#7D287D',
-    white:  '#FFFFFF',
-    red:    '#C62D25',
-    rose:   '#F485BA',
-    gold:   '#D4AF37',
+    white: '#FFFFFF',
+    red: '#C62D25',
+    rose: '#F485BA',
+    gold: '#D4AF37',
   },
 
   // Variantes visibles para uso en UI (dots, stripes, pills, texto)
   // Solo difiere en los colores que son invisibles sobre fondos claros
   liturgicalUI: {
-    green:  '#186420',
+    green: '#186420',
     purple: '#7D287D',
-    white:  '#C8A84B', // marfil dorado — representa vestimenta blanca, visible en cualquier fondo
-    red:    '#C62D25',
-    rose:   '#F485BA',
-    gold:   '#D4AF37',
+    white: '#C8A84B', // marfil dorado — representa vestimenta blanca, visible en cualquier fondo
+    red: '#C62D25',
+    rose: '#F485BA',
+    gold: '#D4AF37',
   },
 
   dark: {
