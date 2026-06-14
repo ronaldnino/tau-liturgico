@@ -98,7 +98,10 @@ export default function PhoneScreen({ navigation }) {
     setLoading(true);
     setError('');
     try {
-      const full = `${country.code}${phone.replace(/\s/g, '')}`;
+      // E.164: solo dígitos y sin el 0 inicial de marcación nacional (p. ej. en
+      // Venezuela 0416... → +58416...). Sin esto se envía +5804... → inválido.
+      const national = digits.replace(/^0+/, '');
+      const full = `${country.code}${national}`;
       await AuthService.requestOtp(full);
       savePhone(full);
       navigation.navigate('Otp', { phone: full });
