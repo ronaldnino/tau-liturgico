@@ -7,8 +7,8 @@
 | Package name | `org.tauliturgico` |
 | App name | Tau Litúrgico |
 | Version inicial | 1.0.0 (version code 1) |
-| AAB generado | `android/app/build/outputs/bundle/release/tau-liturgico.aab` |
-| Keystore | `/Users/ronaldnino/keystores/tau-liturgico-release.keystore` |
+| AAB generado | `tau-liturgico.aab` |
+| Keystore | `el algun lugar secreto del mundo -> tau-liturgico-release.keystore` |
 | Key alias | `tau-liturgico` |
 
 ---
@@ -147,17 +147,17 @@ Users can optionally select a profile photo from their device gallery to persona
 
 ### Política de privacidad
 ```
-https://www.tauliturgico.org/privacy.html
+https://tauliturgico.org/privacy.html
 ```
 
 ### Política CSAE
 ```
-https://www.tauliturgico.org/csae-policy.html
+https://tauliturgico.org/csae-policy.html
 ```
 
 ### Eliminación de cuenta
 ```
-https://www.tauliturgico.org/delete-account.html
+https://tauliturgico.org/delete-account.html
 ```
 
 ---
@@ -258,4 +258,4 @@ buildTypes {
 |---|---|
 | Nombre | Ronald Niño |
 | Correo | ronaldninodev@gmail.com |
-| Sitio web | https://www.tauliturgico.org |
+| Sitio web | https://tauliturgico.org |
