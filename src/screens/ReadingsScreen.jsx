@@ -25,11 +25,7 @@ import Svg, { Path, Rect } from 'react-native-svg';
 import { Colors } from '../theme';
 import { Tau } from '../components';
 import { useSettingsStore, useNotesStore, useLiturgicalStore } from '../store';
-import {
-  READINGS as STATIC_READINGS,
-  TODAY,
-  LITURGICAL_LABELS,
-} from '../data/liturgical';
+import { TODAY, LITURGICAL_LABELS } from '../data/liturgical';
 import { fetchDailyReadings } from '../services/lectionary';
 import { synthesize } from '../services/elevenlabs';
 
@@ -603,7 +599,6 @@ export default function ReadingsScreen({ navigation, route }) {
     readings: storeReadings,
     isLoading,
     sync,
-    error: syncError,
     readingsCache,
     cacheReading,
   } = useLiturgicalStore();
@@ -617,11 +612,10 @@ export default function ReadingsScreen({ navigation, route }) {
   const [dateResult, setDateResult] = useState(null);
   const currentResult = dateResult?.iso === targetDateISO ? dateResult : null;
 
-  const READINGS = isToday
-    ? storeReadings?.length > 0
-      ? storeReadings
-      : STATIC_READINGS
-    : (currentResult?.readings ?? []);
+  // Para hoy usamos las lecturas descargadas; si no cargaron (sin red o fuente
+  // bloqueada) dejamos la lista vacía para mostrar un estado claro en vez de
+  // lecturas de otra fecha.
+  const READINGS = isToday ? (storeReadings ?? []) : (currentResult?.readings ?? []);
 
   const readingLabels =
     READINGS.length > 0
@@ -768,6 +762,14 @@ export default function ReadingsScreen({ navigation, route }) {
         return Math.ceil((new Date(y, m - 1, d) - new Date()) / 86400000);
       })()
     : 0;
+
+  // Estado del bloque de lecturas cuando no hay contenido:
+  // - notPublished: fecha futura cuyas lecturas aún no publica la fuente.
+  // - loadFailed: no se pudieron descargar (sin red o fuente bloqueada). Hoy
+  //   siempre tiene lecturas, así que una lista vacía equivale a fallo de carga.
+  const readingsNotPublished = daysAhead > 62 || dateError === 'FECHA_SIN_LECTURAS';
+  const readingsLoadFailed = !readingsNotPublished && (!!dateError || isToday);
+
   const isBookmarked = (ref) => bookmarks.some((b) => b.ref === ref);
 
   const toggleBookmark = (reading) => {
@@ -891,16 +893,21 @@ export default function ReadingsScreen({ navigation, route }) {
         ) : (
           <View style={s.emptyState}>
             <Tau size={44} color={muted} style={{ opacity: 0.45, marginBottom: 20 }} />
-            <Text style={[s.emptyText, { color: muted }]}>
-              {daysAhead > 62 || dateError === 'FECHA_SIN_LECTURAS'
-                ? 'Las lecturas de este día aún no están publicadas.\nSuelen publicarse con pocos días de antelación.'
-                : dateError || (isToday && syncError)
-                  ? 'No se pudieron cargar las lecturas.\nVerifica tu conexión a internet.'
+            <Text style={[s.emptyText, { color: ink }]}>
+              {readingsNotPublished
+                ? 'Las lecturas de este día aún no están publicadas.'
+                : readingsLoadFailed
+                  ? 'No pudimos cargar estas lecturas ahora mismo.'
                   : 'No hay lecturas disponibles para este día.'}
             </Text>
-            {(dateError || (isToday && syncError)) &&
-            daysAhead <= 62 &&
-            dateError !== 'FECHA_SIN_LECTURAS' ? (
+            {readingsNotPublished || readingsLoadFailed ? (
+              <Text style={[s.emptySubtext, { color: muted }]}>
+                {readingsNotPublished
+                  ? 'Suelen publicarse con pocos días de antelación.'
+                  : 'Mientras tanto puedes explorar el calendario y las lecturas de otros días.'}
+              </Text>
+            ) : null}
+            {readingsLoadFailed ? (
               <TouchableOpacity
                 onPress={handleRetry}
                 style={s.retryBtn}
@@ -1401,6 +1408,14 @@ const s = StyleSheet.create({
     fontSize: 17,
     lineHeight: 26,
     textAlign: 'center',
+  },
+  emptySubtext: {
+    fontFamily: 'CormorantGaramond-Medium',
+    fontSize: 14,
+    lineHeight: 21,
+    textAlign: 'center',
+    marginTop: 8,
+    maxWidth: 280,
   },
   retryBtn: {
     marginTop: 18,

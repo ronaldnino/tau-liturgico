@@ -1,63 +1,10 @@
-import React, { useEffect, useRef, useState, useCallback } from 'react';
-import { View, Text, StyleSheet, Animated, TouchableOpacity } from 'react-native';
+import React, { useEffect, useRef, useState } from 'react';
+import { View, Text, StyleSheet, Animated } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import Svg, { Path, Circle } from 'react-native-svg';
 import { Colors } from '../theme';
 import { Tau, TauWordmark } from '../components';
 import { useAuthStore, useLiturgicalStore, useProfileStore } from '../store';
 import { getProfile } from '../services/profile';
-
-function IcoNoSignal({ c = Colors.brand.primary, size = 40 }) {
-  return (
-    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
-      {/* Barras de señal (atenuadas) */}
-      <Path
-        d="M1 6l5.5 5.5"
-        stroke={c}
-        strokeWidth={1.5}
-        strokeLinecap="round"
-        strokeOpacity={0.3}
-      />
-      <Path d="M1 1l22 22" stroke={c} strokeWidth={1.5} strokeLinecap="round" />
-      <Path
-        d="M16.72 11.06A10.94 10.94 0 0119 12.55"
-        stroke={c}
-        strokeWidth={1.5}
-        strokeLinecap="round"
-        strokeOpacity={0.3}
-      />
-      <Path
-        d="M5 12.55a10.94 10.94 0 015.17-2.39"
-        stroke={c}
-        strokeWidth={1.5}
-        strokeLinecap="round"
-        strokeOpacity={0.3}
-      />
-      <Path
-        d="M10.71 5.05A16 16 0 0122.56 9"
-        stroke={c}
-        strokeWidth={1.5}
-        strokeLinecap="round"
-        strokeOpacity={0.3}
-      />
-      <Path
-        d="M1.42 9a15.91 15.91 0 014.7-2.88"
-        stroke={c}
-        strokeWidth={1.5}
-        strokeLinecap="round"
-        strokeOpacity={0.3}
-      />
-      <Path
-        d="M8.53 16.11a6 6 0 016.95 0"
-        stroke={c}
-        strokeWidth={1.5}
-        strokeLinecap="round"
-        strokeOpacity={0.3}
-      />
-      <Circle cx="12" cy="20" r="1" fill={c} />
-    </Svg>
-  );
-}
 
 export default function SyncScreen({ route }) {
   const insets = useSafeAreaInsets();
@@ -67,8 +14,6 @@ export default function SyncScreen({ route }) {
   const { setProfile } = useProfileStore();
 
   const [progress, setProgress] = useState(0);
-  const [syncFailed, setSyncFailed] = useState(false);
-  const [retryCount, setRetryCount] = useState(0);
   const [syncDone, setSyncDone] = useState(false);
   const progressDone = progress >= 100;
   const pulseAnim = useState(new Animated.Value(1))[0];
@@ -98,25 +43,26 @@ export default function SyncScreen({ route }) {
     if (syncDone && progressDone) setToken(token);
   }, [syncDone, progressDone, token, setToken]);
 
+  // Descarga de lecturas en el primer arranque. Es "best effort": si falla (sin
+  // red, o la fuente bloqueada por Cloudflare desde ciertos países) NO bloqueamos
+  // la entrada. El calendario litúrgico se calcula localmente y la pantalla de
+  // Lecturas reintenta con su propio fallback estático.
   useEffect(() => {
     const run = async () => {
       try {
         await sync();
-        // Recuperar perfil existente para usuarios que regresan
         const profile = await getProfile().catch(() => null);
-        if (mounted.current) {
-          if (profile) setProfile(profile);
-          setSyncDone(true);
-        }
+        if (mounted.current && profile) setProfile(profile);
       } catch {
-        if (mounted.current) setSyncFailed(true);
+        // Continuamos igualmente: el usuario entra a la app.
+      } finally {
+        if (mounted.current) setSyncDone(true);
       }
     };
     run();
-  }, [retryCount]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
-    if (syncFailed) return;
     const interval = setInterval(() => {
       setProgress((p) => {
         if (p >= 100) {
@@ -127,41 +73,7 @@ export default function SyncScreen({ route }) {
       });
     }, 80);
     return () => clearInterval(interval);
-  }, [syncFailed, retryCount]);
-
-  const handleRetry = useCallback(() => {
-    setSyncFailed(false);
-    setSyncDone(false);
-    setProgress(0);
-    setRetryCount((c) => c + 1);
   }, []);
-
-  if (syncFailed) {
-    return (
-      <View
-        style={[
-          s.root,
-          s.errorRoot,
-          { paddingTop: insets.top, paddingBottom: insets.bottom + 24 },
-        ]}
-      >
-        <View style={s.errorCenter}>
-          <View style={s.errorIconWrap}>
-            <IcoNoSignal c={Colors.brand.primary} size={36} />
-          </View>
-          <Text style={s.errorTitle}>Sin conexión</Text>
-          <Text style={s.errorBody}>
-            Necesitas internet para descargar el calendario litúrgico la primera vez.
-          </Text>
-        </View>
-        <View style={s.errorFooter}>
-          <TouchableOpacity onPress={handleRetry} style={s.retryBtn} activeOpacity={0.85}>
-            <Text style={s.retryText}>Reintentar</Text>
-          </TouchableOpacity>
-        </View>
-      </View>
-    );
-  }
 
   return (
     <View
@@ -228,44 +140,4 @@ const s = StyleSheet.create({
     marginTop: 14,
     letterSpacing: 0.5,
   },
-
-  /* ── Error ── */
-  errorRoot: { backgroundColor: Colors.surface.primary },
-  errorCenter: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 12,
-  },
-  errorIconWrap: {
-    width: 76,
-    height: 76,
-    borderRadius: 38,
-    backgroundColor: Colors.brand.tint,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 24,
-  },
-  errorTitle: {
-    fontFamily: 'CormorantGaramond-SemiBoldItalic',
-    fontSize: 28,
-    color: Colors.ink.primary,
-    marginBottom: 10,
-    textAlign: 'center',
-  },
-  errorBody: {
-    fontSize: 15,
-    lineHeight: 23,
-    color: Colors.ink.muted,
-    textAlign: 'center',
-    maxWidth: 280,
-  },
-  errorFooter: { paddingTop: 12 },
-  retryBtn: {
-    backgroundColor: Colors.brand.primary,
-    borderRadius: 14,
-    paddingVertical: 16,
-    alignItems: 'center',
-  },
-  retryText: { color: '#fff', fontSize: 16, fontWeight: '600' },
 });

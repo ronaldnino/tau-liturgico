@@ -1,6 +1,30 @@
 const BASE = 'https://www.dominicos.org/predicacion/evangelio-del-dia';
 const VATICAN_BASE = 'https://www.vaticannews.va/es/evangelio-de-hoy';
 
+// User-Agent de navegador real. Un UA tipo bot (p. ej. "TauLiturgico/1.0") es
+// bloqueado por Cloudflare —que protege Vatican News— sobre todo desde IPs con
+// baja reputación (operadores de Venezuela, etc.), provocando falsos "Sin conexión".
+const BROWSER_HEADERS = {
+  'User-Agent':
+    'Mozilla/5.0 (iPhone; CPU iPhone OS 17_4 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.4 Mobile/15E148 Safari/604.1',
+  Accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+  'Accept-Language': 'es-ES,es;q=0.9',
+};
+
+const FETCH_TIMEOUT_MS = 15000;
+
+// fetch con timeout: en redes lentas/inestables evita que la petición se cuelgue
+// indefinidamente (sin esto, un arranque podía quedarse colgado para siempre).
+async function fetchHtml(url) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
+  try {
+    return await fetch(url, { headers: BROWSER_HEADERS, signal: controller.signal });
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 function buildUrl(date = new Date()) {
   const d = date.getDate();
   const m = date.getMonth() + 1;
@@ -244,9 +268,7 @@ function parseVaticanReadings(html) {
 
 export async function fetchDailyReadings(date = new Date()) {
   const url = buildUrl(date);
-  const resp = await fetch(url, {
-    headers: { 'User-Agent': 'Mozilla/5.0 (compatible; TauLiturgico/1.0)' },
-  });
+  const resp = await fetchHtml(url);
   if (!resp.ok) throw new Error(`Error HTTP ${resp.status} en ${url}`);
   // Si la URL final no es la de evangelio-del-dia, fue redirigida → es domingo
   if (resp.redirected || (resp.url && !resp.url.includes('/evangelio-del-dia/'))) {
@@ -258,9 +280,7 @@ export async function fetchDailyReadings(date = new Date()) {
 
 async function fetchVaticanReadings(date) {
   const url = buildVaticanUrl(date);
-  const resp = await fetch(url, {
-    headers: { 'User-Agent': 'Mozilla/5.0 (compatible; TauLiturgico/1.0)' },
-  });
+  const resp = await fetchHtml(url);
   if (!resp.ok) throw new Error('FECHA_SIN_LECTURAS');
   const html = await resp.text();
   return parseVaticanReadings(html);
