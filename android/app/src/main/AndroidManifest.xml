@@ -6,6 +6,13 @@
     <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" android:maxSdkVersion="32" />
 
+    <!-- Declarar CAMERA hace que Android infiera hardware.camera como REQUERIDO,
+         lo que oculta la app en Play para dispositivos sin cámara (tablets, etc.).
+         La cámara es opcional (la foto de perfil también puede venir de la galería),
+         así que marcamos las features como no obligatorias. -->
+    <uses-feature android:name="android.hardware.camera" android:required="false" />
+    <uses-feature android:name="android.hardware.camera.any" android:required="false" />
+
     <!-- La app no usa publicidad; se elimina AD_ID para que ninguna
          dependencia transitiva (Firebase, GMS) lo inyecte. -->
     <uses-permission android:name="com.google.android.gms.permission.AD_ID"

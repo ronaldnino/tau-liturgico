@@ -145,6 +145,21 @@ El permiso está explícitamente eliminado en `AndroidManifest.xml`:
 Users can optionally select a profile photo from their device gallery to personalize their account. Requested only when the user taps the profile photo field. No images are shared with third parties.
 ```
 
+### Permiso CAMERA y disponibilidad en dispositivos (uses-feature)
+
+La cámara se usa **solo de forma opcional** para tomar la foto de perfil (también puede elegirse desde la galería). Hay dos cosas a tener en cuenta:
+
+**1. Requiere solicitud de permiso en runtime.** `react-native-image-picker` no abre la cámara si `CAMERA` está en el manifest pero no se pidió el permiso en tiempo de ejecución. Se gestiona con el helper `src/utils/permissions.js` (`ensureCameraPermission`). Ver detalle en `docs/DEVELOPMENT_WORKFLOW.md` → "Android: la cámara no se abre…".
+
+**2. `uses-feature` para no filtrar dispositivos.** Declarar `android.permission.CAMERA` hace que Google Play **infiera `android.hardware.camera` como requerido** y **oculte la app** en dispositivos sin cámara (algunas tablets, Android TV, Chromebooks, emuladores sin cámara). Como la cámara es opcional, lo marcamos como **no obligatorio** en `AndroidManifest.xml`:
+
+```xml
+<uses-feature android:name="android.hardware.camera" android:required="false" />
+<uses-feature android:name="android.hardware.camera.any" android:required="false" />
+```
+
+> Este es un cambio en el manifest (nativo) → requiere **rebuild** y un nuevo AAB para que surta efecto en Play.
+
 ### Política de privacidad
 ```
 https://tauliturgico.org/privacy.html
