@@ -7,6 +7,7 @@
 | Package name | `org.tauliturgico` |
 | App name | Tau Litúrgico |
 | Version inicial | 1.0.0 (version code 1) |
+| Versión actual | 1.0.2 (version code 3) |
 | AAB generado | `tau-liturgico.aab` |
 | Keystore | `el algun lugar secreto del mundo -> tau-liturgico-release.keystore` |
 | Key alias | `tau-liturgico` |
@@ -124,6 +125,35 @@ Primera versión de τau Litúrgico.
 • Modo oscuro automático y tamaño de texto ajustable
 • Autenticación por número de teléfono (OTP)
 ```
+
+---
+
+## Release name y Release notes (v1.0.2)
+
+**Versión:** versionName `1.0.2` · versionCode `3`
+
+**Release name:**
+```
+1.0.2 — Correcciones
+```
+
+**Release notes (What's new):**
+```
+Mejoras y correcciones:
+
+• Corregido el registro con números de Venezuela (+58) que mostraba un error interno.
+• La cámara ahora se abre correctamente al tomar la foto de perfil.
+• La app ya no se queda bloqueada si las lecturas no cargan: puedes explorar el calendario y otras fechas.
+• Mensajes más claros cuando no se puede conectar con la fuente de lecturas.
+• Mejoras de estabilidad.
+```
+
+**Cambios técnicos incluidos:**
+- Número de teléfono normalizado a E.164 (se elimina el `0` inicial); corrige `auth/unknown` error 39.
+- Permiso de cámara solicitado en runtime + `uses-feature android.hardware.camera required=false` (no oculta la app en dispositivos sin cámara).
+- Mitigación del bloqueo de Cloudflare (User-Agent de navegador + timeout) y arranque que ya no bloquea si la descarga de lecturas falla.
+- Estado vacío amigable en Lecturas cuando no cargan.
+- Limpieza de lint (144 errores → 0).
 
 ---
 
