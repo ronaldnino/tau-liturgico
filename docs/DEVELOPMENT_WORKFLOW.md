@@ -229,3 +229,28 @@ npm run android  # para Android
 rm -rf ~/Library/Developer/Xcode/DerivedData/TauLiturgico-*
 npm run ios
 ```
+
+### Android: la cámara no se abre al tomar la foto de perfil
+**Síntoma:** En Perfil → foto de perfil (e igual en el onboarding), al elegir "Cámara" no ocurre nada: la cámara no se activa y no aparece ningún error visible.
+
+**Causa:** `react-native-image-picker` tiene un comportamiento específico en Android: **si el permiso `android.permission.CAMERA` está declarado en `AndroidManifest.xml`, la app debe solicitarlo en runtime _antes_ de llamar a `launchCamera`**. Si el permiso está declarado pero nunca se solicita, `launchCamera` falla silenciosamente y la cámara no abre. En nuestro manifest `CAMERA` sí está declarado, pero el código no pedía el permiso en tiempo de ejecución.
+
+> En iOS no aplica: el picker gestiona el permiso mediante `NSCameraUsageDescription` del `Info.plist`.
+
+**Solución:** Solicitar el permiso de cámara en runtime con `PermissionsAndroid` antes de abrir la cámara. La lógica vive en el helper compartido `src/utils/permissions.js` (`ensureCameraPermission()`), usado tanto en `ProfileScreen` como en `ProfileSetupScreen`:
+
+```js
+import { ensureCameraPermission } from '../utils/permissions';
+
+// dentro del onPress de "Cámara":
+const granted = await ensureCameraPermission();
+if (!granted) {
+  Alert.alert('Permiso de cámara', 'Habilita el acceso a la cámara en Configuración…');
+  return;
+}
+launchCamera(opts, handleResult);
+```
+
+Es un cambio solo de JS (`PermissionsAndroid` es parte del core de RN, ya enlazado): basta con recargar Metro, no requiere rebuild nativo.
+
+> **Recomendación pendiente (requiere rebuild):** el manifest declara `CAMERA` sin `<uses-feature android:name="android.hardware.camera" android:required="false" />`. Sin esa línea, Google Play oculta la app en dispositivos sin cámara (algunas tablets). Añadirla mejora la disponibilidad.

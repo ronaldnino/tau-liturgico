@@ -15,6 +15,7 @@ import {
   Platform,
 } from 'react-native';
 import { launchCamera, launchImageLibrary } from 'react-native-image-picker';
+import { ensureCameraPermission } from '../utils/permissions';
 import Svg, { Path, Line, Circle, Rect, Polyline } from 'react-native-svg';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Colors } from '../theme';
@@ -793,7 +794,15 @@ function TabPerfil({ profileStore, ctx }) {
     Alert.alert('Foto de perfil', '¿Cómo deseas cambiar tu foto?', [
       {
         text: 'Cámara',
-        onPress: () => {
+        onPress: async () => {
+          const granted = await ensureCameraPermission();
+          if (!granted) {
+            Alert.alert(
+              'Permiso de cámara',
+              'Habilita el acceso a la cámara en Configuración para tomar una foto, o usa la galería.'
+            );
+            return;
+          }
           try {
             launchCamera(opts, handleCam);
           } catch (_) {

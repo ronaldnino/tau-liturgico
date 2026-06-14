@@ -15,6 +15,7 @@ import {
 import Svg, { Path, Circle } from 'react-native-svg';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { launchCamera, launchImageLibrary } from 'react-native-image-picker';
+import { ensureCameraPermission } from '../utils/permissions';
 import { Colors, Spacing } from '../theme';
 import { useSettingsStore, useProfileStore } from '../store';
 import { saveProfile, uploadProfilePhoto } from '../services/profile';
@@ -106,7 +107,15 @@ export default function ProfileSetupScreen() {
       }
     };
 
-    const openCamera = () => {
+    const openCamera = async () => {
+      const granted = await ensureCameraPermission();
+      if (!granted) {
+        Alert.alert(
+          'Permiso de cámara',
+          'Habilita el acceso a la cámara en Configuración para tomar una foto, o usa la galería.'
+        );
+        return;
+      }
       try {
         launchCamera(imgOptions, handleCameraResult);
       } catch (_) {
