@@ -105,6 +105,38 @@ npm run android
 
 ---
 
+### Paso 3C — Correr en un iPhone físico (device)
+
+Datos del proyecto: workspace `ios/TauLiturgico.xcworkspace` · bundle ID `org.tauliturgico`.
+
+#### Primera vez: preparar el iPhone
+1. Conéctalo al Mac por cable.
+2. En el iPhone toca **Confiar (Trust)** cuando pregunte por el ordenador.
+3. Activa el **Modo de desarrollador**: Ajustes → **Privacidad y seguridad** → **Modo de desarrollador** → ON → reiniciar. *(Obligatorio desde iOS 16.)*
+
+#### Configurar la firma (Signing) en Xcode
+```bash
+open ios/TauLiturgico.xcworkspace
+```
+En Xcode: proyecto **TauLiturgico** → target **TauLiturgico** → **Signing & Capabilities**:
+- Marca **Automatically manage signing**.
+- En **Team** elige tu cuenta (Add an Account… con tu Apple ID si no aparece).
+  - **Apple ID gratuito:** funciona, pero la app caduca a los **7 días** y no soporta Push.
+  - **Apple Developer de pago:** válida **1 año** y soporta Push (necesario para que el OTP de Firebase funcione del todo en iOS).
+- Si `org.tauliturgico` ya está registrado en otra cuenta, usa la cuenta dueña del ID o cambia el bundle ID temporalmente (ej. `org.tauliturgico.dev`).
+
+#### Correr
+1. Inicia Metro: `npm start`
+2. En Xcode selecciona tu iPhone como destino y pulsa **▶ Run** (`Cmd + R`).
+   - Alternativa CLI: `npm run ios -- --device "Nombre del iPhone"`
+3. **Solo Apple ID gratuito** — si aparece "Untrusted Developer": iPhone → Ajustes → **General** → **VPN y gestión de dispositivos** → tu perfil → **Confiar**.
+
+> Para que arranque **sin cable ni Metro**, compila en **Release** (Xcode → *Product → Scheme → Edit Scheme → Run → Build Configuration: Release*). Para el día a día, Debug con Metro es lo normal.
+>
+> Si falla por Pods: `cd ios && pod install`.
+
+---
+
 ## Durante el desarrollo
 
 ### Hot reload
@@ -194,7 +226,8 @@ npm run android  # para Android
 | Acción | Comando |
 |---|---|
 | Ver simuladores disponibles | `xcrun simctl list devices available` |
-| Correr en iOS | `npm run ios` |
+| Correr en iOS (simulador) | `npm run ios` |
+| Correr en iPhone físico | `npm run ios -- --device "Nombre del iPhone"` |
 | Cerrar simulador iOS | `xcrun simctl shutdown booted` |
 | Limpiar build iOS | `rm -rf ~/Library/Developer/Xcode/DerivedData/TauLiturgico-*` |
 
