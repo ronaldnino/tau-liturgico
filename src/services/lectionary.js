@@ -266,16 +266,35 @@ function parseVaticanReadings(html) {
   return readings;
 }
 
+function isSameDay(a, b) {
+  return (
+    a.getFullYear() === b.getFullYear() &&
+    a.getMonth() === b.getMonth() &&
+    a.getDate() === b.getDate()
+  );
+}
+
 export async function fetchDailyReadings(date = new Date()) {
-  const url = buildUrl(date);
+  const today = isSameDay(date, new Date());
+  // Para HOY usamos /hoy/, que en dominicos trae las lecturas completas CON el
+  // salmo responsorial (la URL por fecha redirige a /hoy/ ese día, y antes
+  // caíamos a Vatican News, que NO publica el salmo). Para otras fechas usamos la
+  // URL con fecha; si redirige (domingos o fechas sin página) caemos a Vatican.
+  const url = today ? `${BASE}/hoy/` : buildUrl(date);
   const resp = await fetchHtml(url);
   if (!resp.ok) throw new Error(`Error HTTP ${resp.status} en ${url}`);
-  // Si la URL final no es la de evangelio-del-dia, fue redirigida → es domingo
-  if (resp.redirected || (resp.url && !resp.url.includes('/evangelio-del-dia/'))) {
+  if (
+    !today &&
+    (resp.redirected || (resp.url && !resp.url.includes('/evangelio-del-dia/')))
+  ) {
     return fetchVaticanReadings(date);
   }
-  const html = await resp.text();
-  return parseReadings(html);
+  try {
+    const html = await resp.text();
+    return parseReadings(html);
+  } catch (_) {
+    return fetchVaticanReadings(date);
+  }
 }
 
 async function fetchVaticanReadings(date) {

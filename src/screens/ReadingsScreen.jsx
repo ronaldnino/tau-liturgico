@@ -688,6 +688,11 @@ export default function ReadingsScreen({ navigation, route }) {
   useEffect(() => {
     if (!isToday) return;
     const noReadings = !storeReadings || storeReadings.length === 0;
+    // Conteo esperado de lecturas (incluido el salmo): ferias, memorias y casi
+    // todas las fiestas = 3 (1ª + Salmo + Evangelio); domingos y solemnidades = 4
+    // (1ª + Salmo + 2ª + Evangelio). Fuera de [3,4] asumimos descarga incompleta
+    // (p. ej. fallback sin salmo) y re-sincronizamos. La Vigilia Pascual (7+
+    // lecturas) es la excepción conocida no contemplada.
     const badCount =
       storeReadings && (storeReadings.length < 3 || storeReadings.length > 4);
     const notToday =
