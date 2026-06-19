@@ -73,6 +73,7 @@ Liturgical date calculations (`_easter`, `_adventStart`, `_baptismOfLord`) live 
 
 - `src/services/auth.js` — wraps Firebase Phone Auth OTP flow. Stores the Firebase `confirmation` object at module level between `requestOtp` and `verifyOtp` calls. JWT stored in iOS Keychain / Android Keystore via `react-native-keychain`. `apiFetch` refreshes the Firebase token on every call.
 - `src/services/notifications.js` — Notifee daily reminder. Always calls `cancelAllNotifications` before rescheduling, so there is at most one pending notification.
+- `src/services/lectionary.js` — scrapes the daily readings (dominicos → Evangelizo → Vatican News fallback chain). Liturgical structure (ferias = 3 readings, Sundays/solemnities = 4), source coverage and known limitations are documented in [docs/LECTURAS.md](docs/LECTURAS.md).
 
 ### Theme system
 
