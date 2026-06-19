@@ -49,20 +49,19 @@ queremos olvidar. Cada ítem indica **contexto**, **qué hacer**, **prioridad** 
   estáticos. Los dinámicos (color según tema, `width: ${progress}%`, etc.) pueden
   quedarse o documentarse con `eslint-disable` puntual.
 
-### 4. Salmo ausente en domingos pasados/futuros (al navegar por fecha)
+### 4. Salmo ausente en domingos a más de ±30 días (al navegar por fecha)
 - **Prioridad:** baja · **Riesgo:** bajo
-- **Contexto:** El salmo responsorial sale de `dominicos.org`. Para **hoy** se usa
-  `/hoy/` (trae salmo todos los días). Para otras fechas se usa la URL con fecha,
-  pero dominicos **redirige los domingos** (no tiene página por fecha ese día), así
-  que se cae a **Vatican News**, que **no publica el salmo**. Resultado: al abrir
-  desde el calendario un **domingo pasado o futuro**, falta el salmo.
-- **Casos OK:** hoy (cualquier día, incl. domingo) y días de semana pasados/futuros
-  sí traen salmo.
-- **Qué hacer:** Buscar una fuente con salmo para domingos por fecha (otra sección
-  de dominicos, otra API), o resolverlo con el backend propio del ítem 1 (que
-  normalizaría todas las fechas con salmo).
-- **Referencia:** `src/services/lectionary.js` (`fetchDailyReadings`,
-  `parseVaticanReadings`).
+- **Contexto:** El salmo de los domingos por fecha se resuelve con **Evangelizo**
+  (dominicos redirige los domingos a una homilía). Pero Evangelizo solo acepta
+  fechas dentro de **±30 días** de hoy; fuera de ese rango se cae a Vatican News,
+  que no publica el salmo. Resultado: domingos muy pasados o futuros (>30 días) aún
+  sin salmo.
+- **Casos OK:** hoy (cualquier día), días de semana por fecha, y domingos dentro de
+  ±30 días sí traen salmo.
+- **Qué hacer:** Resolverlo con el backend propio del ítem 1 (normaliza todas las
+  fechas con salmo sin límite de rango), o una fuente sin límite de ±30 días.
+- **Referencia:** `src/services/lectionary.js` (`fetchEvangelizoReadings`,
+  `fetchFallbackReadings`).
 
 ### 5. `uses-feature` de cámara — verificar tras publicar
 - **Prioridad:** baja · **Riesgo:** bajo
@@ -88,6 +87,10 @@ queremos olvidar. Cada ítem indica **contexto**, **qué hacer**, **prioridad** 
 
 ## Hecho
 
+- **sin publicar** — Salmo en las lecturas de hoy: hoy usa dominicos `/hoy/`
+  (trae salmo todos los días, incl. domingos).
+- **sin publicar** — Salmo en domingos por fecha: fallback a Evangelizo (con salmo)
+  dentro de ±30 días; ver limitación restante en el ítem 4.
 - **1.0.2** — Registro con números +58 (Venezuela): número normalizado a E.164
   (quita el `0` inicial); corrige `auth/unknown` error 39.
 - **1.0.2** — Cámara de foto de perfil: permiso solicitado en runtime

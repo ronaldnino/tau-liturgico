@@ -1,5 +1,9 @@
 const BASE = 'https://www.dominicos.org/predicacion/evangelio-del-dia';
 const VATICAN_BASE = 'https://www.vaticannews.va/es/evangelio-de-hoy';
+// Evangelizo SÍ publica el salmo responsorial los domingos (dominicos redirige
+// los domingos a una homilía y Vatican News omite el salmo). Limitación: solo
+// acepta fechas dentro de ±30 días de hoy.
+const EVANGELIZO_BASE = 'https://feed.evangelizo.org/v2/reader.php';
 
 // User-Agent de navegador real. Un UA tipo bot (p. ej. "TauLiturgico/1.0") es
 // bloqueado por Cloudflare —que protege Vatican News— sobre todo desde IPs con
@@ -287,14 +291,121 @@ export async function fetchDailyReadings(date = new Date()) {
     !today &&
     (resp.redirected || (resp.url && !resp.url.includes('/evangelio-del-dia/')))
   ) {
-    return fetchVaticanReadings(date);
+    return fetchFallbackReadings(date);
   }
   try {
     const html = await resp.text();
     return parseReadings(html);
   } catch (_) {
+    return fetchFallbackReadings(date);
+  }
+}
+
+// Fallback para fechas que dominicos no sirve (domingos): primero Evangelizo
+// (trae el salmo, dentro de ±30 días) y, si falla, Vatican News (sin salmo).
+async function fetchFallbackReadings(date) {
+  try {
+    return await fetchEvangelizoReadings(date);
+  } catch (_) {
     return fetchVaticanReadings(date);
   }
+}
+
+function buildEvangelizoUrl(date) {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, '0');
+  const d = String(date.getDate()).padStart(2, '0');
+  return `${EVANGELIZO_BASE}?date=${y}-${m}-${d}&type=all&lang=SP`;
+}
+
+async function fetchEvangelizoReadings(date) {
+  const resp = await fetchHtml(buildEvangelizoUrl(date));
+  if (!resp.ok) throw new Error('FECHA_SIN_LECTURAS');
+  const raw = await resp.text();
+  // Página de error de evangelizo (fecha fuera de ±30 días o sin datos).
+  if (/<!DOCTYPE|Reader Evangelizo|Error\s*:/i.test(raw)) {
+    throw new Error('FECHA_SIN_LECTURAS');
+  }
+  return parseEvangelizoReadings(raw);
+}
+
+// type=all devuelve, en líneas separadas por <br/> y en orden fijo:
+// [día litúrgico], 1ª lectura, Salmo, [2ª lectura], Evangelio. Cada lectura es
+// una línea de título (libro + cita) seguida de sus párrafos.
+function parseEvangelizoReadings(html) {
+  const lines = stripHtml(html)
+    .split('\n')
+    .map((l) => l.trim())
+    .filter((l) => l.length > 0);
+
+  const psalmIdx = lines.findIndex((l) => /^Salmo\b/i.test(l));
+  const gospelIdx = lines.findIndex((l) => /^Evangelio\b/i.test(l));
+  if (psalmIdx < 1 || gospelIdx <= psalmIdx) {
+    throw new Error('Estructura de Evangelizo no reconocida');
+  }
+  // Una línea de título tiene libro + cita ("Romanos 5,6-11."); el texto bíblico
+  // no termina en cita. Sirve para hallar la 2ª lectura entre salmo y evangelio.
+  const isTitle = (l) => /\s\d/.test(l) && l.length < 100;
+
+  const mkReading = (titleLine, textLines, type, closing) => {
+    const m = titleLine.match(/^(.*?)(\d.*)$/); // separa libro / cita
+    return {
+      type,
+      ref: m ? m[2].replace(/\.\s*$/, '').trim() : '',
+      intro: m ? m[1].trim() : titleLine,
+      text: textLines.join('\n\n'),
+      closing,
+    };
+  };
+
+  const readings = [];
+  // 1ª lectura: lines[0] = día litúrgico, lines[1] = título, texto hasta el salmo.
+  readings.push(
+    mkReading(lines[1], lines.slice(2, psalmIdx), 'Primera Lectura', 'Palabra de Dios.')
+  );
+
+  // Salmo (+ posible 2ª lectura entre el salmo y el evangelio).
+  let secondIdx = -1;
+  for (let i = psalmIdx + 1; i < gospelIdx; i++) {
+    if (isTitle(lines[i])) {
+      secondIdx = i;
+      break;
+    }
+  }
+  const psalmEnd = secondIdx === -1 ? gospelIdx : secondIdx;
+  readings.push(
+    mkReading(
+      lines[psalmIdx],
+      lines.slice(psalmIdx + 1, psalmEnd),
+      'Salmo Responsorial',
+      ''
+    )
+  );
+  if (secondIdx !== -1) {
+    readings.push(
+      mkReading(
+        lines[secondIdx],
+        lines.slice(secondIdx + 1, gospelIdx),
+        'Segunda Lectura',
+        'Palabra de Dios.'
+      )
+    );
+  }
+
+  // Evangelio.
+  readings.push(
+    mkReading(
+      lines[gospelIdx],
+      lines.slice(gospelIdx + 1),
+      'Santo Evangelio',
+      'Palabra del Señor.'
+    )
+  );
+
+  if (readings.length < 3) {
+    throw new Error('No se pudieron extraer lecturas de Evangelizo');
+  }
+  return readings;
 }
 
 async function fetchVaticanReadings(date) {
