@@ -83,6 +83,22 @@ queremos olvidar. Cada ítem indica **contexto**, **qué hacer**, **prioridad** 
 - **Referencia:** `src/services/lectionary.js` (`normalizeType`, `parseReadings`),
   `src/screens/ReadingsScreen.jsx` (`badCount`).
 
+### 7. Subtítulo de lecturas en "Hoy" desfasado en solemnidades de día de semana
+- **Prioridad:** baja · **Riesgo:** muy bajo
+- **Contexto:** En `TodayScreen` el subtítulo del resumen de lecturas se calcula
+  **solo a partir de `isSunday`**, no del contenido real:
+  `const readingsSub = isSunday ? '1ª · Sal · 2ª · Ev' : '1ª · Sal · Ev';`.
+  La estructura litúrgica es: ferias = 3 (1ª · Salmo · Ev) y domingos/solemnidades
+  = 4 (1ª · Salmo · 2ª · Ev). En **solemnidades que caen en día de semana**
+  (p. ej. 15-ago Asunción, 8-dic Inmaculada, 29-jun San Pedro y San Pablo) sí hay
+  2ª lectura: la app **renderiza las 4 lecturas correctamente**, pero el subtítulo
+  anuncia solo "1ª · Sal · Ev". Es un desajuste **solo de la etiqueta**, no de los
+  datos ni del orden (auditados y correctos en dominicos y Evangelizo).
+- **Qué hacer:** Derivar el subtítulo del array real en vez del calendario:
+  `const hasSecond = READINGS.some((r) => r.type === 'Segunda Lectura');`
+  `const readingsSub = hasSecond ? '1ª · Sal · 2ª · Ev' : '1ª · Sal · Ev';`.
+- **Referencia:** `src/screens/TodayScreen.jsx` (`readingsSub`, ~línea 331).
+
 ---
 
 ## Hecho
