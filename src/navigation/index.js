@@ -223,6 +223,8 @@ function MainTabs() {
     <Tab.Navigator
       // "history": el botón atrás (y el back físico de Android) vuelve a la última
       // pestaña visitada, no a la primera (por defecto sería 'firstRoute' → Hoy).
+      // Trade-off Android asumido a propósito: para salir de la app el back físico
+      // recorre el historial de pestañas (en vez de salir directo desde Hoy).
       backBehavior="history"
       screenOptions={{
         headerShown: false,
