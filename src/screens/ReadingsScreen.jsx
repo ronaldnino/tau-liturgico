@@ -26,7 +26,11 @@ import { Colors } from '../theme';
 import { Tau } from '../components';
 import { useSettingsStore, useNotesStore, useLiturgicalStore } from '../store';
 import { TODAY, LITURGICAL_LABELS } from '../data/liturgical';
-import { fetchDailyReadings, buildCanonicalReadings } from '../services/lectionary';
+import {
+  fetchDailyReadings,
+  buildCanonicalReadings,
+  resolveReadingIndex,
+} from '../services/lectionary';
 import { synthesize } from '../services/elevenlabs';
 
 const _rNow = new Date();
@@ -643,10 +647,17 @@ export default function ReadingsScreen({ navigation, route }) {
   const muted = dark ? Colors.dark.inkMuted : Colors.ink.muted;
   const border = dark ? Colors.dark.border : Colors.border.default;
 
-  // Lectura abierta. Inicial: la pedida por el parámetro `reading` (cubre el
-  // primer montaje perezoso de la pestaña, antes de que corra el listener focus).
+  // Ref con las lecturas actuales, para resolver índices dentro de listeners
+  // (que tienen closures sobre el primer render). Se sincroniza tras cada render.
+  const readingsRef = useRef(READINGS);
+  useEffect(() => {
+    readingsRef.current = READINGS;
+  });
+
+  // Lectura abierta. Inicial: la pedida por los parámetros (cubre el primer
+  // montaje perezoso de la pestaña, antes de que corra el listener focus).
   const [activeReading, setActiveReading] = useState(() =>
-    Math.max(0, route?.params?.reading ?? 0)
+    resolveReadingIndex(READINGS, route?.params)
   );
 
   // Reset a la primera lectura cuando cambia la fecha. Patrón de estado derivado
@@ -696,20 +707,21 @@ export default function ReadingsScreen({ navigation, route }) {
         color: undefined,
         celebration: undefined,
         reading: undefined,
+        readingType: undefined,
       });
       setActiveReading(0);
     });
     return unsub;
   }, [navigation]);
 
-  // Al llegar a Lecturas, abrir la lectura indicada por el parámetro `reading`
-  // (p. ej. al tocar "2ª lectura" en el resumen de Hoy). Se lee del estado de
-  // navegación para tener siempre el valor más reciente.
+  // Al llegar a Lecturas, abrir la lectura indicada por los parámetros (p. ej. al
+  // tocar "2ª lectura" en el resumen de Hoy). Se resuelve por tipo contra las
+  // lecturas del día, así nunca apunta a una lectura inexistente.
   useEffect(() => {
     const unsub = navigation.addListener('focus', () => {
       const state = navigation.getState();
       const params = state.routes?.[state.index]?.params;
-      setActiveReading(Math.max(0, params?.reading ?? 0));
+      setActiveReading(resolveReadingIndex(readingsRef.current, params));
     });
     return unsub;
   }, [navigation]);

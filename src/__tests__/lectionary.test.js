@@ -1,4 +1,4 @@
-import { buildCanonicalReadings } from '../services/lectionary';
+import { buildCanonicalReadings, resolveReadingIndex } from '../services/lectionary';
 import { isSolemnity } from '../data/liturgical';
 
 // Helpers para construir lecturas crudas de prueba.
@@ -95,5 +95,44 @@ describe('isSolemnity', () => {
 
   it('una feria normal no es solemnidad', () => {
     expect(isSolemnity(FERIA)).toBe(false);
+  });
+});
+
+describe('resolveReadingIndex', () => {
+  const domingo = [
+    r('Primera Lectura'),
+    r('Salmo Responsorial'),
+    r('Segunda Lectura'),
+    r('Santo Evangelio'),
+  ];
+  const feria = [r('Primera Lectura'), r('Salmo Responsorial'), r('Santo Evangelio')];
+
+  it('ancla por tipo: el Evangelio cae en índice distinto según el día', () => {
+    // Mismo "tipo pedido" → índice correcto aunque cambie el conteo del día.
+    expect(resolveReadingIndex(domingo, { readingType: 'Santo Evangelio' })).toBe(3);
+    expect(resolveReadingIndex(feria, { readingType: 'Santo Evangelio' })).toBe(2);
+  });
+
+  it('resuelve cada tipo a su posición real', () => {
+    expect(resolveReadingIndex(domingo, { readingType: 'Segunda Lectura' })).toBe(2);
+    expect(resolveReadingIndex(feria, { readingType: 'Salmo Responsorial' })).toBe(1);
+  });
+
+  it('tipo inexistente para el día → primera lectura (0), nunca falla', () => {
+    // 2ª lectura pedida en una feria que no la tiene.
+    expect(resolveReadingIndex(feria, { readingType: 'Segunda Lectura' })).toBe(0);
+  });
+
+  it('índice numérico se acota al rango válido', () => {
+    expect(resolveReadingIndex(feria, { reading: 9 })).toBe(2);
+    expect(resolveReadingIndex(feria, { reading: -3 })).toBe(0);
+    expect(resolveReadingIndex(domingo, { reading: 2 })).toBe(2);
+  });
+
+  it('sin parámetros, lista vacía o nula → 0', () => {
+    expect(resolveReadingIndex(feria, undefined)).toBe(0);
+    expect(resolveReadingIndex(feria, {})).toBe(0);
+    expect(resolveReadingIndex([], { readingType: 'Santo Evangelio' })).toBe(0);
+    expect(resolveReadingIndex(null, { reading: 2 })).toBe(0);
   });
 });

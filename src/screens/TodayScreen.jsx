@@ -473,7 +473,7 @@ export default function TodayScreen({ navigation }) {
                 navigation.navigate('Lecturas', {
                   date: TODAY_ISO,
                   from: 'Hoy',
-                  reading: i,
+                  readingType: r.type,
                 })
               }
               activeOpacity={0.7}

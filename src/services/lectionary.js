@@ -336,6 +336,23 @@ export function buildCanonicalReadings(rawReadings, date = new Date()) {
   );
 }
 
+// Resuelve qué lectura abrir a partir de los parámetros de navegación, contra la
+// lista de lecturas REAL del día. Ancla por TIPO (`readingType`), dinámico según
+// el día —el índice varía si el día tiene 3 ó 4 lecturas—, así el enlace nunca
+// apunta a la lectura equivocada. Si el tipo no está, cae al índice numérico
+// acotado y, por último, a la primera. Nunca devuelve un índice fuera de rango.
+export function resolveReadingIndex(list, params) {
+  if (!Array.isArray(list) || list.length === 0) return 0;
+  if (params?.readingType) {
+    const i = list.findIndex((r) => r.type === params.readingType);
+    if (i >= 0) return i;
+  }
+  if (typeof params?.reading === 'number') {
+    return Math.min(Math.max(0, params.reading), list.length - 1);
+  }
+  return 0;
+}
+
 // Fallback para fechas que dominicos no sirve (domingos): primero Evangelizo
 // (trae el salmo, dentro de ±30 días) y, si falla, Vatican News (sin salmo).
 async function fetchFallbackReadings(date) {
