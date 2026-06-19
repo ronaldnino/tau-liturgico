@@ -26,7 +26,7 @@ import { Colors } from '../theme';
 import { Tau } from '../components';
 import { useSettingsStore, useNotesStore, useLiturgicalStore } from '../store';
 import { TODAY, LITURGICAL_LABELS } from '../data/liturgical';
-import { fetchDailyReadings } from '../services/lectionary';
+import { fetchDailyReadings, buildCanonicalReadings } from '../services/lectionary';
 import { synthesize } from '../services/elevenlabs';
 
 const _rNow = new Date();
@@ -612,10 +612,22 @@ export default function ReadingsScreen({ navigation, route }) {
   const [dateResult, setDateResult] = useState(null);
   const currentResult = dateResult?.iso === targetDateISO ? dateResult : null;
 
-  // Para hoy usamos las lecturas descargadas; si no cargaron (sin red o fuente
-  // bloqueada) dejamos la lista vacía para mostrar un estado claro en vez de
-  // lecturas de otra fecha.
-  const READINGS = isToday ? (storeReadings ?? []) : (currentResult?.readings ?? []);
+  // Lecturas crudas descargadas (para hoy del store; para otra fecha del fetch).
+  // Pueden faltar elementos (p. ej. una fuente que no trae el salmo).
+  const rawReadings = isToday ? (storeReadings ?? []) : (currentResult?.readings ?? []);
+
+  // Fecha objetivo, para decidir cuántas ranuras corresponden (3 ó 4).
+  const targetDate = isToday
+    ? new Date()
+    : (() => {
+        const [y, m, d] = targetDateISO.split('-').map(Number);
+        return new Date(y, m - 1, d);
+      })();
+
+  // Ranuras canónicas del día: SIEMPRE las que toca por la regla litúrgica;
+  // las no descargadas quedan marcadas `unavailable` ("Contenido no disponible")
+  // en vez de desaparecer. El skeleton de carga se decide aparte (rawReadings).
+  const READINGS = buildCanonicalReadings(rawReadings, targetDate);
 
   const readingLabels =
     READINGS.length > 0
@@ -892,37 +904,8 @@ export default function ReadingsScreen({ navigation, route }) {
       </View>
 
       {/* Texto de la lectura / estado vacío */}
-      {READINGS.length === 0 ? (
-        showLoading ? (
-          <ReadingSkeleton dark={dark} />
-        ) : (
-          <View style={s.emptyState}>
-            <Tau size={44} color={muted} style={{ opacity: 0.45, marginBottom: 20 }} />
-            <Text style={[s.emptyText, { color: ink }]}>
-              {readingsNotPublished
-                ? 'Las lecturas de este día aún no están publicadas.'
-                : readingsLoadFailed
-                  ? 'No pudimos cargar estas lecturas ahora mismo.'
-                  : 'No hay lecturas disponibles para este día.'}
-            </Text>
-            {readingsNotPublished || readingsLoadFailed ? (
-              <Text style={[s.emptySubtext, { color: muted }]}>
-                {readingsNotPublished
-                  ? 'Suelen publicarse con pocos días de antelación.'
-                  : 'Mientras tanto puedes explorar el calendario y las lecturas de otros días.'}
-              </Text>
-            ) : null}
-            {readingsLoadFailed ? (
-              <TouchableOpacity
-                onPress={handleRetry}
-                style={s.retryBtn}
-                activeOpacity={0.8}
-              >
-                <Text style={s.retryBtnText}>Reintentar</Text>
-              </TouchableOpacity>
-            ) : null}
-          </View>
-        )
+      {showLoading && rawReadings.length === 0 ? (
+        <ReadingSkeleton dark={dark} />
       ) : (
         <ScrollView
           style={s.scroll}
@@ -934,9 +917,11 @@ export default function ReadingsScreen({ navigation, route }) {
           <Text style={[s.readingType, { color: muted }]}>
             {READINGS[activeReading]?.type}
           </Text>
-          <Text style={[s.readingRef, { color: ink }]}>
-            {READINGS[activeReading]?.ref}
-          </Text>
+          {READINGS[activeReading]?.ref ? (
+            <Text style={[s.readingRef, { color: ink }]}>
+              {READINGS[activeReading]?.ref}
+            </Text>
+          ) : null}
 
           {/* Separador del color litúrgico del día */}
           <View
@@ -949,34 +934,61 @@ export default function ReadingsScreen({ navigation, route }) {
             ]}
           />
 
-          {/* Intro como epígrafe con borde lateral */}
-          {READINGS[activeReading]?.intro ? (
-            <View
-              style={[
-                s.introBox,
-                {
-                  backgroundColor:
-                    (Colors.liturgicalUI[headerColorKey] ?? Colors.liturgicalUI.green) +
-                    '18',
-                  borderLeftColor:
-                    Colors.liturgicalUI[headerColorKey] ?? Colors.liturgicalUI.green,
-                },
-              ]}
-            >
-              <Text style={[s.readingIntro, { color: muted }]}>
-                {READINGS[activeReading].intro}
+          {READINGS[activeReading]?.unavailable ? (
+            /* Ranura sin contenido descargado: la lectura corresponde al día por
+               la regla litúrgica, pero la fuente no la publicó o falló la carga. */
+            <View style={s.unavailableBlock}>
+              <Tau size={40} color={muted} style={{ opacity: 0.4, marginBottom: 16 }} />
+              <Text style={[s.emptyText, { color: ink }]}>Contenido no disponible</Text>
+              <Text style={[s.emptySubtext, { color: muted }]}>
+                {readingsNotPublished
+                  ? 'Las lecturas de este día aún no están publicadas.'
+                  : readingsLoadFailed
+                    ? 'No pudimos cargarla ahora mismo.'
+                    : 'La fuente no publica esta lectura para este día.'}
               </Text>
+              {readingsLoadFailed ? (
+                <TouchableOpacity
+                  onPress={handleRetry}
+                  style={s.retryBtn}
+                  activeOpacity={0.8}
+                >
+                  <Text style={s.retryBtnText}>Reintentar</Text>
+                </TouchableOpacity>
+              ) : null}
             </View>
-          ) : null}
+          ) : (
+            <>
+              {/* Intro como epígrafe con borde lateral */}
+              {READINGS[activeReading]?.intro ? (
+                <View
+                  style={[
+                    s.introBox,
+                    {
+                      backgroundColor:
+                        (Colors.liturgicalUI[headerColorKey] ??
+                          Colors.liturgicalUI.green) + '18',
+                      borderLeftColor:
+                        Colors.liturgicalUI[headerColorKey] ?? Colors.liturgicalUI.green,
+                    },
+                  ]}
+                >
+                  <Text style={[s.readingIntro, { color: muted }]}>
+                    {READINGS[activeReading].intro}
+                  </Text>
+                </View>
+              ) : null}
 
-          <HighlightedText
-            text={READINGS[activeReading]?.text ?? ''}
-            start={isPlaying && activeIdx === activeReading ? wordRange.start : -1}
-            end={isPlaying && activeIdx === activeReading ? wordRange.end : -1}
-            style={s.readingText}
-            hlColor={Colors.brand.primary + '38'}
-            ink={ink}
-          />
+              <HighlightedText
+                text={READINGS[activeReading]?.text ?? ''}
+                start={isPlaying && activeIdx === activeReading ? wordRange.start : -1}
+                end={isPlaying && activeIdx === activeReading ? wordRange.end : -1}
+                style={s.readingText}
+                hlColor={Colors.brand.primary + '38'}
+                ink={ink}
+              />
+            </>
+          )}
 
           {/* Cierre litúrgico centrado y prominente */}
           <View style={[s.closingBlock, { borderTopColor: border }]}>
@@ -995,12 +1007,14 @@ export default function ReadingsScreen({ navigation, route }) {
             ) : null}
             <TouchableOpacity
               onPress={() => toggleBookmark(READINGS[activeReading])}
+              disabled={READINGS[activeReading]?.unavailable}
               style={[
                 s.bookmarkBtn,
                 {
                   borderColor: isBookmarked(READINGS[activeReading]?.ref)
                     ? Colors.brand.primary + '50'
                     : border,
+                  opacity: READINGS[activeReading]?.unavailable ? 0.4 : 1,
                 },
               ]}
               activeOpacity={0.7}
@@ -1062,12 +1076,21 @@ export default function ReadingsScreen({ navigation, route }) {
             <IcoSkipPrev c={ink} />
           </TouchableOpacity>
 
-          {/* Play/Pausa */}
+          {/* Play/Pausa — desactivado si la ranura no tiene contenido */}
           <TouchableOpacity
             onPress={() => toggle(activeReading, READINGS[activeReading]?.text ?? '')}
-            style={[s.playBtn, { backgroundColor: Colors.brand.primary }]}
+            style={[
+              s.playBtn,
+              {
+                backgroundColor: Colors.brand.primary,
+                opacity: READINGS[activeReading]?.unavailable ? 0.4 : 1,
+              },
+            ]}
             activeOpacity={0.85}
-            disabled={ttsLoading && activeIdx === activeReading}
+            disabled={
+              READINGS[activeReading]?.unavailable ||
+              (ttsLoading && activeIdx === activeReading)
+            }
           >
             {ttsLoading && activeIdx === activeReading ? (
               <ActivityIndicator size="small" color="#fff" />
@@ -1402,11 +1425,11 @@ const s = StyleSheet.create({
   elBadgeText: { fontSize: 10, fontWeight: '600', letterSpacing: 0.5 },
   ttsErrorText: { fontSize: 11, flex: 1, textAlign: 'right' },
 
-  emptyState: {
-    flex: 1,
+  unavailableBlock: {
     alignItems: 'center',
     justifyContent: 'center',
-    padding: 32,
+    paddingVertical: 44,
+    paddingHorizontal: 16,
   },
   emptyText: {
     fontFamily: 'CormorantGaramond-Medium',

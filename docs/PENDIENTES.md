@@ -58,6 +58,9 @@ queremos olvidar. Cada ítem indica **contexto**, **qué hacer**, **prioridad** 
   sin salmo.
 - **Casos OK:** hoy (cualquier día), días de semana por fecha, y domingos dentro de
   ±30 días sí traen salmo.
+- **UX ya mitigada:** la ranura del salmo **ya no desaparece**; se muestra como
+  "Contenido no disponible" (ver `buildCanonicalReadings` y [LECTURAS.md](LECTURAS.md)).
+  Lo que falta es el **contenido** del salmo, no la estructura.
 - **Qué hacer:** Resolverlo con el backend propio del ítem 1 (normaliza todas las
   fechas con salmo sin límite de rango), o una fuente sin límite de ±30 días.
 - **Referencia:** `src/services/lectionary.js` (`fetchEvangelizoReadings`,
@@ -87,6 +90,10 @@ queremos olvidar. Cada ítem indica **contexto**, **qué hacer**, **prioridad** 
 
 ## Hecho
 
+- **sin publicar** — Ranuras de lecturas siempre visibles: `buildCanonicalReadings`
+  muestra siempre las 3–4 lecturas del día según la regla litúrgica; las que no se
+  pudieron descargar aparecen como "Contenido no disponible" (con reproductor y
+  Guardar desactivados) en vez de desaparecer. Detalle en [LECTURAS.md](LECTURAS.md).
 - **sin publicar** — Subtítulo de lecturas en "Hoy" en solemnidades de día de
   semana: `readingsSub` ya no depende solo de `isSunday`; usa `isSunday || hasSecond`
   (detecta la 2ª lectura en el array real), así domingos y solemnidades feriales

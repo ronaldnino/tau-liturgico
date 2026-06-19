@@ -432,6 +432,19 @@ function _computeUpcoming(count = 5) {
 
 export const UPCOMING = _computeUpcoming(5);
 
+// ¿La fecha es una solemnidad? Sirve para saber si el día lleva 2ª lectura
+// (domingos y solemnidades = 4 lecturas; el resto = 3) aunque no se haya podido
+// descargar. Recorre las fiestas fijas y móviles marcadas con `solemn: true`.
+export function isSolemnity(date) {
+  const m = date.getMonth();
+  const d = date.getDate();
+  const y = date.getFullYear();
+  if (_FIXED_FEASTS.some((f) => f.m === m && f.d === d && f.solemn)) return true;
+  return _moveableFeasts(y).some(
+    (f) => f.solemn && f.date.toDateString() === date.toDateString()
+  );
+}
+
 // ── Calendario litúrgico dinámico ──────────────────────────────
 
 function _easter(year) {

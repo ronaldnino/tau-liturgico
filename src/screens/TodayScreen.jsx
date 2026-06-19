@@ -22,6 +22,7 @@ import {
   UPCOMING,
   SEASONS,
 } from '../data/liturgical';
+import { buildCanonicalReadings } from '../services/lectionary';
 
 const _n = new Date();
 const TODAY_ISO = `${_n.getFullYear()}-${String(_n.getMonth() + 1).padStart(2, '0')}-${String(_n.getDate()).padStart(2, '0')}`;
@@ -300,7 +301,12 @@ export default function TodayScreen({ navigation }) {
   const scheme = useColorScheme();
   const { darkMode } = useSettingsStore();
   const { readings: storeReadings, lastSync, sync } = useLiturgicalStore();
-  const READINGS = storeReadings?.length > 0 ? storeReadings : STATIC_READINGS;
+  // Con datos descargados, mostrar las ranuras canónicas del día (rellena huecos
+  // como un salmo ausente con `unavailable`). En arranque frío, placeholder.
+  const READINGS =
+    storeReadings?.length > 0
+      ? buildCanonicalReadings(storeReadings, new Date())
+      : STATIC_READINGS;
   const dark = darkMode === 'dark' || (darkMode === 'auto' && scheme === 'dark');
   const [refreshing, setRefreshing] = useState(false);
 
@@ -481,8 +487,11 @@ export default function TodayScreen({ navigation }) {
               </View>
               <View style={s.readingMeta}>
                 <Text style={[s.readingType, { color: muted }]}>{r.type}</Text>
-                <Text style={[s.readingRef, { color: ink }]} numberOfLines={1}>
-                  {r.ref}
+                <Text
+                  style={[s.readingRef, { color: r.unavailable ? muted : ink }]}
+                  numberOfLines={1}
+                >
+                  {r.unavailable ? 'No disponible' : r.ref}
                 </Text>
               </View>
               <IconChevron color={muted} size={14} />

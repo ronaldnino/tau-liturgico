@@ -1,3 +1,5 @@
+import { isSolemnity } from '../data/liturgical';
+
 const BASE = 'https://www.dominicos.org/predicacion/evangelio-del-dia';
 const VATICAN_BASE = 'https://www.vaticannews.va/es/evangelio-de-hoy';
 // Evangelizo SÍ publica el salmo responsorial los domingos (dominicos redirige
@@ -299,6 +301,39 @@ export async function fetchDailyReadings(date = new Date()) {
   } catch (_) {
     return fetchFallbackReadings(date);
   }
+}
+
+// Orden litúrgico de proclamación. La 2ª lectura solo está en domingos y
+// solemnidades; el resto de días tiene 3 lecturas (1ª, Salmo, Evangelio).
+const CANONICAL_ORDER = [
+  'Primera Lectura',
+  'Salmo Responsorial',
+  'Segunda Lectura',
+  'Santo Evangelio',
+];
+
+// Devuelve SIEMPRE las ranuras que corresponden al día según la regla litúrgica,
+// emparejando cada una con lo que se descargó. Las que falten se marcan
+// `unavailable` (la UI muestra "Contenido no disponible") en vez de desaparecer.
+// `date` decide si se espera 2ª lectura: domingo, solemnidad, o que ya haya
+// venido una 2ª en los datos (cubre fuentes que la traen sin el salmo).
+export function buildCanonicalReadings(rawReadings, date = new Date()) {
+  const raw = Array.isArray(rawReadings) ? rawReadings : [];
+  const hasSecondData = raw.some((r) => r.type === 'Segunda Lectura');
+  const expectsSecond = date.getDay() === 0 || isSolemnity(date) || hasSecondData;
+  return CANONICAL_ORDER.filter(
+    (type) => type !== 'Segunda Lectura' || expectsSecond
+  ).map(
+    (type) =>
+      raw.find((r) => r.type === type) ?? {
+        type,
+        ref: '',
+        intro: '',
+        text: '',
+        closing: '',
+        unavailable: true,
+      }
+  );
 }
 
 // Fallback para fechas que dominicos no sirve (domingos): primero Evangelizo
