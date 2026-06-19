@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import Colors from '../theme/colors';
+import { TextStyles } from '../theme/typography';
 
 export default function SectionTitle({ children, action, dark, onActionPress }) {
   return (
@@ -24,18 +25,15 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   title: {
-    fontWeight: '600',
-    fontSize: 11,
-    textTransform: 'uppercase',
-    letterSpacing: 1.5,
+    ...TextStyles.eyebrow,
     color: Colors.ink.muted,
   },
   titleDark: {
     color: 'rgba(255,255,255,0.55)',
   },
   action: {
+    ...TextStyles.meta,
     fontSize: 13,
-    fontWeight: '500',
     color: Colors.brand.primary,
   },
 });

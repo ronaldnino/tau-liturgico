@@ -11,7 +11,9 @@ import {
 } from 'react-native';
 import Svg, { Path, Rect, Polyline } from 'react-native-svg';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Colors } from '../theme';
+import { Colors, Typography } from '../theme';
+
+const { TextStyles } = Typography;
 import { Tau } from '../components';
 import { useSettingsStore, useNotesStore, useLiturgicalStore } from '../store';
 import { TODAY, READINGS as STATIC_READINGS } from '../data/liturgical';
@@ -658,7 +660,7 @@ const s = StyleSheet.create({
     paddingVertical: 8,
     borderRadius: 999,
   },
-  newBtnText: { fontWeight: '700', fontSize: 13 },
+  newBtnText: { ...TextStyles.buttonSm },
   tabBar: { flexDirection: 'row', borderBottomWidth: 0.5 },
   tab: {
     flex: 1,
@@ -730,7 +732,7 @@ const co = StyleSheet.create({
   cancelBtn: { paddingHorizontal: 10, paddingVertical: 8 },
   cancelText: { fontSize: 14 },
   saveBtn: { paddingHorizontal: 20, paddingVertical: 9, borderRadius: 999 },
-  saveText: { color: '#fff', fontWeight: '700', fontSize: 14 },
+  saveText: { ...TextStyles.buttonSm, fontSize: 14, color: '#fff' },
 });
 
 // ── Estilos: tarjetas (nota y marcador) ───────────────────────────────────────
@@ -753,10 +755,8 @@ const nc = StyleSheet.create({
   celebration: { fontSize: 13, fontWeight: '700', flex: 1 },
   deleteBtn: { padding: 4, marginLeft: 8 },
   date: {
+    ...TextStyles.eyebrow,
     fontSize: 10,
-    fontWeight: '600',
-    letterSpacing: 0.7,
-    textTransform: 'uppercase',
   },
   text: {
     fontFamily: 'CormorantGaramond-Medium',
@@ -812,10 +812,8 @@ const rd = StyleSheet.create({
   },
   readingMeta: { flex: 1, gap: 2 },
   readingType: {
+    ...TextStyles.eyebrow,
     fontSize: 9,
-    fontWeight: '700',
-    letterSpacing: 1,
-    textTransform: 'uppercase',
   },
   readingRef: { fontSize: 13, fontWeight: '600' },
 

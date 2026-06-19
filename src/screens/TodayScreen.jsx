@@ -12,7 +12,9 @@ import {
 } from 'react-native';
 import Svg, { Path, Line } from 'react-native-svg';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Colors } from '../theme';
+import { Colors, Typography } from '../theme';
+
+const { TextStyles } = Typography;
 import { Tau, TauWordmark, LitDot, SectionTitle } from '../components';
 import { useSettingsStore, useLiturgicalStore } from '../store';
 import {
@@ -627,9 +629,7 @@ const s = StyleSheet.create({
     top: -10,
   },
   heroDate: {
-    fontSize: 11,
-    fontWeight: '700',
-    letterSpacing: 1.6,
+    ...TextStyles.eyebrow,
     marginBottom: 4,
   },
   heroSeason: {
@@ -718,10 +718,8 @@ const s = StyleSheet.create({
   typeTagText: { fontSize: 11, fontWeight: '800', letterSpacing: 0.3 },
   readingMeta: { flex: 1 },
   readingType: {
+    ...TextStyles.eyebrow,
     fontSize: 10,
-    fontWeight: '600',
-    letterSpacing: 1,
-    textTransform: 'uppercase',
     marginBottom: 2,
   },
   readingRef: {
@@ -749,10 +747,8 @@ const s = StyleSheet.create({
     flexShrink: 0,
   },
   dateDow: {
+    ...TextStyles.eyebrow,
     fontSize: 9,
-    fontWeight: '700',
-    letterSpacing: 0.8,
-    textTransform: 'uppercase',
   },
   dateDay: {
     fontFamily: 'CormorantGaramond-SemiBoldItalic',
@@ -766,11 +762,9 @@ const s = StyleSheet.create({
     fontSize: 16,
   },
   solemnLabel: {
+    ...TextStyles.eyebrow,
     fontSize: 10,
-    fontWeight: '700',
     color: Colors.liturgicalUI.gold,
-    letterSpacing: 1,
-    textTransform: 'uppercase',
     marginTop: 2,
   },
   upcomingDot: {
@@ -808,10 +802,8 @@ const lc = StyleSheet.create({
     justifyContent: 'center',
   },
   expEyebrow: {
+    ...TextStyles.eyebrow,
     fontSize: 9,
-    fontWeight: '700',
-    letterSpacing: 1.4,
-    textTransform: 'uppercase',
     color: 'rgba(255,255,255,0.65)',
     marginBottom: 6,
   },
@@ -859,10 +851,8 @@ const lc = StyleSheet.create({
     backgroundColor: 'rgba(255,255,255,0.7)',
   },
   colLabel: {
+    ...TextStyles.eyebrow,
     fontSize: 8,
-    fontWeight: '800',
-    letterSpacing: 0.5,
     color: 'rgba(255,255,255,0.7)',
-    textTransform: 'uppercase',
   },
 });

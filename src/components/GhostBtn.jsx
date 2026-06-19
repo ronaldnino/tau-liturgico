@@ -1,6 +1,7 @@
 import React from 'react';
 import { TouchableOpacity, Text, StyleSheet } from 'react-native';
 import Colors from '../theme/colors';
+import { TextStyles } from '../theme/typography';
 
 export default function GhostBtn({ children, onPress, light, style }) {
   return (
@@ -30,7 +31,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   text: {
-    fontWeight: '600',
-    fontSize: 16,
+    ...TextStyles.button,
   },
 });

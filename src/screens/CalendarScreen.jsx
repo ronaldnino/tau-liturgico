@@ -9,8 +9,10 @@ import {
 } from 'react-native';
 import Svg, { Path, Line } from 'react-native-svg';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Colors } from '../theme';
+import { Colors, Typography } from '../theme';
 import { useSettingsStore } from '../store';
+
+const { TextStyles } = Typography;
 import { buildMonthGrid, LITURGICAL_LABELS } from '../data/liturgical';
 
 /* ── Constantes ─────────────────────────────────────────────────────────── */
@@ -503,7 +505,7 @@ const s = StyleSheet.create({
     marginLeft: 4,
   },
   todayBtnMuted: { opacity: 0.35 },
-  todayBtnText: { color: '#fff', fontWeight: '700', fontSize: 12, letterSpacing: 0.3 },
+  todayBtnText: { ...TextStyles.buttonSm, fontSize: 12, color: '#fff' },
 
   /* Grid */
   grid: { paddingHorizontal: GRID_H_PAD },
@@ -514,7 +516,7 @@ const s = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  dayHeaderText: { fontSize: 11, fontWeight: '700', letterSpacing: 0.8 },
+  dayHeaderText: { ...TextStyles.eyebrow },
 
   /* Celdas */
   dayCell: {
@@ -551,14 +553,14 @@ const s = StyleSheet.create({
   panelContent: { padding: 20, paddingTop: 16 },
 
   panelDateRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 4 },
-  panelDate: { fontSize: 11, fontWeight: '700', letterSpacing: 1.2 },
+  panelDate: { ...TextStyles.eyebrow },
   todayPill: {
     paddingHorizontal: 8,
     paddingVertical: 2,
     borderRadius: 999,
     backgroundColor: Colors.brand.primary,
   },
-  todayPillText: { color: '#fff', fontSize: 10, fontWeight: '700', letterSpacing: 0.8 },
+  todayPillText: { ...TextStyles.eyebrow, fontSize: 10, color: '#fff' },
 
   panelName: {
     fontFamily: 'CormorantGaramond-SemiBoldItalic',
@@ -598,7 +600,7 @@ const s = StyleSheet.create({
     alignSelf: 'flex-start',
     marginTop: 3,
   },
-  celebGradeText: { fontSize: 9, fontWeight: '800', letterSpacing: 0.6 },
+  celebGradeText: { ...TextStyles.eyebrow, fontSize: 9 },
 
   panelMeta: {
     flexDirection: 'row',

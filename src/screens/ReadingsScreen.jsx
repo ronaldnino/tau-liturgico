@@ -22,8 +22,10 @@ const _Sound = () => {
 };
 const _Tts = () => require('react-native-tts').default;
 import Svg, { Path, Rect } from 'react-native-svg';
-import { Colors } from '../theme';
+import { Colors, Typography } from '../theme';
 import { Tau } from '../components';
+
+const { TextStyles } = Typography;
 import { useSettingsStore, useNotesStore, useLiturgicalStore } from '../store';
 import { TODAY, LITURGICAL_LABELS } from '../data/liturgical';
 import {
@@ -1306,10 +1308,7 @@ const s = StyleSheet.create({
     borderRadius: 999,
   },
   headerDate: {
-    fontSize: 11,
-    fontWeight: '600',
-    letterSpacing: 1,
-    textTransform: 'uppercase',
+    ...TextStyles.eyebrow,
     marginBottom: 2,
   },
   headerTitle: {
@@ -1329,10 +1328,8 @@ const s = StyleSheet.create({
     borderWidth: 1,
   },
   litPillText: {
+    ...TextStyles.eyebrow,
     fontSize: 10,
-    fontWeight: '700',
-    letterSpacing: 0.8,
-    textTransform: 'uppercase',
   },
 
   /* ── Tabs ── */
@@ -1353,10 +1350,7 @@ const s = StyleSheet.create({
   scrollContent: { padding: 24 },
 
   readingType: {
-    fontSize: 11,
-    fontWeight: '600',
-    letterSpacing: 1.5,
-    textTransform: 'uppercase',
+    ...TextStyles.eyebrow,
     marginBottom: 4,
   },
   readingRef: {
@@ -1466,10 +1460,7 @@ const s = StyleSheet.create({
     marginTop: 4,
   },
   playerLabel: {
-    fontSize: 11,
-    fontWeight: '500',
-    letterSpacing: 0.5,
-    textTransform: 'uppercase',
+    ...TextStyles.eyebrow,
   },
   elBadge: {
     paddingHorizontal: 8,
@@ -1507,5 +1498,5 @@ const s = StyleSheet.create({
     borderRadius: 10,
     backgroundColor: Colors.brand.primary,
   },
-  retryBtnText: { color: '#fff', fontWeight: '600', fontSize: 14 },
+  retryBtnText: { ...TextStyles.buttonSm, fontSize: 14, color: '#fff' },
 });

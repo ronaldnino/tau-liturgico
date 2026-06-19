@@ -16,7 +16,9 @@ import Svg, { Path, Circle } from 'react-native-svg';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { launchCamera, launchImageLibrary } from 'react-native-image-picker';
 import { ensureCameraPermission } from '../utils/permissions';
-import { Colors, Spacing } from '../theme';
+import { Colors, Spacing, Typography } from '../theme';
+
+const { TextStyles } = Typography;
 import { useSettingsStore, useProfileStore } from '../store';
 import { saveProfile, uploadProfilePhoto } from '../services/profile';
 
@@ -319,10 +321,7 @@ const s = StyleSheet.create({
   content: { paddingHorizontal: Spacing[5] },
 
   eyebrow: {
-    fontSize: 11,
-    fontWeight: '800',
-    letterSpacing: 2,
-    textTransform: 'uppercase',
+    ...TextStyles.eyebrow,
     textAlign: 'center',
     marginBottom: 8,
   },
@@ -367,10 +366,7 @@ const s = StyleSheet.create({
   form: { gap: 16, marginBottom: 28 },
   fieldWrap: { gap: 6 },
   fieldLabel: {
-    fontSize: 11,
-    fontWeight: '700',
-    letterSpacing: 1,
-    textTransform: 'uppercase',
+    ...TextStyles.eyebrow,
     marginLeft: 2,
   },
   fieldBox: {
@@ -390,7 +386,7 @@ const s = StyleSheet.create({
     backgroundColor: Colors.brand.primary,
   },
   saveBtnSaving: { opacity: 0.7 },
-  saveBtnText: { color: '#fff', fontSize: 16, fontWeight: '700', letterSpacing: 0.3 },
+  saveBtnText: { ...TextStyles.button, color: '#fff' },
 
   skipBtn: { alignItems: 'center', paddingVertical: 8 },
   skipText: { fontSize: 14 },

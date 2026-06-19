@@ -1,6 +1,7 @@
 import React from 'react';
 import { TouchableOpacity, Text, StyleSheet } from 'react-native';
 import Colors from '../theme/colors';
+import { TextStyles } from '../theme/typography';
 
 export default function PrimaryBtn({ children, onPress, disabled, style }) {
   return (
@@ -28,8 +29,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#CBD5E1',
   },
   text: {
+    ...TextStyles.button,
     color: '#fff',
-    fontWeight: '600',
-    fontSize: 16,
   },
 });
