@@ -106,11 +106,10 @@ Todos los parsers devuelven un array de objetos con la misma forma:
   feria, 4 = domingo/solemnidad; fuera de rango asume descarga incompleta y
   resincroniza).
 - `TodayScreen.jsx` — resumen del día; el chip de lecturas usa `STATIC_READINGS`
-  solo como placeholder si el store está vacío.
-
-> El subtítulo de lecturas en `TodayScreen` hoy se deriva de `isSunday` y no del
-> array real, por lo que desfasa en solemnidades de día de semana →
-> [PENDIENTES.md](PENDIENTES.md) ítem 7.
+  solo como placeholder si el store está vacío. El subtítulo (`readingsSub`)
+  anuncia 4 lecturas con `isSunday || hasSecond`: los domingos por el calendario
+  (aunque las lecturas aún no carguen) y las solemnidades de día de semana por la
+  2ª lectura presente en el array.
 
 ---
 

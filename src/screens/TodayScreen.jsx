@@ -328,7 +328,11 @@ export default function TodayScreen({ navigation }) {
   const litColor =
     Colors.liturgicalUI[TODAY.liturgicalColor] ?? Colors.liturgicalUI.green;
   const isSunday = _n.getDay() === 0;
-  const readingsSub = isSunday ? '1ª · Sal · 2ª · Ev' : '1ª · Sal · Ev';
+  // Domingos y solemnidades llevan 2ª lectura (4 en total); ferias no (3). Los
+  // domingos se saben por el calendario aunque las lecturas aún no hayan cargado;
+  // las solemnidades de día de semana se detectan por la 2ª lectura ya presente.
+  const hasSecond = READINGS.some((r) => r.type === 'Segunda Lectura');
+  const readingsSub = isSunday || hasSecond ? '1ª · Sal · 2ª · Ev' : '1ª · Sal · Ev';
 
   return (
     <ScrollView
