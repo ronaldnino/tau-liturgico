@@ -221,6 +221,9 @@ function IconPerfil({ color }) {
 function MainTabs() {
   return (
     <Tab.Navigator
+      // "history": el botón atrás (y el back físico de Android) vuelve a la última
+      // pestaña visitada, no a la primera (por defecto sería 'firstRoute' → Hoy).
+      backBehavior="history"
       screenOptions={{
         headerShown: false,
         tabBarLabelStyle: { fontSize: 10.5, fontWeight: '600', marginTop: 2 },
