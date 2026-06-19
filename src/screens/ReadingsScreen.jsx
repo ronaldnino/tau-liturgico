@@ -825,7 +825,14 @@ export default function ReadingsScreen({ navigation, route }) {
 
         <View style={s.headerRow}>
           <TouchableOpacity
-            onPress={() => navigation.goBack()}
+            onPress={() => {
+              // Volver a la pantalla de origen (la que abrió Lecturas). Es
+              // determinista: no depende del backBehavior del tab navigator, que
+              // por defecto vuelve a la primera pestaña (Hoy), no a la última.
+              const from = route?.params?.from;
+              if (from) navigation.navigate(from);
+              else navigation.goBack();
+            }}
             style={s.backBtn}
             activeOpacity={0.7}
           >

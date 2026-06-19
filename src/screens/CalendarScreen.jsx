@@ -449,6 +449,7 @@ export default function CalendarScreen({ navigation }) {
                 date: selectedISO,
                 color: selColor,
                 celebration: selectedCell?.name ?? null,
+                from: 'Calendario',
               })
             }
             activeOpacity={0.82}

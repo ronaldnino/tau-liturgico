@@ -436,7 +436,9 @@ export default function TodayScreen({ navigation }) {
           {/* Footer: CTA lecturas integrado */}
           <TouchableOpacity
             style={[s.heroFooter, { borderTopColor: border }]}
-            onPress={() => navigation.navigate('Lecturas', { date: TODAY_ISO })}
+            onPress={() =>
+              navigation.navigate('Lecturas', { date: TODAY_ISO, from: 'Hoy' })
+            }
             activeOpacity={0.75}
           >
             <View style={[s.heroFooterIcon, { backgroundColor: litColor + '18' }]}>
@@ -457,7 +459,9 @@ export default function TodayScreen({ navigation }) {
       <View style={s.sectionPad}>
         <SectionTitle
           action="Ver todas"
-          onActionPress={() => navigation.navigate('Lecturas', { date: TODAY_ISO })}
+          onActionPress={() =>
+            navigation.navigate('Lecturas', { date: TODAY_ISO, from: 'Hoy' })
+          }
         >
           Lecturas de hoy
         </SectionTitle>
@@ -465,7 +469,9 @@ export default function TodayScreen({ navigation }) {
           {READINGS.map((r, i) => (
             <TouchableOpacity
               key={i}
-              onPress={() => navigation.navigate('Lecturas', { date: TODAY_ISO })}
+              onPress={() =>
+                navigation.navigate('Lecturas', { date: TODAY_ISO, from: 'Hoy' })
+              }
               activeOpacity={0.7}
               style={[
                 s.readingRow,
