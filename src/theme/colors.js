@@ -46,6 +46,17 @@ const Colors = {
     gold: '#D4AF37',
   },
 
+  // Acentos de UI (íconos de ajustes, chips de categoría). Tonos iOS-system,
+  // visibles tanto en claro como en oscuro. Centralizados para no repetir hex.
+  accent: {
+    amber: '#FF9F0A', // apariencia · velocidad · notificaciones
+    indigo: '#5E5CE6', // tema oscuro · calendario romano
+    blue: '#0A84FF', // info · pestaña App
+    mint: '#30D158', // voz del sistema
+    pink: '#FF375F', // credenciales ElevenLabs
+    orange: '#FF6B35', // dominicos.org
+  },
+
   dark: {
     bg: '#0F172A',
     surface: '#1E293B',

@@ -1277,6 +1277,8 @@ PODS:
   - RecaptchaInterop (100.0.0)
   - RNCAsyncStorage (1.23.1):
     - React-Core
+  - RNDeviceInfo (15.0.2):
+    - React-Core
   - RNFBApp (18.9.0):
     - Firebase/CoreOnly (= 10.20.0)
     - React-Core
@@ -1440,6 +1442,7 @@ DEPENDENCIES:
   - ReactCommon/turbomodule/core (from `../node_modules/react-native/ReactCommon`)
   - RecaptchaInterop
   - "RNCAsyncStorage (from `../node_modules/@react-native-async-storage/async-storage`)"
+  - RNDeviceInfo (from `../node_modules/react-native-device-info`)
   - "RNFBApp (from `../node_modules/@react-native-firebase/app`)"
   - "RNFBAppCheck (from `../node_modules/@react-native-firebase/app-check`)"
   - "RNFBAuth (from `../node_modules/@react-native-firebase/auth`)"
@@ -1586,6 +1589,8 @@ EXTERNAL SOURCES:
     :path: "../node_modules/react-native/ReactCommon"
   RNCAsyncStorage:
     :path: "../node_modules/@react-native-async-storage/async-storage"
+  RNDeviceInfo:
+    :path: "../node_modules/react-native-device-info"
   RNFBApp:
     :path: "../node_modules/@react-native-firebase/app"
   RNFBAppCheck:
@@ -1683,6 +1688,7 @@ SPEC CHECKSUMS:
   ReactCommon: 9f285823dbe955099978d9bff65a7653ca029256
   RecaptchaInterop: 7d1a4a01a6b2cb1610a47ef3f85f0c411434cb21
   RNCAsyncStorage: aa75595c1aefa18f868452091fa0c411a516ce11
+  RNDeviceInfo: 4c852998208b60dc192ae3529e5867817719ad1e
   RNFBApp: 20bfba7e2a61a959518c1d57e5d48817c62ed3f6
   RNFBAppCheck: c5e77f500b36ad540eb323769448d2d0a954095b
   RNFBAuth: 71ecb2cdb13dbcaf0f8453e5a6cd23340498cb53

@@ -12,13 +12,17 @@ import {
   Alert,
   Linking,
   ActivityIndicator,
+  KeyboardAvoidingView,
   Platform,
 } from 'react-native';
 import { launchCamera, launchImageLibrary } from 'react-native-image-picker';
+import DeviceInfo from 'react-native-device-info';
 import { ensureCameraPermission } from '../utils/permissions';
 import Svg, { Path, Line, Circle, Rect, Polyline } from 'react-native-svg';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Colors } from '../theme';
+import { Colors, Typography } from '../theme';
+
+const { TextStyles } = Typography;
 import { useSettingsStore, useAuthStore, useNotesStore, useProfileStore } from '../store';
 import { CYCLE, TODAY } from '../data/liturgical';
 import { clearTTSCache, DEFAULT_VOICE_ID } from '../services/elevenlabs';
@@ -27,18 +31,21 @@ import { saveProfile, uploadProfilePhoto } from '../services/profile';
 const SPEED_OPTIONS = [0.25, 0.5, 0.75, 1, 1.25, 1.5, 2];
 const _Tts = () => require('react-native-tts').default;
 
+// Versión del binario. Defensivo: si el módulo nativo aún no está enlazado
+// (p. ej. tras instalar device-info sin reconstruir), no debe tumbar la app.
+function appVersionLabel() {
+  try {
+    return `${DeviceInfo.getVersion()} (${DeviceInfo.getBuildNumber()})`;
+  } catch (_) {
+    return '—';
+  }
+}
+
 const TABS = [
   { id: 'perfil', label: 'Feligrés', Icon: IcoUser, color: Colors.brand.primary },
-  { id: 'apariencia', label: 'Apariencia', Icon: IcoSliders, color: '#FF9F0A' },
-  { id: 'voz', label: 'Voz', Icon: IcoMic, color: '#30D158' },
-  {
-    id: 'elevenlabs',
-    label: 'ElevenLabs',
-    Icon: IcoStar,
-    color: Colors.liturgicalUI.gold,
-    premium: true,
-  },
-  { id: 'app', label: 'App', Icon: IcoGear, color: '#0A84FF' },
+  { id: 'apariencia', label: 'Apariencia', Icon: IcoSliders, color: Colors.accent.amber },
+  { id: 'voz', label: 'Voz', Icon: IcoMic, color: Colors.accent.mint },
+  { id: 'app', label: 'App', Icon: IcoGear, color: Colors.accent.blue },
 ];
 
 // ── Iconos SVG ────────────────────────────────────────────────────────────────
@@ -285,6 +292,57 @@ function IcoChevron({ c, size = 14 }) {
     </Svg>
   );
 }
+function IcoX({ c, size = 16 }) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <Line
+        x1={18}
+        y1={6}
+        x2={6}
+        y2={18}
+        stroke={c}
+        strokeWidth={2.2}
+        strokeLinecap="round"
+      />
+      <Line
+        x1={6}
+        y1={6}
+        x2={18}
+        y2={18}
+        stroke={c}
+        strokeWidth={2.2}
+        strokeLinecap="round"
+      />
+    </Svg>
+  );
+}
+function IcoEye({ c, size = 18 }) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <Path
+        d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"
+        stroke={c}
+        strokeWidth={1.8}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <Circle cx={12} cy={12} r={3} stroke={c} strokeWidth={1.8} />
+    </Svg>
+  );
+}
+function IcoEyeOff({ c, size = 18 }) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <Path
+        d="M9.88 9.88a3 3 0 1 0 4.24 4.24M10.73 5.08A10.43 10.43 0 0 1 12 5c6.5 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68M6.61 6.61A13.526 13.526 0 0 0 2 12s3.5 7 10 7a9.74 9.74 0 0 0 5.39-1.61M2 2l20 20"
+        stroke={c}
+        strokeWidth={1.8}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </Svg>
+  );
+}
 function IcoKey({ c, size = 16 }) {
   return (
     <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
@@ -516,245 +574,12 @@ function IcoCalGrid({ c, size = 16 }) {
   );
 }
 
-// ── Pantalla principal ────────────────────────────────────────────────────────
-
-export default function ProfileScreen() {
-  const insets = useSafeAreaInsets();
-  const scheme = useColorScheme();
-  const {
-    darkMode,
-    setDarkMode,
-    ttsSpeed,
-    setTtsSpeed,
-    ttsVoiceId,
-    setTtsVoiceId,
-    elevenlabsApiKey,
-    setElevenlabsApiKey,
-    elevenlabsVoiceId,
-    setElevenlabsVoiceId,
-    dailyReminder,
-    setDailyReminder,
-  } = useSettingsStore();
-
-  const [activeTab, setActiveTab] = useState('perfil');
-  const [showApiKey, setShowApiKey] = useState(false);
-  const [systemVoices, setSystemVoices] = useState([]);
-  const [voiceOpen, setVoiceOpen] = useState(false);
-  const [voicesLoading, setVoicesLoading] = useState(true); // carga al montar
-
-  const { notes } = useNotesStore();
-  const { phone, logout } = useAuthStore();
-  const { displayName, photoURL, clearProfile } = useProfileStore();
-  const profileStore = useProfileStore();
-
-  const dark = darkMode === 'dark' || (darkMode === 'auto' && scheme === 'dark');
-  const bg = dark ? Colors.dark.bg : Colors.surface.secondary;
-  const surface = dark ? Colors.dark.surface : Colors.surface.primary;
-  const ink = dark ? Colors.dark.ink : Colors.ink.primary;
-  const muted = dark ? Colors.dark.inkMuted : Colors.ink.muted;
-  const border = dark ? Colors.dark.border : Colors.border.default;
-
-  const seasonColor = Colors.liturgicalUI[TODAY.seasonColor] ?? Colors.liturgicalUI.green;
-
-  // Fetch puro: sin setState síncrono (incluso un throw de _Tts se maneja en el
-  // .catch asíncrono), para poder llamarlo desde el efecto de montaje sin avisos.
-  const fetchVoices = () => {
-    Promise.resolve()
-      .then(() => _Tts().voices())
-      .then((voices) => {
-        const list = Array.isArray(voices) ? voices : [];
-        const es = list.filter((v) => v.language && /^es/i.test(v.language));
-        setSystemVoices(es.length > 0 ? es : list);
-        setVoicesLoading(false);
-      })
-      .catch(() => setVoicesLoading(false));
-  };
-
-  // Reintento manual desde la UI: aquí sí mostramos el spinner antes de recargar
-  const loadVoices = () => {
-    setVoicesLoading(true);
-    fetchVoices();
-  };
-
-  useEffect(() => {
-    fetchVoices();
-    try {
-      if (ttsVoiceId)
-        _Tts()
-          .setDefaultVoice(ttsVoiceId)
-          .catch(() => {});
-    } catch (_) {}
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
-
-  const handleLogout = () => {
-    Alert.alert('Cerrar sesión', '¿Estás seguro de que quieres salir?', [
-      { text: 'Cancelar', style: 'cancel' },
-      {
-        text: 'Salir',
-        style: 'destructive',
-        onPress: () => {
-          clearProfile();
-          logout();
-        },
-      },
-    ]);
-  };
-
-  const hasEleven = !!(elevenlabsApiKey && elevenlabsApiKey.trim().length > 0);
-
-  const ctx = { ink, muted, border, surface, dark };
-
-  return (
-    <ScrollView
-      style={[s.root, { backgroundColor: bg }]}
-      contentContainerStyle={{ paddingBottom: insets.bottom + 40 }}
-      showsVerticalScrollIndicator={false}
-      stickyHeaderIndices={[1]}
-    >
-      {/* ── Hero ───────────────────────────────────────────────────────── */}
-      <View style={[s.hero, { backgroundColor: surface }]}>
-        <View style={{ paddingTop: insets.top + 10 }} />
-        <View style={[s.heroStripe, { backgroundColor: seasonColor }]} />
-
-        {/* Avatar */}
-        <TouchableOpacity
-          activeOpacity={0.85}
-          onPress={() => setActiveTab('perfil')}
-          style={[s.avatar, { borderColor: Colors.brand.primary + '30' }]}
-        >
-          {photoURL ? (
-            <Image
-              source={{ uri: photoURL }}
-              style={{ width: 76, height: 76, borderRadius: 38 }}
-            />
-          ) : (
-            <AvatarPlaceholder
-              size={76}
-              accentColor={Colors.brand.primary}
-              badgeBg={surface}
-            />
-          )}
-        </TouchableOpacity>
-
-        {displayName ? (
-          <Text style={[s.heroName, { color: ink }]}>{displayName}</Text>
-        ) : null}
-        <Text style={[s.heroPhone, { color: displayName ? muted : ink }]}>
-          {phone || '+502 0000-0000'}
-        </Text>
-
-        <View
-          style={[
-            s.heroBadge,
-            { backgroundColor: seasonColor + '18', borderColor: seasonColor + '40' },
-          ]}
-        >
-          <View style={[s.heroBadgeDot, { backgroundColor: seasonColor }]} />
-          <Text style={[s.heroBadgeText, { color: seasonColor }]}>{CYCLE.fullLabel}</Text>
-        </View>
-
-        <View style={[s.statsRow, { borderTopColor: border }]}>
-          <StatItem value={notes.length} label="Notas" ink={ink} muted={muted} />
-          <View style={[s.statDiv, { backgroundColor: border }]} />
-          <StatItem value="12" label="Lecturas" ink={ink} muted={muted} />
-          <View style={[s.statDiv, { backgroundColor: border }]} />
-          <StatItem value={CYCLE.liturgicalYear} label="Año" ink={ink} muted={muted} />
-        </View>
-      </View>
-
-      {/* ── Tab bar (sticky) ───────────────────────────────────────────── */}
-      <View style={[s.tabBar, { backgroundColor: bg, borderBottomColor: border }]}>
-        <View style={s.tabBarInner}>
-          {TABS.map((tab) => {
-            const active = activeTab === tab.id;
-            const accentColor = active ? tab.color : muted;
-            const isPremium = tab.id === 'elevenlabs';
-            return (
-              <TouchableOpacity
-                key={tab.id}
-                onPress={() => setActiveTab(tab.id)}
-                style={[s.tab, active && { backgroundColor: tab.color + '12' }]}
-                activeOpacity={0.7}
-              >
-                <View
-                  style={[s.tabIconWrap, active && { backgroundColor: tab.color + '22' }]}
-                >
-                  <tab.Icon c={accentColor} size={20} />
-                  {isPremium && (
-                    <View
-                      style={[
-                        s.tabPremiumDot,
-                        {
-                          backgroundColor: hasEleven
-                            ? Colors.liturgicalUI.green
-                            : Colors.liturgicalUI.gold,
-                        },
-                      ]}
-                    />
-                  )}
-                </View>
-                <Text
-                  style={[s.tabText, { color: accentColor }, active && s.tabTextActive]}
-                >
-                  {tab.label}
-                </Text>
-              </TouchableOpacity>
-            );
-          })}
-        </View>
-      </View>
-
-      {/* ── Contenido de cada pestaña ──────────────────────────────────── */}
-      <View style={s.tabContent}>
-        {activeTab === 'perfil' && <TabPerfil profileStore={profileStore} ctx={ctx} />}
-        {activeTab === 'apariencia' && (
-          <TabApariencia darkMode={darkMode} setDarkMode={setDarkMode} ctx={ctx} />
-        )}
-        {activeTab === 'voz' && (
-          <TabVoz
-            ttsVoiceId={ttsVoiceId}
-            setTtsVoiceId={setTtsVoiceId}
-            ttsSpeed={ttsSpeed}
-            setTtsSpeed={setTtsSpeed}
-            systemVoices={systemVoices}
-            voiceOpen={voiceOpen}
-            setVoiceOpen={setVoiceOpen}
-            voicesLoading={voicesLoading}
-            loadVoices={loadVoices}
-            onGoEleven={() => setActiveTab('elevenlabs')}
-            ctx={ctx}
-          />
-        )}
-        {activeTab === 'elevenlabs' && (
-          <TabElevenLabs
-            elevenlabsApiKey={elevenlabsApiKey}
-            setElevenlabsApiKey={setElevenlabsApiKey}
-            elevenlabsVoiceId={elevenlabsVoiceId}
-            setElevenlabsVoiceId={setElevenlabsVoiceId}
-            showApiKey={showApiKey}
-            setShowApiKey={setShowApiKey}
-            hasEleven={hasEleven}
-            ctx={ctx}
-          />
-        )}
-        {activeTab === 'app' && (
-          <TabApp
-            dailyReminder={dailyReminder}
-            setDailyReminder={setDailyReminder}
-            onLogout={handleLogout}
-            ctx={ctx}
-          />
-        )}
-      </View>
-    </ScrollView>
-  );
-}
-
-// ── Tab: Perfil / Feligrés ────────────────────────────────────────────────────
-
-function TabPerfil({ profileStore, ctx }) {
-  const { displayName, country, diocese, parish, photoURL, setProfile } = profileStore;
-  const { ink, muted, border, surface } = ctx;
+// ── Formulario de perfil ──────────────────────────────────────────────────────
+// El estado vive aquí (en el padre) y no dentro de la pestaña: así no se pierde
+// lo escrito al cambiar de pestaña, ya que las pestañas se montan/desmontan.
+function useProfileForm() {
+  const { displayName, country, diocese, parish, photoURL, setProfile } =
+    useProfileStore();
 
   const [name, setName] = useState(displayName ?? '');
   const [countryVal, setCountryVal] = useState(country ?? '');
@@ -764,6 +589,13 @@ function TabPerfil({ profileStore, ctx }) {
   const [saving, setSaving] = useState(false);
 
   const displayPhoto = photoUri || photoURL || null;
+
+  const dirty =
+    name !== (displayName ?? '') ||
+    countryVal !== (country ?? '') ||
+    dioceseVal !== (diocese ?? '') ||
+    parishVal !== (parish ?? '') ||
+    photoUri !== null;
 
   const pickPhoto = useCallback(() => {
     const opts = { mediaType: 'photo', quality: 0.8, maxWidth: 512, maxHeight: 512 };
@@ -847,6 +679,7 @@ function TabPerfil({ profileStore, ctx }) {
       };
       await saveProfile(data);
       setProfile(data);
+      setPhotoUri(null); // ya subida: limpia el pendiente para que «dirty» vuelva a false
       Alert.alert('Guardado', 'Tu perfil ha sido actualizado correctamente.');
     } catch (e) {
       Alert.alert(
@@ -858,36 +691,297 @@ function TabPerfil({ profileStore, ctx }) {
     }
   }, [name, countryVal, dioceseVal, parishVal, photoUri, photoURL, setProfile]);
 
+  return {
+    name,
+    setName,
+    countryVal,
+    setCountryVal,
+    dioceseVal,
+    setDioceseVal,
+    parishVal,
+    setParishVal,
+    displayPhoto,
+    pickPhoto,
+    handleSave,
+    saving,
+    dirty,
+  };
+}
+
+// ── Pantalla principal ────────────────────────────────────────────────────────
+
+export default function ProfileScreen() {
+  const insets = useSafeAreaInsets();
+  const scheme = useColorScheme();
+  const {
+    darkMode,
+    setDarkMode,
+    ttsSpeed,
+    setTtsSpeed,
+    ttsVoiceId,
+    setTtsVoiceId,
+    elevenlabsApiKey,
+    setElevenlabsApiKey,
+    elevenlabsVoiceId,
+    setElevenlabsVoiceId,
+    dailyReminder,
+    setDailyReminder,
+  } = useSettingsStore();
+
+  const [activeTab, setActiveTab] = useState('perfil');
+  const [showApiKey, setShowApiKey] = useState(false);
+  const [systemVoices, setSystemVoices] = useState([]);
+  const [voiceOpen, setVoiceOpen] = useState(false);
+  const [voicesLoading, setVoicesLoading] = useState(true); // carga al montar
+
+  const { notes, bookmarks } = useNotesStore();
+  const { phone, logout } = useAuthStore();
+  const { displayName, clearProfile } = useProfileStore();
+  const profileForm = useProfileForm();
+
+  const dark = darkMode === 'dark' || (darkMode === 'auto' && scheme === 'dark');
+  const bg = dark ? Colors.dark.bg : Colors.surface.secondary;
+  const surface = dark ? Colors.dark.surface : Colors.surface.primary;
+  const ink = dark ? Colors.dark.ink : Colors.ink.primary;
+  const muted = dark ? Colors.dark.inkMuted : Colors.ink.muted;
+  const border = dark ? Colors.dark.border : Colors.border.default;
+
+  const seasonColor = Colors.liturgicalUI[TODAY.seasonColor] ?? Colors.liturgicalUI.green;
+
+  // Fetch puro: sin setState síncrono (incluso un throw de _Tts se maneja en el
+  // .catch asíncrono), para poder llamarlo desde el efecto de montaje sin avisos.
+  const fetchVoices = () => {
+    Promise.resolve()
+      .then(() => _Tts().voices())
+      .then((voices) => {
+        const list = Array.isArray(voices) ? voices : [];
+        const es = list.filter((v) => v.language && /^es/i.test(v.language));
+        setSystemVoices(es.length > 0 ? es : list);
+        setVoicesLoading(false);
+      })
+      .catch(() => setVoicesLoading(false));
+  };
+
+  // Reintento manual desde la UI: aquí sí mostramos el spinner antes de recargar
+  const loadVoices = () => {
+    setVoicesLoading(true);
+    fetchVoices();
+  };
+
+  useEffect(() => {
+    fetchVoices();
+    try {
+      if (ttsVoiceId)
+        _Tts()
+          .setDefaultVoice(ttsVoiceId)
+          .catch(() => {});
+    } catch (_) {}
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const handleLogout = () => {
+    Alert.alert('Cerrar sesión', '¿Estás seguro de que quieres salir?', [
+      { text: 'Cancelar', style: 'cancel' },
+      {
+        text: 'Salir',
+        style: 'destructive',
+        onPress: () => {
+          clearProfile();
+          logout();
+        },
+      },
+    ]);
+  };
+
+  const hasEleven = !!(elevenlabsApiKey && elevenlabsApiKey.trim().length > 0);
+
+  const ctx = { ink, muted, border, surface, dark };
+
   return (
-    <View style={t.section}>
-      {/* Avatar */}
-      <TouchableOpacity onPress={pickPhoto} activeOpacity={0.85} style={tp.avatarWrap}>
-        {displayPhoto ? (
-          <Image source={{ uri: displayPhoto }} style={tp.avatar} />
-        ) : (
+    <KeyboardAvoidingView
+      style={s.root}
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+    >
+      <ScrollView
+        style={[s.root, { backgroundColor: bg }]}
+        contentContainerStyle={{ paddingBottom: insets.bottom + 40 }}
+        showsVerticalScrollIndicator={false}
+        stickyHeaderIndices={[1]}
+        keyboardShouldPersistTaps="handled"
+        keyboardDismissMode="on-drag"
+      >
+        {/* ── Hero ───────────────────────────────────────────────────────── */}
+        <View style={[s.hero, { backgroundColor: surface }]}>
+          <View style={{ paddingTop: insets.top + 10 }} />
+          <View style={[s.heroStripe, { backgroundColor: seasonColor }]} />
+
+          {/* Avatar (único, editable) */}
+          <TouchableOpacity
+            activeOpacity={0.85}
+            onPress={profileForm.pickPhoto}
+            accessibilityRole="button"
+            accessibilityLabel="Cambiar foto de perfil"
+            style={s.heroAvatarWrap}
+          >
+            <View style={[s.avatar, { borderColor: Colors.brand.primary + '30' }]}>
+              {profileForm.displayPhoto ? (
+                <Image
+                  source={{ uri: profileForm.displayPhoto }}
+                  style={{ width: 76, height: 76, borderRadius: 38 }}
+                />
+              ) : (
+                <AvatarPlaceholder
+                  size={76}
+                  accentColor={Colors.brand.primary}
+                  badgeBg={surface}
+                />
+              )}
+            </View>
+            {/* Con foto, el placeholder ya no aporta su badge: añadimos el nuestro */}
+            {profileForm.displayPhoto ? (
+              <View
+                style={[
+                  s.avatarBadge,
+                  { backgroundColor: Colors.brand.primary, borderColor: surface },
+                ]}
+              >
+                <IcoPencil c="#fff" size={11} />
+              </View>
+            ) : null}
+          </TouchableOpacity>
+
+          {displayName ? (
+            <Text style={[s.heroName, { color: ink }]}>{displayName}</Text>
+          ) : null}
+          {phone ? (
+            <Text style={[s.heroPhone, { color: displayName ? muted : ink }]}>
+              {phone}
+            </Text>
+          ) : null}
+
           <View
             style={[
-              tp.avatarPlaceholder,
-              {
-                backgroundColor: Colors.brand.primary + '12',
-                borderColor: Colors.brand.primary + '30',
-              },
+              s.heroBadge,
+              { backgroundColor: seasonColor + '18', borderColor: seasonColor + '40' },
             ]}
           >
-            <IcoUser c={Colors.brand.primary + '80'} size={44} />
+            <View style={[s.heroBadgeDot, { backgroundColor: seasonColor }]} />
+            <Text style={[s.heroBadgeText, { color: seasonColor }]}>
+              {CYCLE.fullLabel}
+            </Text>
           </View>
-        )}
-        <View
-          style={[
-            tp.cameraBadge,
-            { backgroundColor: Colors.brand.primary, borderColor: surface },
-          ]}
-        >
-          <IcoPencil c="#fff" size={12} />
-        </View>
-      </TouchableOpacity>
-      <Text style={[tp.photoHint, { color: muted }]}>Toca para cambiar foto</Text>
 
+          <View style={[s.statsRow, { borderTopColor: border }]}>
+            <StatItem value={notes.length} label="Notas" ink={ink} muted={muted} />
+            <View style={[s.statDiv, { backgroundColor: border }]} />
+            <StatItem
+              value={bookmarks.length}
+              label="Marcadores"
+              ink={ink}
+              muted={muted}
+            />
+            <View style={[s.statDiv, { backgroundColor: border }]} />
+            <StatItem value={CYCLE.liturgicalYear} label="Año" ink={ink} muted={muted} />
+          </View>
+        </View>
+
+        {/* ── Tab bar (sticky) ───────────────────────────────────────────── */}
+        <View style={[s.tabBar, { backgroundColor: bg, borderBottomColor: border }]}>
+          <View style={s.tabBarInner}>
+            {TABS.map((tab) => {
+              const active = activeTab === tab.id;
+              const accentColor = active ? tab.color : muted;
+              return (
+                <TouchableOpacity
+                  key={tab.id}
+                  onPress={() => setActiveTab(tab.id)}
+                  accessibilityRole="tab"
+                  accessibilityState={{ selected: active }}
+                  accessibilityLabel={tab.label}
+                  style={[s.tab, active && { backgroundColor: tab.color + '12' }]}
+                  activeOpacity={0.7}
+                >
+                  <View
+                    style={[
+                      s.tabIconWrap,
+                      active && { backgroundColor: tab.color + '22' },
+                    ]}
+                  >
+                    <tab.Icon c={accentColor} size={20} />
+                  </View>
+                  <Text
+                    style={[s.tabText, { color: accentColor }, active && s.tabTextActive]}
+                  >
+                    {tab.label}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+        </View>
+
+        {/* ── Contenido de cada pestaña ──────────────────────────────────── */}
+        <View style={s.tabContent}>
+          {activeTab === 'perfil' && <TabPerfil form={profileForm} ctx={ctx} />}
+          {activeTab === 'apariencia' && (
+            <TabApariencia darkMode={darkMode} setDarkMode={setDarkMode} ctx={ctx} />
+          )}
+          {activeTab === 'voz' && (
+            <TabVoz
+              ttsVoiceId={ttsVoiceId}
+              setTtsVoiceId={setTtsVoiceId}
+              ttsSpeed={ttsSpeed}
+              setTtsSpeed={setTtsSpeed}
+              systemVoices={systemVoices}
+              voiceOpen={voiceOpen}
+              setVoiceOpen={setVoiceOpen}
+              voicesLoading={voicesLoading}
+              loadVoices={loadVoices}
+              elevenlabsApiKey={elevenlabsApiKey}
+              setElevenlabsApiKey={setElevenlabsApiKey}
+              elevenlabsVoiceId={elevenlabsVoiceId}
+              setElevenlabsVoiceId={setElevenlabsVoiceId}
+              showApiKey={showApiKey}
+              setShowApiKey={setShowApiKey}
+              hasEleven={hasEleven}
+              ctx={ctx}
+            />
+          )}
+          {activeTab === 'app' && (
+            <TabApp
+              dailyReminder={dailyReminder}
+              setDailyReminder={setDailyReminder}
+              onLogout={handleLogout}
+              ctx={ctx}
+            />
+          )}
+        </View>
+      </ScrollView>
+    </KeyboardAvoidingView>
+  );
+}
+
+// ── Tab: Perfil / Feligrés ────────────────────────────────────────────────────
+
+function TabPerfil({ form, ctx }) {
+  const { ink, muted, border, surface } = ctx;
+  const {
+    name,
+    setName,
+    countryVal,
+    setCountryVal,
+    dioceseVal,
+    setDioceseVal,
+    parishVal,
+    setParishVal,
+    handleSave,
+    saving,
+    dirty,
+  } = form;
+
+  const canSave = dirty && !saving;
+
+  return (
+    <View style={t.section}>
       {/* Información personal */}
       <SectionHeader label="Información personal" muted={muted} />
       <View style={[t.card, { backgroundColor: surface, borderColor: border }]}>
@@ -939,14 +1033,17 @@ function TabPerfil({ profileStore, ctx }) {
       {/* Guardar */}
       <TouchableOpacity
         onPress={handleSave}
-        disabled={saving}
+        disabled={!canSave}
         activeOpacity={0.85}
-        style={[tp.saveBtn, saving && { opacity: 0.7 }]}
+        accessibilityRole="button"
+        accessibilityLabel="Guardar cambios"
+        accessibilityState={{ disabled: !canSave }}
+        style={[tp.saveBtn, !canSave && tp.saveBtnDisabled]}
       >
         {saving ? (
           <ActivityIndicator color="#fff" size="small" />
         ) : (
-          <Text style={tp.saveBtnText}>Guardar cambios</Text>
+          <Text style={tp.saveBtnText}>{dirty ? 'Guardar cambios' : 'Sin cambios'}</Text>
         )}
       </TouchableOpacity>
     </View>
@@ -979,6 +1076,8 @@ function ProfileField({
         style={[tp.fieldInput, { color: ink }]}
         autoCapitalize="words"
         autoCorrect={false}
+        accessibilityLabel={label}
+        returnKeyType="done"
       />
     </View>
   );
@@ -990,8 +1089,8 @@ function TabApariencia({ darkMode, setDarkMode, ctx }) {
   const { ink, muted, border, surface } = ctx;
 
   const OPTS = [
-    { id: 'light', label: 'Claro', Icon: IcoSun, iconColor: '#FF9F0A' },
-    { id: 'dark', label: 'Oscuro', Icon: IcoMoon, iconColor: '#5E5CE6' },
+    { id: 'light', label: 'Claro', Icon: IcoSun, iconColor: Colors.accent.amber },
+    { id: 'dark', label: 'Oscuro', Icon: IcoMoon, iconColor: Colors.accent.indigo },
     { id: 'auto', label: 'Automático', Icon: IcoAuto, iconColor: Colors.brand.primary },
   ];
 
@@ -1007,6 +1106,9 @@ function TabApariencia({ darkMode, setDarkMode, ctx }) {
               key={opt.id}
               onPress={() => setDarkMode(opt.id)}
               activeOpacity={0.7}
+              accessibilityRole="radio"
+              accessibilityState={{ selected: active }}
+              accessibilityLabel={`Tema ${opt.label}`}
               style={[
                 t.themeRow,
                 { borderBottomColor: border },
@@ -1046,10 +1148,17 @@ function TabVoz({
   setVoiceOpen,
   voicesLoading,
   loadVoices,
-  onGoEleven,
+  elevenlabsApiKey,
+  setElevenlabsApiKey,
+  elevenlabsVoiceId,
+  setElevenlabsVoiceId,
+  showApiKey,
+  setShowApiKey,
+  hasEleven,
   ctx,
 }) {
   const { ink, muted, border, surface } = ctx;
+  const [advancedOpen, setAdvancedOpen] = useState(hasEleven);
   const selectedName =
     systemVoices.find((v) => v.id === ttsVoiceId)?.name ?? 'Por defecto';
 
@@ -1061,13 +1170,16 @@ function TabVoz({
         <TouchableOpacity
           onPress={() => setVoiceOpen((v) => !v)}
           activeOpacity={0.7}
+          accessibilityRole="button"
+          accessibilityLabel="Voz activa"
+          accessibilityState={{ expanded: voiceOpen }}
           style={[
             t.row,
             { borderBottomWidth: voiceOpen ? 0.5 : 0, borderBottomColor: border },
           ]}
         >
-          <View style={[t.iconWrap, { backgroundColor: '#30D15820' }]}>
-            <IcoMic c="#30D158" size={17} />
+          <View style={[t.iconWrap, { backgroundColor: Colors.accent.mint + '20' }]}>
+            <IcoMic c={Colors.accent.mint} size={17} />
           </View>
           <Text style={[t.rowLabel, { color: ink }]}>Voz activa</Text>
           <Text style={[t.rowVal, { color: muted }]} numberOfLines={1}>
@@ -1093,15 +1205,11 @@ function TabVoz({
                 </Text>
                 <TouchableOpacity
                   onPress={loadVoices}
+                  accessibilityRole="button"
+                  accessibilityLabel="Reintentar carga de voces"
                   style={[t.retryBtn, { borderColor: Colors.brand.primary + '50' }]}
                 >
-                  <Text
-                    style={{
-                      color: Colors.brand.primary,
-                      fontSize: 13,
-                      fontWeight: '600',
-                    }}
-                  >
+                  <Text style={[t.retryText, { color: Colors.brand.primary }]}>
                     Reintentar
                   </Text>
                 </TouchableOpacity>
@@ -1122,6 +1230,9 @@ function TabVoz({
                           } catch (_) {}
                         setVoiceOpen(false);
                       }}
+                      accessibilityRole="radio"
+                      accessibilityState={{ selected: sel }}
+                      accessibilityLabel={v.name}
                       style={[
                         t.voiceItem,
                         i < arr.length - 1 && {
@@ -1162,8 +1273,8 @@ function TabVoz({
       <View style={[t.card, { backgroundColor: surface, borderColor: border }]}>
         <View style={t.speedBlock}>
           <View style={t.speedHeaderRow}>
-            <View style={[t.iconWrap, { backgroundColor: '#FF9F0A20' }]}>
-              <IcoWave c="#FF9F0A" size={17} />
+            <View style={[t.iconWrap, { backgroundColor: Colors.accent.amber + '20' }]}>
+              <IcoWave c={Colors.accent.amber} size={17} />
             </View>
             <Text style={[t.rowLabel, { color: ink }]}>Velocidad</Text>
             <Text style={[t.speedVal, { color: Colors.brand.primary }]}>{ttsSpeed}×</Text>
@@ -1175,6 +1286,9 @@ function TabVoz({
                 <TouchableOpacity
                   key={sp}
                   onPress={() => setTtsSpeed(sp)}
+                  accessibilityRole="radio"
+                  accessibilityState={{ selected: sel }}
+                  accessibilityLabel={`Velocidad ${sp} por`}
                   style={[
                     t.chip,
                     { borderColor: sel ? Colors.brand.primary : border },
@@ -1189,10 +1303,13 @@ function TabVoz({
         </View>
       </View>
 
-      {/* Promo ElevenLabs */}
+      {/* Voz IA · ElevenLabs (desplegable, antes era una pestaña aparte) */}
       <TouchableOpacity
-        onPress={onGoEleven}
+        onPress={() => setAdvancedOpen((v) => !v)}
         activeOpacity={0.8}
+        accessibilityRole="button"
+        accessibilityLabel="Voz IA con ElevenLabs"
+        accessibilityState={{ expanded: advancedOpen }}
         style={[
           t.promoCard,
           {
@@ -1204,19 +1321,36 @@ function TabVoz({
         <IcoStar c={Colors.liturgicalUI.gold} size={16} />
         <View style={{ flex: 1 }}>
           <Text style={[t.promoTitle, { color: ink }]}>
-            ¿Quieres una voz más natural?
+            {hasEleven ? 'Voz IA · ElevenLabs' : '¿Quieres una voz más natural?'}
           </Text>
           <Text style={[t.promoSub, { color: muted }]}>
-            Activa ElevenLabs para síntesis de voz IA de alta calidad.
+            {hasEleven
+              ? 'Activa. Toca para ajustar credenciales.'
+              : 'Activa ElevenLabs para síntesis de voz IA de alta calidad.'}
           </Text>
         </View>
-        <IcoChevron c={Colors.liturgicalUI.gold} size={14} />
+        <View style={advancedOpen ? s.chevronUp : undefined}>
+          <IcoChevron c={Colors.liturgicalUI.gold} size={14} />
+        </View>
       </TouchableOpacity>
+
+      {advancedOpen && (
+        <ElevenLabsSection
+          elevenlabsApiKey={elevenlabsApiKey}
+          setElevenlabsApiKey={setElevenlabsApiKey}
+          elevenlabsVoiceId={elevenlabsVoiceId}
+          setElevenlabsVoiceId={setElevenlabsVoiceId}
+          showApiKey={showApiKey}
+          setShowApiKey={setShowApiKey}
+          hasEleven={hasEleven}
+          ctx={ctx}
+        />
+      )}
     </View>
   );
 }
 
-// ── Tab: ElevenLabs ───────────────────────────────────────────────────────────
+// ── Sección ElevenLabs (embebida en la pestaña Voz) ───────────────────────────
 
 const ELEVEN_STEPS = [
   { n: '1', text: 'Crea una cuenta gratuita en elevenlabs.io' },
@@ -1225,7 +1359,7 @@ const ELEVEN_STEPS = [
   { n: '4', text: 'Copia la API Key y pégala aquí abajo' },
 ];
 
-function TabElevenLabs({
+function ElevenLabsSection({
   elevenlabsApiKey,
   setElevenlabsApiKey,
   elevenlabsVoiceId,
@@ -1238,7 +1372,7 @@ function TabElevenLabs({
   const { ink, muted, border, surface } = ctx;
 
   return (
-    <View style={t.section}>
+    <View style={t.sectionEmbedded}>
       {/* Banner premium */}
       <View
         style={[
@@ -1353,6 +1487,8 @@ function TabElevenLabs({
         <TouchableOpacity
           onPress={() => Linking.openURL('https://elevenlabs.io/sign-up')}
           activeOpacity={0.8}
+          accessibilityRole="link"
+          accessibilityLabel="Abrir elevenlabs.io"
           style={[
             t.linkBtn,
             { backgroundColor: Colors.brand.primary + '10', borderTopColor: border },
@@ -1371,8 +1507,8 @@ function TabElevenLabs({
       <View style={[t.card, { backgroundColor: surface, borderColor: border }]}>
         {/* API Key */}
         <View style={[t.credRow, { borderBottomWidth: 0.5, borderBottomColor: border }]}>
-          <View style={[t.iconWrap, { backgroundColor: '#FF375F20' }]}>
-            <IcoKey c="#FF375F" size={17} />
+          <View style={[t.iconWrap, { backgroundColor: Colors.accent.pink + '20' }]}>
+            <IcoKey c={Colors.accent.pink} size={17} />
           </View>
           <View style={{ flex: 1 }}>
             <Text style={[t.credLabel, { color: muted }]}>API Key</Text>
@@ -1385,10 +1521,20 @@ function TabElevenLabs({
                 secureTextEntry={!showApiKey}
                 autoCapitalize="none"
                 autoCorrect={false}
+                accessibilityLabel="API Key de ElevenLabs"
                 style={[t.credInput, { color: ink }]}
               />
-              <TouchableOpacity onPress={() => setShowApiKey((v) => !v)} style={t.eyeBtn}>
-                <Text style={{ fontSize: 15 }}>{showApiKey ? '🙈' : '👁️'}</Text>
+              <TouchableOpacity
+                onPress={() => setShowApiKey((v) => !v)}
+                style={t.eyeBtn}
+                accessibilityRole="button"
+                accessibilityLabel={showApiKey ? 'Ocultar API Key' : 'Mostrar API Key'}
+              >
+                {showApiKey ? (
+                  <IcoEyeOff c={muted} size={18} />
+                ) : (
+                  <IcoEye c={muted} size={18} />
+                )}
               </TouchableOpacity>
             </View>
           </View>
@@ -1396,8 +1542,8 @@ function TabElevenLabs({
 
         {/* Voice ID */}
         <View style={t.credRow}>
-          <View style={[t.iconWrap, { backgroundColor: '#FF375F20' }]}>
-            <IcoMic c="#FF375F" size={17} />
+          <View style={[t.iconWrap, { backgroundColor: Colors.accent.pink + '20' }]}>
+            <IcoMic c={Colors.accent.pink} size={17} />
           </View>
           <View style={{ flex: 1 }}>
             <Text style={[t.credLabel, { color: muted }]}>Voice ID</Text>
@@ -1408,6 +1554,7 @@ function TabElevenLabs({
               placeholderTextColor={muted}
               autoCapitalize="none"
               autoCorrect={false}
+              accessibilityLabel="Voice ID de ElevenLabs"
               style={[t.credInput, { color: ink }]}
             />
           </View>
@@ -1429,6 +1576,8 @@ function TabElevenLabs({
         }
         style={[t.ghostBtn, { borderColor: border }]}
         activeOpacity={0.7}
+        accessibilityRole="button"
+        accessibilityLabel="Limpiar caché de audio"
       >
         <Text style={[t.ghostBtnText, { color: muted }]}>Limpiar caché de audio</Text>
       </TouchableOpacity>
@@ -1444,14 +1593,11 @@ function CompareCol({ title, items, bad, ink, muted }) {
       </Text>
       {items.map((item) => (
         <View key={item} style={t.compareItem}>
-          <Text
-            style={{
-              color: bad ? Colors.liturgicalUI.red : Colors.liturgicalUI.green,
-              fontSize: 13,
-            }}
-          >
-            {bad ? '✕' : '✓'}
-          </Text>
+          {bad ? (
+            <IcoX c={Colors.liturgicalUI.red} size={14} />
+          ) : (
+            <IcoCheck c={Colors.liturgicalUI.green} size={14} />
+          )}
           <Text style={[t.compareItemText, { color: bad ? muted : ink }]}>{item}</Text>
         </View>
       ))}
@@ -1467,10 +1613,10 @@ function TabApp({ dailyReminder, setDailyReminder, onLogout, ctx }) {
   const ABOUT = [
     {
       label: 'Versión',
-      value: '1.0.0',
+      value: appVersionLabel(),
       Icon: IcoInfo,
-      iconBg: '#0A84FF18',
-      iconC: '#0A84FF',
+      iconBg: Colors.accent.blue + '18',
+      iconC: Colors.accent.blue,
     },
     {
       label: 'Ciclo litúrgico',
@@ -1490,15 +1636,15 @@ function TabApp({ dailyReminder, setDailyReminder, onLogout, ctx }) {
       label: 'Lecturas',
       value: 'dominicos.org · Vatican News',
       Icon: IcoBookOpen,
-      iconBg: '#FF6B3518',
-      iconC: '#FF6B35',
+      iconBg: Colors.accent.orange + '18',
+      iconC: Colors.accent.orange,
     },
     {
       label: 'Calendario',
       value: 'Rito Romano',
       Icon: IcoCalGrid,
-      iconBg: '#5E5CE618',
-      iconC: '#5E5CE6',
+      iconBg: Colors.accent.indigo + '18',
+      iconC: Colors.accent.indigo,
     },
   ];
 
@@ -1508,8 +1654,8 @@ function TabApp({ dailyReminder, setDailyReminder, onLogout, ctx }) {
       <SectionHeader label="Notificaciones" muted={muted} />
       <View style={[t.card, { backgroundColor: surface, borderColor: border }]}>
         <View style={t.row}>
-          <View style={[t.iconWrap, { backgroundColor: '#FF9F0A20' }]}>
-            <IcoBell c="#FF9F0A" size={17} />
+          <View style={[t.iconWrap, { backgroundColor: Colors.accent.amber + '20' }]}>
+            <IcoBell c={Colors.accent.amber} size={17} />
           </View>
           <Text style={[t.rowLabel, { color: ink }]}>Recordatorio diario</Text>
           <Switch
@@ -1517,6 +1663,7 @@ function TabApp({ dailyReminder, setDailyReminder, onLogout, ctx }) {
             onValueChange={setDailyReminder}
             trackColor={{ false: border, true: Colors.brand.primary }}
             thumbColor="#fff"
+            accessibilityLabel="Recordatorio diario"
           />
         </View>
       </View>
@@ -1552,6 +1699,8 @@ function TabApp({ dailyReminder, setDailyReminder, onLogout, ctx }) {
             Linking.openURL('https://www.dominicos.org/predicacion/evangelio-del-dia')
           }
           activeOpacity={0.8}
+          accessibilityRole="link"
+          accessibilityLabel="Abrir dominicos.org"
           style={[
             t.linkBtn,
             { borderTopWidth: 0, borderBottomWidth: 0.5, borderBottomColor: border },
@@ -1571,6 +1720,8 @@ function TabApp({ dailyReminder, setDailyReminder, onLogout, ctx }) {
             Linking.openURL('https://www.vaticannews.va/es/evangelio-de-hoy.html')
           }
           activeOpacity={0.8}
+          accessibilityRole="link"
+          accessibilityLabel="Abrir Vatican News"
           style={[t.linkBtn, { borderTopWidth: 0 }]}
         >
           <IcoLink c={Colors.brand.primary} size={16} />
@@ -1587,6 +1738,8 @@ function TabApp({ dailyReminder, setDailyReminder, onLogout, ctx }) {
       {/* Cerrar sesión */}
       <TouchableOpacity
         onPress={onLogout}
+        accessibilityRole="button"
+        accessibilityLabel="Cerrar sesión"
         style={[
           t.logoutBtn,
           { backgroundColor: surface, borderColor: Colors.liturgicalUI.red + '35' },
@@ -1626,14 +1779,24 @@ const s = StyleSheet.create({
 
   hero: { alignItems: 'center', paddingBottom: 0, overflow: 'hidden' },
   heroStripe: { position: 'absolute', top: 0, left: 0, right: 0, height: 3 },
+  heroAvatarWrap: { marginTop: 28, marginBottom: 12 },
   avatar: {
     width: 76,
     height: 76,
     borderRadius: 38,
     borderWidth: 1.5,
     overflow: 'hidden',
-    marginTop: 28,
-    marginBottom: 12,
+  },
+  avatarBadge: {
+    position: 'absolute',
+    bottom: 0,
+    right: 0,
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 2,
   },
   heroName: {
     fontFamily: 'CormorantGaramond-SemiBold',
@@ -1668,10 +1831,8 @@ const s = StyleSheet.create({
     lineHeight: 30,
   },
   statLabel: {
+    ...TextStyles.eyebrow,
     fontSize: 10,
-    fontWeight: '600',
-    letterSpacing: 1,
-    textTransform: 'uppercase',
     marginTop: 2,
   },
   statDiv: { width: 0.5, marginVertical: 10 },
@@ -1692,57 +1853,19 @@ const s = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  tabPremiumDot: {
-    position: 'absolute',
-    top: 4,
-    right: 4,
-    width: 8,
-    height: 8,
-    borderRadius: 999,
-  },
   tabText: { fontSize: 10, fontWeight: '600', letterSpacing: 0.2, textAlign: 'center' },
   tabTextActive: { fontWeight: '700' },
-  premiumBadge: {
-    width: 16,
-    height: 16,
-    borderRadius: 999,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
+  chevronUp: { transform: [{ rotate: '-90deg' }] },
 
   tabContent: { paddingTop: 4 },
 });
 
 // Estilos TabPerfil
 const tp = StyleSheet.create({
-  avatarWrap: { alignSelf: 'center', marginBottom: 8, marginTop: 4 },
-  avatar: { width: 88, height: 88, borderRadius: 44 },
-  avatarPlaceholder: {
-    width: 88,
-    height: 88,
-    borderRadius: 44,
-    borderWidth: 1.5,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  cameraBadge: {
-    position: 'absolute',
-    bottom: 0,
-    right: 0,
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 2,
-  },
-  photoHint: { textAlign: 'center', fontSize: 12, marginBottom: 20 },
   fieldRow: { paddingHorizontal: 14, paddingVertical: 11 },
   fieldLabel: {
+    ...TextStyles.eyebrow,
     fontSize: 10,
-    fontWeight: '700',
-    letterSpacing: 0.8,
-    textTransform: 'uppercase',
     marginBottom: 5,
   },
   fieldInput: { fontSize: 15, paddingVertical: 0 },
@@ -1755,17 +1878,16 @@ const tp = StyleSheet.create({
     justifyContent: 'center',
     backgroundColor: Colors.brand.primary,
   },
-  saveBtnText: { color: '#fff', fontSize: 16, fontWeight: '700', letterSpacing: 0.3 },
+  saveBtnDisabled: { opacity: 0.5 },
+  saveBtnText: { ...TextStyles.button, color: '#fff' },
 });
 
 // Estilos compartidos entre tabs
 const t = StyleSheet.create({
   section: { paddingTop: 20, paddingBottom: 12 },
+  sectionEmbedded: { paddingTop: 8, paddingBottom: 12 },
   sectionHeader: {
-    fontSize: 11,
-    fontWeight: '700',
-    letterSpacing: 1.4,
-    textTransform: 'uppercase',
+    ...TextStyles.eyebrow,
     marginHorizontal: 20,
     marginBottom: 8,
     marginTop: 6,
@@ -1814,6 +1936,7 @@ const t = StyleSheet.create({
   emptyBox: { padding: 18, gap: 10 },
   emptyTitle: { fontSize: 14, fontWeight: '600' },
   emptyText: { fontSize: 13, lineHeight: 19 },
+  retryText: { ...TextStyles.buttonSm },
   retryBtn: {
     alignSelf: 'flex-start',
     paddingHorizontal: 14,
@@ -1888,7 +2011,7 @@ const t = StyleSheet.create({
     borderRadius: 999,
     borderWidth: 1,
   },
-  recommendedText: { fontSize: 9, fontWeight: '800', letterSpacing: 0.8 },
+  recommendedText: { ...TextStyles.eyebrow, fontSize: 9 },
   premiumSub: { fontSize: 13, lineHeight: 19 },
   compareDivider: { height: 0.5 },
   compareRow: { flexDirection: 'row', gap: 10 },
