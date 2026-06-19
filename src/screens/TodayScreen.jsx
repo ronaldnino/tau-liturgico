@@ -470,7 +470,11 @@ export default function TodayScreen({ navigation }) {
             <TouchableOpacity
               key={i}
               onPress={() =>
-                navigation.navigate('Lecturas', { date: TODAY_ISO, from: 'Hoy' })
+                navigation.navigate('Lecturas', {
+                  date: TODAY_ISO,
+                  from: 'Hoy',
+                  reading: i,
+                })
               }
               activeOpacity={0.7}
               style={[

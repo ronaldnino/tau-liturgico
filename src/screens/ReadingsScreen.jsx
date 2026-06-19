@@ -643,7 +643,11 @@ export default function ReadingsScreen({ navigation, route }) {
   const muted = dark ? Colors.dark.inkMuted : Colors.ink.muted;
   const border = dark ? Colors.dark.border : Colors.border.default;
 
-  const [activeReading, setActiveReading] = useState(0);
+  // Lectura abierta. Inicial: la pedida por el parámetro `reading` (cubre el
+  // primer montaje perezoso de la pestaña, antes de que corra el listener focus).
+  const [activeReading, setActiveReading] = useState(() =>
+    Math.max(0, route?.params?.reading ?? 0)
+  );
 
   // Reset a la primera lectura cuando cambia la fecha. Patrón de estado derivado
   // (ajuste en render) en lugar de setState síncrono dentro de un efecto.
@@ -678,10 +682,10 @@ export default function ReadingsScreen({ navigation, route }) {
     stop();
   }, [targetDateISO]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Al tocar la pestaña Lecturas directamente en la barra inferior: mostrar HOY y
-  // recordar la pestaña de origen como `from`, para que el botón atrás vuelva a
-  // ella. Sin esto, quedaría el `from` (y la fecha) de una navegación anterior y
-  // atrás iría a una pantalla equivocada.
+  // Al tocar la pestaña Lecturas directamente en la barra inferior: mostrar HOY,
+  // abrir la 1ª lectura y recordar la pestaña de origen como `from`, para que el
+  // botón atrás vuelva a ella. Sin esto, quedaría el `from` (y la fecha/lectura)
+  // de una navegación anterior y atrás iría a una pantalla equivocada.
   useEffect(() => {
     const unsub = navigation.addListener('tabPress', () => {
       const state = navigation.getState();
@@ -691,7 +695,21 @@ export default function ReadingsScreen({ navigation, route }) {
         from: fromTab && fromTab !== 'Lecturas' ? fromTab : undefined,
         color: undefined,
         celebration: undefined,
+        reading: undefined,
       });
+      setActiveReading(0);
+    });
+    return unsub;
+  }, [navigation]);
+
+  // Al llegar a Lecturas, abrir la lectura indicada por el parámetro `reading`
+  // (p. ej. al tocar "2ª lectura" en el resumen de Hoy). Se lee del estado de
+  // navegación para tener siempre el valor más reciente.
+  useEffect(() => {
+    const unsub = navigation.addListener('focus', () => {
+      const state = navigation.getState();
+      const params = state.routes?.[state.index]?.params;
+      setActiveReading(Math.max(0, params?.reading ?? 0));
     });
     return unsub;
   }, [navigation]);
