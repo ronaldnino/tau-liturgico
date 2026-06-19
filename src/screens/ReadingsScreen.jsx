@@ -678,6 +678,24 @@ export default function ReadingsScreen({ navigation, route }) {
     stop();
   }, [targetDateISO]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Al tocar la pestaña Lecturas directamente en la barra inferior: mostrar HOY y
+  // recordar la pestaña de origen como `from`, para que el botón atrás vuelva a
+  // ella. Sin esto, quedaría el `from` (y la fecha) de una navegación anterior y
+  // atrás iría a una pantalla equivocada.
+  useEffect(() => {
+    const unsub = navigation.addListener('tabPress', () => {
+      const state = navigation.getState();
+      const fromTab = state.routes?.[state.index]?.name;
+      navigation.setParams({
+        date: TODAY_ISO,
+        from: fromTab && fromTab !== 'Lecturas' ? fromTab : undefined,
+        color: undefined,
+        celebration: undefined,
+      });
+    });
+    return unsub;
+  }, [navigation]);
+
   // Dispara reproducción automática tras auto-avance
   useEffect(() => {
     if (!autoAdvanceRef.current) return;
