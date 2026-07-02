@@ -15,17 +15,18 @@ import { Colors } from '../theme';
 import { Tau } from '../components';
 import { useAuthStore } from '../store';
 import AuthService from '../services/auth';
+import { normalizePhone } from '../utils/phone';
 
 const LIT_COLORS = Object.values(Colors.liturgical);
 
 const COUNTRIES = [
-  { code: '+58', flag: '🇻🇪', name: 'Venezuela' },
-  { code: '+34', flag: '🇪🇸', name: 'España' },
-  { code: '+54', flag: '🇦🇷', name: 'Argentina' },
-  { code: '+57', flag: '🇨🇴', name: 'Colombia' },
-  { code: '+52', flag: '🇲🇽', name: 'México' },
-  { code: '+51', flag: '🇵🇪', name: 'Perú' },
-  { code: '+1', flag: '🇺🇸', name: 'EE.UU.' },
+  { code: '+58', iso: 'VE', flag: '🇻🇪', name: 'Venezuela' },
+  { code: '+34', iso: 'ES', flag: '🇪🇸', name: 'España' },
+  { code: '+54', iso: 'AR', flag: '🇦🇷', name: 'Argentina' },
+  { code: '+57', iso: 'CO', flag: '🇨🇴', name: 'Colombia' },
+  { code: '+52', iso: 'MX', flag: '🇲🇽', name: 'México' },
+  { code: '+51', iso: 'PE', flag: '🇵🇪', name: 'Perú' },
+  { code: '+1', iso: 'US', flag: '🇺🇸', name: 'EE.UU.' },
 ];
 
 function IcoBack({ c = Colors.ink.primary, size = 22 }) {
@@ -90,18 +91,14 @@ export default function PhoneScreen({ navigation }) {
   const { setPhone: savePhone, resetOnboarding } = useAuthStore();
   const inputRef = useRef(null);
 
-  const digits = phone.replace(/\D/g, '');
-  const isValid = digits.length >= 7;
+  const { isValid, e164 } = normalizePhone(phone, country.iso);
 
   const handleNext = async () => {
     if (!isValid || loading) return;
     setLoading(true);
     setError('');
     try {
-      // E.164: solo dígitos y sin el 0 inicial de marcación nacional (p. ej. en
-      // Venezuela 0416... → +58416...). Sin esto se envía +5804... → inválido.
-      const national = digits.replace(/^0+/, '');
-      const full = `${country.code}${national}`;
+      const full = e164;
       await AuthService.requestOtp(full);
       savePhone(full);
       navigation.navigate('Otp', { phone: full });
