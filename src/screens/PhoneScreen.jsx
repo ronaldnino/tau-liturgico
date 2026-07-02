@@ -1,16 +1,17 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
   View,
   Text,
-  TextInput,
   TouchableOpacity,
   ScrollView,
   StyleSheet,
   KeyboardAvoidingView,
   Platform,
+  Animated,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Path } from 'react-native-svg';
+import MaskInput, { formatWithMask } from 'react-native-mask-input';
 import { Colors } from '../theme';
 import { Tau } from '../components';
 import { useAuthStore } from '../store';
@@ -18,15 +19,70 @@ import AuthService from '../services/auth';
 import { normalizePhone } from '../utils/phone';
 
 const LIT_COLORS = Object.values(Colors.liturgical);
+const D = /\d/;
 
+// mask y placeholder comparten longitud y posición de los caracteres fijos
+// (espacios/guiones) para que el texto fantasma (el resto del ejemplo, en
+// gris) quede alineado exactamente donde termina el número ya escrito.
+// El 0 inicial de marcación nacional (Venezuela/Argentina) no es parte del
+// número: se descarta al escribirlo.
 const COUNTRIES = [
-  { code: '+58', iso: 'VE', flag: '🇻🇪', name: 'Venezuela' },
-  { code: '+34', iso: 'ES', flag: '🇪🇸', name: 'España' },
-  { code: '+54', iso: 'AR', flag: '🇦🇷', name: 'Argentina' },
-  { code: '+57', iso: 'CO', flag: '🇨🇴', name: 'Colombia' },
-  { code: '+52', iso: 'MX', flag: '🇲🇽', name: 'México' },
-  { code: '+51', iso: 'PE', flag: '🇵🇪', name: 'Perú' },
-  { code: '+1', iso: 'US', flag: '🇺🇸', name: 'EE.UU.' },
+  {
+    code: '+58',
+    iso: 'VE',
+    flag: '🇻🇪',
+    name: 'Venezuela',
+    placeholder: '416 123 4567',
+    mask: [D, D, D, ' ', D, D, D, ' ', D, D, D, D],
+  },
+  {
+    code: '+34',
+    iso: 'ES',
+    flag: '🇪🇸',
+    name: 'España',
+    placeholder: '612 345 678',
+    mask: [D, D, D, ' ', D, D, D, ' ', D, D, D],
+  },
+  {
+    code: '+54',
+    iso: 'AR',
+    flag: '🇦🇷',
+    name: 'Argentina',
+    placeholder: '11 15-1234-5678',
+    mask: [D, D, ' ', D, D, '-', D, D, D, D, '-', D, D, D, D],
+  },
+  {
+    code: '+57',
+    iso: 'CO',
+    flag: '🇨🇴',
+    name: 'Colombia',
+    placeholder: '300 123 4567',
+    mask: [D, D, D, ' ', D, D, D, ' ', D, D, D, D],
+  },
+  {
+    code: '+52',
+    iso: 'MX',
+    flag: '🇲🇽',
+    name: 'México',
+    placeholder: '55 1234 5678',
+    mask: [D, D, ' ', D, D, D, D, ' ', D, D, D, D],
+  },
+  {
+    code: '+51',
+    iso: 'PE',
+    flag: '🇵🇪',
+    name: 'Perú',
+    placeholder: '987 654 321',
+    mask: [D, D, D, ' ', D, D, D, ' ', D, D, D],
+  },
+  {
+    code: '+1',
+    iso: 'US',
+    flag: '🇺🇸',
+    name: 'EE.UU.',
+    placeholder: '(212) 555-0134',
+    mask: ['(', D, D, D, ')', ' ', D, D, D, '-', D, D, D, D],
+  },
 ];
 
 function IcoBack({ c = Colors.ink.primary, size = 22 }) {
@@ -90,8 +146,36 @@ export default function PhoneScreen({ navigation }) {
   const [error, setError] = useState('');
   const { setPhone: savePhone, resetOnboarding } = useAuthStore();
   const inputRef = useRef(null);
+  const [zeroHint, setZeroHint] = useState(false);
+  const hintAnim = useState(new Animated.Value(0))[0];
+  const hintTimeout = useRef(null);
+
+  useEffect(() => () => clearTimeout(hintTimeout.current), []);
 
   const { isValid, e164 } = normalizePhone(phone, country.iso);
+  const { masked } = formatWithMask({ text: phone, mask: country.mask });
+  const ghost = country.placeholder.slice(masked.length);
+
+  const handlePhoneChange = (unmasked) => {
+    if (/^0/.test(unmasked)) {
+      setZeroHint(true);
+      Animated.timing(hintAnim, {
+        toValue: 1,
+        duration: 200,
+        useNativeDriver: true,
+      }).start();
+      clearTimeout(hintTimeout.current);
+      hintTimeout.current = setTimeout(() => {
+        Animated.timing(hintAnim, {
+          toValue: 0,
+          duration: 250,
+          useNativeDriver: true,
+        }).start(() => setZeroHint(false));
+      }, 2200);
+    }
+    setPhone(unmasked.replace(/^0+/, ''));
+    setError('');
+  };
 
   const handleNext = async () => {
     if (!isValid || loading) return;
@@ -156,21 +240,56 @@ export default function PhoneScreen({ navigation }) {
               <IcoChevronDown c={pickerOpen ? Colors.brand.primary : Colors.ink.muted} />
             </TouchableOpacity>
 
-            <TextInput
-              ref={inputRef}
-              value={phone}
-              onChangeText={(v) => {
-                setPhone(v);
-                setError('');
-              }}
-              placeholder="000 000 0000"
-              keyboardType="phone-pad"
-              style={s.phoneInput}
-              placeholderTextColor={Colors.ink.soft}
-              returnKeyType="done"
-              onSubmitEditing={handleNext}
-            />
+            <View style={s.phoneInputWrap}>
+              {phone.length > 0 && (
+                <Text
+                  style={[s.phoneGhost, s.phoneNumeric]}
+                  pointerEvents="none"
+                  numberOfLines={1}
+                  allowFontScaling={false}
+                >
+                  <Text style={s.phoneGhostHidden}>{masked}</Text>
+                  <Text style={s.phoneGhostVisible}>{ghost}</Text>
+                </Text>
+              )}
+              <MaskInput
+                ref={inputRef}
+                value={phone}
+                onChangeText={(_masked, unmasked) => handlePhoneChange(unmasked)}
+                mask={country.mask}
+                placeholder={country.placeholder}
+                keyboardType="number-pad"
+                style={[s.phoneInput, s.phoneNumeric]}
+                placeholderTextColor={Colors.ink.soft}
+                returnKeyType="done"
+                allowFontScaling={false}
+                onSubmitEditing={handleNext}
+              />
+            </View>
           </View>
+
+          {zeroHint && (
+            <Animated.View
+              style={[
+                s.zeroHint,
+                {
+                  opacity: hintAnim,
+                  transform: [
+                    {
+                      translateY: hintAnim.interpolate({
+                        inputRange: [0, 1],
+                        outputRange: [-6, 0],
+                      }),
+                    },
+                  ],
+                },
+              ]}
+            >
+              <Text style={s.zeroHintText}>
+                No hace falta escribir el 0 inicial — ya lo quitamos por ti.
+              </Text>
+            </Animated.View>
+          )}
 
           {/* Picker de países */}
           {pickerOpen && (
@@ -294,17 +413,45 @@ const s = StyleSheet.create({
   },
 
   flag: { fontSize: 20 },
-  code: { fontSize: 15, fontWeight: '600', color: Colors.ink.primary },
+  code: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: Colors.ink.primary,
+    fontVariant: ['tabular-nums'],
+  },
+
+  phoneInputWrap: { flex: 1, position: 'relative' },
+  // Compartido entre el fantasma y el input real: mismas métricas de fuente
+  // (peso, tracking, dígitos tabulares) para que el punto donde termina lo
+  // escrito y empieza el resto del ejemplo quede exacto, sin desalinearse.
+  phoneNumeric: {
+    fontSize: 18,
+    fontWeight: '600',
+    letterSpacing: 0.6,
+    lineHeight: 22,
+    fontVariant: ['tabular-nums'],
+    includeFontPadding: false,
+  },
+  phoneGhost: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    top: 0,
+    bottom: 0,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+  },
+  phoneGhostHidden: { color: 'transparent' },
+  phoneGhostVisible: { color: Colors.ink.soft },
 
   phoneInput: {
     flex: 1,
+    backgroundColor: 'transparent',
     paddingHorizontal: 16,
     paddingVertical: 14,
     borderRadius: 14,
     borderWidth: 1.5,
     borderColor: Colors.border.default,
-    fontSize: 18,
-    fontWeight: '500',
     color: Colors.ink.primary,
     minHeight: 54,
   },
@@ -334,6 +481,19 @@ const s = StyleSheet.create({
   pickerName: { flex: 1, fontSize: 15, color: Colors.ink.primary },
   pickerCode: { fontSize: 13, color: Colors.ink.muted, fontWeight: '500' },
   checkDot: { width: 8, height: 8, borderRadius: 999 },
+
+  zeroHint: {
+    backgroundColor: Colors.brand.tint,
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 9,
+    marginTop: 8,
+  },
+  zeroHintText: {
+    color: Colors.brand.dark,
+    fontSize: 12.5,
+    lineHeight: 17,
+  },
 
   errorText: {
     color: Colors.liturgicalUI.red,
