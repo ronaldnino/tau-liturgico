@@ -50,7 +50,7 @@ queremos olvidar. Cada ítem indica **contexto**, **qué hacer**, **prioridad** 
   quedarse o documentarse con `eslint-disable` puntual.
 
 ### 4. Salmo ausente en domingos a más de ±30 días (al navegar por fecha)
-- **Prioridad:** baja · **Riesgo:** bajo
+- **Prioridad:** baja · **Riesgo:** bajo · **Bloqueado por:** ítem 1
 - **Contexto:** El salmo de los domingos por fecha se resuelve con **Evangelizo**
   (dominicos redirige los domingos a una homilía). Pero Evangelizo solo acepta
   fechas dentro de **±30 días** de hoy; fuera de ese rango se cae a Vatican News,
@@ -61,8 +61,14 @@ queremos olvidar. Cada ítem indica **contexto**, **qué hacer**, **prioridad** 
 - **UX ya mitigada:** la ranura del salmo **ya no desaparece**; se muestra como
   "Contenido no disponible" (ver `buildCanonicalReadings` y [LECTURAS.md](LECTURAS.md)).
   Lo que falta es el **contenido** del salmo, no la estructura.
-- **Qué hacer:** Resolverlo con el backend propio del ítem 1 (normaliza todas las
-  fechas con salmo sin límite de rango), o una fuente sin límite de ±30 días.
+- **Investigado y descartado (sin backend):** el límite de Evangelizo es una
+  restricción del servidor sobre el parámetro `date` (confirmado contra su propio
+  manual de API en `feed.evangelizo.org/v2/reader.php`), sin parámetro alterno
+  (p. ej. por ciclo litúrgico) que lo evite. Un sondeo rápido de fuentes
+  alternativas en español (Opus Dei, Corazones.org, Conferencia Episcopal
+  Española) no encontró un reemplazo confiable. No hay corrección de bajo riesgo
+  independiente disponible; **este ítem depende de resolver primero el ítem 1**
+  (backend propio, que no tendría el límite de ±30 días).
 - **Referencia:** `src/services/lectionary.js` (`fetchEvangelizoReadings`,
   `fetchFallbackReadings`).
 
