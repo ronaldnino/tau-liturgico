@@ -33,8 +33,14 @@ haya podido descargar:
   Corazón, Pentecostés, Ascensión…).
 - O bien la **2ª lectura ya vino** en los datos descargados.
 
-> Caso especial no soportado aún: la **Vigilia Pascual** (hasta 7 lecturas del AT
-> + epístola + evangelio). Ver [PENDIENTES.md](PENDIENTES.md) ítem 6.
+> Caso especial no soportado: la **Vigilia Pascual** (hasta 7 lecturas del AT +
+> epístola + evangelio). Verificado en vivo que **ninguna fuente la sirve**:
+> dominicos redirige el Sábado Santo igual que un domingo, y Vatican News
+> responde con las lecturas del Sábado Santo *diurno* (una liturgia distinta a
+> la Vigilia) bajo la misma URL de fecha. `isEasterVigil(date)` en
+> `src/data/liturgical.js` detecta el día y `fetchDailyReadings` corta antes de
+> intentar ninguna fuente, para no mostrar ese contenido equivocado como si
+> fueran las lecturas de la Vigilia. Ver [PENDIENTES.md](PENDIENTES.md) ítem 6.
 
 ---
 
@@ -127,6 +133,7 @@ Todo vive en `src/services/lectionary.js`, salvo el consumo en pantallas.
 | Normalización tipo | `normalizeType(h2)` | Devuelve `{type, closing}` o `null` para secciones que no son lecturas. |
 | Referencia bíblica | `extractRef(intro, tipo)` | Limpia el prefacio ("Lectura del libro de…") y deja "Libro cap, vv". |
 | ¿Solemnidad? | `isSolemnity(date)` *(en `data/liturgical.js`)* | Decide si el día espera 2ª lectura aunque no se haya descargado. |
+| ¿Vigilia Pascual? | `isEasterVigil(date)` *(en `data/liturgical.js`)* | Detecta el Sábado Santo; `fetchDailyReadings` corta antes de intentar ninguna fuente. |
 
 ### Forma de cada lectura
 
@@ -168,7 +175,7 @@ vacíos (la UI la muestra como "Contenido no disponible").
 | Domingo dentro de ±30 días | ✅ | 1ª · Salmo · 2ª · Ev | OK |
 | Domingo a >±30 días | ❌ contenido | 1ª · **Salmo "no disponible"** · 2ª · Ev | Ranura visible; falta el contenido — ítem 4 |
 | Sin red / fecha futura no publicada | ❌ contenido | ranuras del día, todas "no disponible" | Estructura visible + Reintentar |
-| Vigilia Pascual | parcial | solo 1ª/2ª/salmo/evangelio | No soportado — ítem 6 |
+| Vigilia Pascual | ❌ contenido | 3 ranuras "no disponible" (sin Reintentar) | No soportado — ítem 6. Se corta antes de scrapear para no mostrar el Sábado Santo diurno como si fuera la Vigilia |
 
 > Tras introducir `buildCanonicalReadings`, una lectura que no se pudo descargar ya
 > **no desaparece**: su ranura se muestra como "Contenido no disponible". La

@@ -27,7 +27,7 @@ import { Tau } from '../components';
 
 const { TextStyles } = Typography;
 import { useSettingsStore, useNotesStore, useLiturgicalStore } from '../store';
-import { TODAY, LITURGICAL_LABELS } from '../data/liturgical';
+import { TODAY, LITURGICAL_LABELS, isEasterVigil } from '../data/liturgical';
 import {
   fetchDailyReadings,
   buildCanonicalReadings,
@@ -604,6 +604,7 @@ export default function ReadingsScreen({ navigation, route }) {
   const {
     readings: storeReadings,
     isLoading,
+    error: storeError,
     sync,
     readingsCache,
     cacheReading,
@@ -749,12 +750,15 @@ export default function ReadingsScreen({ navigation, route }) {
   const { lastSync } = useLiturgicalStore();
   useEffect(() => {
     if (!isToday) return;
+    // La Vigilia Pascual no tiene fuente que la sirva (ver fetchDailyReadings);
+    // sync() siempre fallaría sin fijar lastSync, causando reintentos en cada
+    // visita a la pantalla. Se excluye del chequeo en vez de reintentar en vano.
+    if (isEasterVigil(new Date())) return;
     const noReadings = !storeReadings || storeReadings.length === 0;
     // Conteo esperado de lecturas (incluido el salmo): ferias, memorias y casi
     // todas las fiestas = 3 (1ª + Salmo + Evangelio); domingos y solemnidades = 4
     // (1ª + Salmo + 2ª + Evangelio). Fuera de [3,4] asumimos descarga incompleta
-    // (p. ej. fallback sin salmo) y re-sincronizamos. La Vigilia Pascual (7+
-    // lecturas) es la excepción conocida no contemplada.
+    // (p. ej. fallback sin salmo) y re-sincronizamos.
     const badCount =
       storeReadings && (storeReadings.length < 3 || storeReadings.length > 4);
     const notToday =
@@ -821,8 +825,9 @@ export default function ReadingsScreen({ navigation, route }) {
     ? TODAY.liturgicalColorLabel.split(' · ')[0]
     : (LITURGICAL_LABELS[headerColorKey]?.name ?? 'Verde');
 
-  // Días adelante del día seleccionado y error de fetch
-  const dateError = !isToday ? (currentResult?.error ?? null) : null;
+  // Días adelante del día seleccionado y error de fetch (hoy viene del store;
+  // otra fecha, del resultado del fetch por fecha).
+  const dateError = isToday ? storeError : (currentResult?.error ?? null);
   const daysAhead = !isToday
     ? (() => {
         const [y, m, d] = targetDateISO.split('-').map(Number);
@@ -832,10 +837,18 @@ export default function ReadingsScreen({ navigation, route }) {
 
   // Estado del bloque de lecturas cuando no hay contenido:
   // - notPublished: fecha futura cuyas lecturas aún no publica la fuente.
+  // - unsupported: Vigilia Pascual, sin fuente que la sirva (ver LECTURAS.md).
+  //   Se calcula por fecha, no por `dateError`: en la Vigilia de hoy el sync
+  //   ni se intenta (ver el effect de resync), así que nunca habría error que leer.
   // - loadFailed: no se pudieron descargar (sin red o fuente bloqueada). Hoy
   //   siempre tiene lecturas, así que una lista vacía equivale a fallo de carga.
   const readingsNotPublished = daysAhead > 62 || dateError === 'FECHA_SIN_LECTURAS';
-  const readingsLoadFailed = !readingsNotPublished && (!!dateError || isToday);
+  const readingsUnsupported =
+    dateError === 'VIGILIA_PASCUAL_NO_SOPORTADA' ||
+    (isToday && isEasterVigil(new Date())) ||
+    (!isToday && isEasterVigil(targetDate));
+  const readingsLoadFailed =
+    !readingsNotPublished && !readingsUnsupported && (!!dateError || isToday);
 
   const isBookmarked = (ref) => bookmarks.some((b) => b.ref === ref);
 
@@ -1000,9 +1013,11 @@ export default function ReadingsScreen({ navigation, route }) {
               <Text style={[s.emptySubtext, { color: muted }]}>
                 {readingsNotPublished
                   ? 'Las lecturas de este día aún no están publicadas.'
-                  : readingsLoadFailed
-                    ? 'No pudimos cargarla ahora mismo.'
-                    : 'La fuente no publica esta lectura para este día.'}
+                  : readingsUnsupported
+                    ? 'La Vigilia Pascual todavía no está disponible en la app. Consulta el misal o tu parroquia.'
+                    : readingsLoadFailed
+                      ? 'No pudimos cargarla ahora mismo.'
+                      : 'La fuente no publica esta lectura para este día.'}
               </Text>
               {readingsLoadFailed ? (
                 <TouchableOpacity

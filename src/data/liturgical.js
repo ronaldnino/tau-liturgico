@@ -445,6 +445,17 @@ export function isSolemnity(date) {
   );
 }
 
+// ¿La fecha es la Vigilia Pascual (Sábado Santo por la noche)? Sus lecturas
+// (hasta 7 del AT + epístola + evangelio, cada una con su salmo) no las sirve
+// ninguna fuente scrapeada por fecha: dominicos redirige el Sábado Santo igual
+// que un domingo, y Vatican News responde con las lecturas del Sábado Santo
+// *diurno* (una liturgia distinta), no las de la Vigilia. Se usa para no
+// mostrar ese contenido equivocado como si fueran las lecturas del día.
+export function isEasterVigil(date) {
+  const holySaturday = _addDays(_easter(date.getFullYear()), -1);
+  return date.toDateString() === holySaturday.toDateString();
+}
+
 // ── Calendario litúrgico dinámico ──────────────────────────────
 
 function _easter(year) {

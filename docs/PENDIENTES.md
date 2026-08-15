@@ -74,22 +74,18 @@ queremos olvidar. Cada ítem indica **contexto**, **qué hacer**, **prioridad** 
 - **Qué hacer:** Tras publicar, confirmar en Play Console → *Dispositivos
   compatibles* que el número de dispositivos no quedó restringido por la cámara.
 
-### 6. Vigilia Pascual no soportada por el parser de lecturas
-- **Prioridad:** baja · **Riesgo:** bajo
-- **Contexto:** La Vigilia Pascual tiene hasta **7 lecturas del AT + epístola +
-  evangelio**, cada una con su salmo. El parser (`normalizeType`) solo reconoce
-  "primera lectura", "segunda lectura", "salmo de hoy" y "evangelio del día", así
-  que no extraería el resto. Además, el conteo esperado en `ReadingsScreen`
-  (`badCount`, rango 3–4) marcaría ese día como incompleto.
-- **Qué hacer:** Soportar el caso especial de la Vigilia (reconocer 3ª…7ª lectura,
-  epístola y múltiples salmos) y excluir ese día del chequeo de `badCount`.
-- **Referencia:** `src/services/lectionary.js` (`normalizeType`, `parseReadings`),
-  `src/screens/ReadingsScreen.jsx` (`badCount`).
-
 ---
 
 ## Hecho
 
+- **sin publicar** — Vigilia Pascual: verificado en vivo que ninguna fuente la
+  sirve (dominicos redirige como un domingo; Vatican News responde con las
+  lecturas del Sábado Santo *diurno*, una liturgia distinta, bajo la misma URL
+  de fecha). En vez de parsear un contenido que no existe, `isEasterVigil(date)`
+  (`src/data/liturgical.js`) detecta el día y `fetchDailyReadings` corta antes de
+  intentar ninguna fuente; la UI muestra "Contenido no disponible" con un mensaje
+  específico (sin botón Reintentar) y ese día se excluye del reintento automático
+  de `sync()`. Detalle en [LECTURAS.md](LECTURAS.md).
 - **sin publicar** — Ranuras de lecturas siempre visibles: `buildCanonicalReadings`
   muestra siempre las 3–4 lecturas del día según la regla litúrgica; las que no se
   pudieron descargar aparecen como "Contenido no disponible" (con reproductor y

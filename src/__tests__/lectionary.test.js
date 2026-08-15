@@ -1,5 +1,9 @@
-import { buildCanonicalReadings, resolveReadingIndex } from '../services/lectionary';
-import { isSolemnity } from '../data/liturgical';
+import {
+  buildCanonicalReadings,
+  resolveReadingIndex,
+  fetchDailyReadings,
+} from '../services/lectionary';
+import { isSolemnity, isEasterVigil } from '../data/liturgical';
 
 // Helpers para construir lecturas crudas de prueba.
 const r = (type, extra = {}) => ({
@@ -95,6 +99,28 @@ describe('isSolemnity', () => {
 
   it('una feria normal no es solemnidad', () => {
     expect(isSolemnity(FERIA)).toBe(false);
+  });
+});
+
+describe('isEasterVigil', () => {
+  it('reconoce el Sábado Santo (Vigilia Pascual 2026 = 4-abr, Pascua = 5-abr)', () => {
+    expect(isEasterVigil(new Date(2026, 3, 4))).toBe(true);
+  });
+
+  it('no confunde el Domingo de Pascua con la Vigilia', () => {
+    expect(isEasterVigil(new Date(2026, 3, 5))).toBe(false);
+  });
+
+  it('una feria normal no es la Vigilia', () => {
+    expect(isEasterVigil(FERIA)).toBe(false);
+  });
+});
+
+describe('fetchDailyReadings — Vigilia Pascual', () => {
+  it('rechaza sin llegar a ninguna fuente (ninguna la sirve correctamente)', async () => {
+    await expect(fetchDailyReadings(new Date(2026, 3, 4))).rejects.toThrow(
+      'VIGILIA_PASCUAL_NO_SOPORTADA'
+    );
   });
 });
 

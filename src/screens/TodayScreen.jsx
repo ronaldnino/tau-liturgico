@@ -23,6 +23,7 @@ import {
   READINGS as STATIC_READINGS,
   UPCOMING,
   SEASONS,
+  isEasterVigil,
 } from '../data/liturgical';
 import { buildCanonicalReadings } from '../services/lectionary';
 
@@ -313,6 +314,10 @@ export default function TodayScreen({ navigation }) {
   const [refreshing, setRefreshing] = useState(false);
 
   useEffect(() => {
+    // La Vigilia Pascual no tiene fuente que la sirva (ver fetchDailyReadings
+    // en services/lectionary.js); sync() siempre fallaría sin fijar lastSync,
+    // así que se excluye para no reintentar en cada visita a la pantalla.
+    if (isEasterVigil(new Date())) return;
     const noReadings = !storeReadings || storeReadings.length === 0;
     const notToday =
       !lastSync || new Date(lastSync).toDateString() !== new Date().toDateString();

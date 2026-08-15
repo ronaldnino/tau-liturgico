@@ -1,4 +1,4 @@
-import { isSolemnity } from '../data/liturgical';
+import { isSolemnity, isEasterVigil } from '../data/liturgical';
 
 const BASE = 'https://www.dominicos.org/predicacion/evangelio-del-dia';
 const VATICAN_BASE = 'https://www.vaticannews.va/es/evangelio-de-hoy';
@@ -281,6 +281,13 @@ function isSameDay(a, b) {
 }
 
 export async function fetchDailyReadings(date = new Date()) {
+  // La Vigilia Pascual no tiene página propia en ninguna fuente: dominicos la
+  // redirige como un domingo y Vatican News sirve las lecturas del Sábado
+  // Santo diurno (una liturgia distinta) bajo la misma URL de fecha. Mostrar
+  // eso como "las lecturas de hoy" sería litúrgicamente incorrecto, así que
+  // cortamos antes de intentar ninguna fuente.
+  if (isEasterVigil(date)) throw new Error('VIGILIA_PASCUAL_NO_SOPORTADA');
+
   const today = isSameDay(date, new Date());
   // Para HOY usamos /hoy/, que en dominicos trae las lecturas completas CON el
   // salmo responsorial (la URL por fecha redirige a /hoy/ ese día, y antes
