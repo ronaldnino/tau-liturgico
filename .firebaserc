@@ -1,0 +1,7 @@
+{
+  "projects": {
+    "default": "tau-liturgico-dev",
+    "dev": "tau-liturgico-dev",
+    "prod": "tau-liturgico-prd"
+  }
+}

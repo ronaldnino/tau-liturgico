@@ -1,31 +1,11 @@
 import auth from '@react-native-firebase/auth';
-import appCheck from '@react-native-firebase/app-check';
 import Config from 'react-native-config';
+import { authHeaders } from './firebaseAuth';
 
 const PROJECT_ID = Config.FIREBASE_PROJECT_ID || 'taoliturgico';
 const STORAGE_BUCKET =
   Config.FIREBASE_STORAGE_BUCKET || 'taoliturgico.firebasestorage.app';
 const FIRESTORE_BASE = `https://firestore.googleapis.com/v1/projects/${PROJECT_ID}/databases/(default)/documents`;
-
-async function getAppCheckToken() {
-  try {
-    const { token } = await appCheck().getToken();
-    return token;
-  } catch (_) {
-    return null;
-  }
-}
-
-async function authHeaders(extra = {}) {
-  const user = auth().currentUser;
-  if (!user) throw new Error('No autenticado');
-  const [authToken, acToken] = await Promise.all([user.getIdToken(), getAppCheckToken()]);
-  return {
-    Authorization: `Bearer ${authToken}`,
-    ...(acToken ? { 'X-Firebase-AppCheck': acToken } : {}),
-    ...extra,
-  };
-}
 
 function toFirestoreFields(data) {
   const fields = {};

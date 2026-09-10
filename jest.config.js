@@ -6,8 +6,11 @@ module.exports = {
   moduleNameMapper: {
     '^react-native-tts$': '<rootDir>/__mocks__/react-native-tts.js',
     '^react-native-keychain$': '<rootDir>/__mocks__/react-native-keychain.js',
+    '^react-native-config$': '<rootDir>/__mocks__/react-native-config.js',
     '^@react-native-firebase/auth$': '<rootDir>/__mocks__/@react-native-firebase/auth.js',
     '^@react-native-firebase/app$': '<rootDir>/__mocks__/@react-native-firebase/app.js',
+    '^@react-native-firebase/app-check$':
+      '<rootDir>/__mocks__/@react-native-firebase/app-check.js',
     '^@notifee/react-native$': '<rootDir>/__mocks__/@notifee/react-native.js',
     '^@react-native-async-storage/async-storage$':
       '<rootDir>/__mocks__/@react-native-async-storage/async-storage.js',

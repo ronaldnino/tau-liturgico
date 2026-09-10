@@ -39,8 +39,9 @@ haya podido descargar:
 > responde con las lecturas del Sábado Santo *diurno* (una liturgia distinta a
 > la Vigilia) bajo la misma URL de fecha. `isEasterVigil(date)` en
 > `src/data/liturgical.js` detecta el día y `fetchDailyReadings` corta antes de
-> intentar ninguna fuente, para no mostrar ese contenido equivocado como si
-> fueran las lecturas de la Vigilia. Ver [PENDIENTES.md](PENDIENTES.md) ítem 6.
+> llamar a la Cloud Function, para no gastar una invocación (ni mostrar ese
+> contenido equivocado) en un día que siempre falla. Ver
+> [PENDIENTES.md](PENDIENTES.md) ítem 6.
 
 ---
 
@@ -78,19 +79,29 @@ ranuras en orden. Cada ranura se empareja con su lectura o, si falta, se marca
 
 ## Fuentes y cadena de fallback
 
-Las lecturas se obtienen por *scraping* desde el cliente. Cada fuente cubre un
-caso distinto; se intentan en orden hasta que una responde con datos válidos.
+Desde el ítem 1 del backlog, el *scraping* ya no corre en el cliente: corre en
+la Cloud Function `getReadings` (`functions/`), que además cachea el resultado
+en Firestore (`readings/{YYYY-MM-DD}`) para todos los usuarios. El cliente solo
+llama a esa función — ver [Mapa del código](#mapa-del-código) más abajo.
+
+Dentro de la función, cada fuente cubre un caso distinto; se intentan en orden
+hasta que una responde con datos válidos.
 
 ```
-fetchDailyReadings(date)
+getReadings?date=YYYY-MM-DD  (functions/index.js)
   │
-  ├─ HOY ──────────────► dominicos /hoy/         (trae salmo todos los días)
+  ├─ Firestore readings/{date} ya existe ──► responde directo (sin scrapear)
   │
-  └─ OTRA FECHA ───────► dominicos /<fecha>/
-                          │  (los domingos redirige a una homilía → fallback)
-                          └─ fetchFallbackReadings(date)
-                               ├─ Evangelizo  (con salmo, solo ±30 días)
-                               └─ Vatican News (sin salmo)
+  └─ No existe ──► fetchDailyReadings(date)  (functions/src/lectionary.js)
+                     │
+                     ├─ HOY ──────────────► dominicos /hoy/         (trae salmo todos los días)
+                     │
+                     └─ OTRA FECHA ───────► dominicos /<fecha>/
+                                             │  (los domingos redirige a una homilía → fallback)
+                                             └─ fetchFallbackReadings(date)
+                                                  ├─ Evangelizo  (con salmo, solo ±30 días)
+                                                  └─ Vatican News (sin salmo)
+                     (si el resultado tiene 3–4 lecturas, se cachea en Firestore)
 ```
 
 ### Resultado por fuente (verificado en vivo)
@@ -99,7 +110,7 @@ fetchDailyReadings(date)
 |---|---|---|
 | **dominicos** (`/hoy/` + ferias por fecha) | hoy y días de semana por fecha | ✅ Orden `1ª → Salmo → Ev` (3). Filtra secciones que no son lecturas (vídeo/reflexión/audio/recomendaciones) con `normalizeType`. |
 | **Evangelizo** (`type=all`) | domingos por fecha dentro de **±30 días** | ✅ Orden `1ª → Salmo → 2ª → Ev` (4). Verificado con el domingo 21-jun-2026 (Jeremías → Salmo → Romanos → Mateo). |
-| **Vatican News** | fallback para fechas que las otras no sirven (domingos a **>±30 días**) | ⚠️ Da `1ª → 2ª → Ev` **sin salmo**. Limitación conocida → [PENDIENTES.md](PENDIENTES.md) ítem 4. |
+| **Vatican News** | fallback para fechas que las otras no sirven (domingos a **>±30 días**) | ⚠️ Da `1ª → 2ª → Ev` **sin salmo**. Limitación conocida → [PENDIENTES.md](PENDIENTES.md) ítem 4 (persiste incluso con backend propio: es una limitación de *contenido* de la fuente, no de red). |
 
 ### Por qué tres fuentes
 
@@ -110,30 +121,36 @@ fetchDailyReadings(date)
   solo acepta fechas dentro de **±30 días** de hoy.
 - **Vatican News** es el último recurso (domingos lejanos): tiene las lecturas
   pero **omite el salmo**, así que esos días quedan con 3 elementos sin salmo.
-- Vatican News está tras **Cloudflare**, que bloquea IPs de baja reputación; por
-  eso todas las peticiones usan un `User-Agent` de navegador real y un timeout.
-
-La solución de fondo (un backend propio que normalice todas las fechas con salmo
-sin límite de rango) está en [PENDIENTES.md](PENDIENTES.md) ítem 1.
+- Vatican News está tras **Cloudflare**, que bloquea IPs de baja reputación. Al
+  correr el scraping desde Cloud Functions (IPs de Google Cloud) en vez de
+  desde el móvil del usuario, el geo-bloqueo a operadores de Venezuela —la
+  motivación original del ítem 1— queda resuelto. Las peticiones igual usan un
+  `User-Agent` de navegador real y timeout, por si Cloudflare endurece el
+  bloqueo a nivel de datacenter en el futuro.
 
 ---
 
 ## Mapa del código
 
-Todo vive en `src/services/lectionary.js`, salvo el consumo en pantallas.
-
-| Pieza | Función | Rol |
+| Pieza | Dónde | Rol |
 |---|---|---|
-| Entrada | `fetchDailyReadings(date)` | Decide `/hoy/` vs fecha y dispara el fallback si dominicos redirige. |
-| Ranuras canónicas | `buildCanonicalReadings(raw, date)` | Devuelve siempre las 3–4 ranuras del día; rellena las faltantes con `unavailable`. |
-| Fallback | `fetchFallbackReadings(date)` | Encadena Evangelizo → Vatican News. |
-| Parser dominicos | `parseReadings(html)` | Trocea por `<h2>`; `normalizeType` mapea/filtra cada sección. |
-| Parser Evangelizo | `parseEvangelizoReadings(html)` | Separa por líneas; localiza salmo y evangelio, e infiere la 2ª lectura entre ambos. |
-| Parser Vatican | `parseVaticanReadings(html)` | Extrae `<section>` de lectura y evangelio (sin salmo). |
-| Normalización tipo | `normalizeType(h2)` | Devuelve `{type, closing}` o `null` para secciones que no son lecturas. |
-| Referencia bíblica | `extractRef(intro, tipo)` | Limpia el prefacio ("Lectura del libro de…") y deja "Libro cap, vv". |
-| ¿Solemnidad? | `isSolemnity(date)` *(en `data/liturgical.js`)* | Decide si el día espera 2ª lectura aunque no se haya descargado. |
-| ¿Vigilia Pascual? | `isEasterVigil(date)` *(en `data/liturgical.js`)* | Detecta el Sábado Santo; `fetchDailyReadings` corta antes de intentar ninguna fuente. |
+| Cliente — entrada | `fetchDailyReadings(date)` en `src/services/lectionary.js` | Wrapper delgado: corta en `isEasterVigil`, si no arma headers de Auth/App Check y llama a `getReadings`. |
+| Cliente — ranuras canónicas | `buildCanonicalReadings(raw, date)` en `src/services/lectionary.js` | Sin cambios: devuelve siempre las 3–4 ranuras del día; rellena las faltantes con `unavailable`. |
+| Servidor — entrada HTTP | `getReadings` en `functions/index.js` | Verifica el ID token de Firebase Auth, resuelve *cache-through* contra Firestore, y solo scrapea si no hay caché. |
+| Servidor — orquestador | `fetchDailyReadings(date)` en `functions/src/lectionary.js` | Mismo algoritmo que antes vivía en el cliente: decide `/hoy/` vs fecha y dispara el fallback si dominicos redirige. |
+| Servidor — fallback | `fetchFallbackReadings(date)` en `functions/src/lectionary.js` | Encadena Evangelizo → Vatican News. |
+| Servidor — parser dominicos | `parseReadings(html)` | Trocea por `<h2>`; `normalizeType` mapea/filtra cada sección. |
+| Servidor — parser Evangelizo | `parseEvangelizoReadings(html)` | Separa por líneas; localiza salmo y evangelio, e infiere la 2ª lectura entre ambos. |
+| Servidor — parser Vatican | `parseVaticanReadings(html)` | Extrae `<section>` de lectura y evangelio (sin salmo). |
+| ¿Solemnidad? | `isSolemnity(date)` en `src/data/liturgical.js` (cliente) y su copia generada `functions/src/liturgical.js` (servidor) | Decide si el día espera 2ª lectura aunque no se haya descargado. |
+| ¿Vigilia Pascual? | `isEasterVigil(date)`, mismo archivo/copia que `isSolemnity` | Detecta el Sábado Santo; ambos lados (cliente y función) cortan antes de scrapear. |
+
+> `functions/src/liturgical.js` es una **copia generada** de
+> `src/data/liturgical.js` (JS puro, sin imports — 100% portable a Node), para
+> no mantener dos implementaciones del cálculo de Pascua a mano. La sincroniza
+> `scripts/sync-functions-shared.js`, invocado manualmente
+> (`npm run functions:sync-shared`) o automáticamente en cada `firebase deploy`
+> (hook `predeploy` en `firebase.json`).
 
 ### Forma de cada lectura
 
@@ -178,6 +195,8 @@ vacíos (la UI la muestra como "Contenido no disponible").
 | Vigilia Pascual | ❌ contenido | 3 ranuras "no disponible" (sin Reintentar) | No soportado — ítem 6. Se corta antes de scrapear para no mostrar el Sábado Santo diurno como si fuera la Vigilia |
 
 > Tras introducir `buildCanonicalReadings`, una lectura que no se pudo descargar ya
-> **no desaparece**: su ranura se muestra como "Contenido no disponible". La
-> limitación de *contenido* (p. ej. el salmo de domingos lejanos) persiste hasta el
-> backend propio ([PENDIENTES.md](PENDIENTES.md) ítem 1).
+> **no desaparece**: su ranura se muestra como "Contenido no disponible". El
+> backend propio ([PENDIENTES.md](PENDIENTES.md) ítem 1) resuelve el geo-bloqueo
+> de Cloudflare, pero la limitación de *contenido* del salmo en domingos lejanos
+> (ítem 4) persiste: es que Evangelizo/Vatican News no lo publican para esas
+> fechas, no un problema de red.

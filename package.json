@@ -8,6 +8,7 @@
     "ios": "react-native run-ios",
     "env:dev": "node scripts/set-env.js dev",
     "env:prod": "node scripts/set-env.js prod",
+    "functions:sync-shared": "node scripts/sync-functions-shared.js",
     "link-assets": "npx react-native-asset",
     "lint": "eslint 'src/**/*.{js,jsx}' 'App.js'",
     "lint:fix": "eslint 'src/**/*.{js,jsx}' 'App.js' --fix",

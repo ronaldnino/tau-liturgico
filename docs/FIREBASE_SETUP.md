@@ -15,6 +15,7 @@ Esta guía detalla todos los pasos necesarios para configurar los proyectos Fire
 7. [App Check](#7-app-check)
 8. [Cambiar de ambiente](#8-cambiar-de-ambiente)
 9. [Build de producción Android](#9-build-de-producción-android)
+10. [Cloud Functions (lecturas)](#10-cloud-functions-lecturas)
 
 ---
 
@@ -25,7 +26,7 @@ El proyecto usa dos proyectos Firebase separados:
 | Ambiente | Proyecto Firebase | Uso |
 |---|---|---|
 | **Dev** | `tau-liturgico-dev` | Desarrollo y pruebas locales |
-| **Prod** | `taoliturgico` | Usuarios reales en producción |
+| **Prod** | `tau-liturgico-prd` | Usuarios reales en producción |
 
 Los archivos de configuración sensibles **nunca se suben al repositorio** (están en `.gitignore`):
 
@@ -400,6 +401,85 @@ cd android && ./gradlew assembleRelease
 ```
 
 El build firmará automáticamente con el release keystore configurado en `~/.gradle/gradle.properties`.
+
+---
+
+## 10. Cloud Functions (lecturas)
+
+La Cloud Function `getReadings` (`functions/`) mueve el *scraping* de lecturas
+del cliente al servidor — ver [LECTURAS.md](LECTURAS.md) para la arquitectura
+completa. Requiere pasos manuales que no se pueden automatizar desde el código:
+
+### 10.1 Activar el plan Blaze
+
+Cloud Functions solo se puede desplegar en proyectos con el plan **Blaze**
+(pago por uso), incluso si el uso esperado es $0/mes dentro de la capa
+gratuita.
+
+1. Firebase Console → proyecto (`tau-liturgico-dev` primero, luego
+   `tau-liturgico-prd`) → ⚙️ **Uso y facturación** → **Modificar plan**
+2. Seleccionar **Blaze** y vincular una cuenta de facturación de Google Cloud
+
+### 10.2 Instalar y autenticar `firebase-tools`
+
+```bash
+npm install -g firebase-tools   # o usar npx firebase <comando> sin instalar global
+firebase login                  # abre el navegador, requiere la cuenta con acceso a los proyectos
+```
+
+### 10.3 Seleccionar el proyecto activo
+
+El repo ya trae `.firebaserc` con los alias:
+
+```bash
+firebase use dev    # → tau-liturgico-dev
+firebase use prod   # → tau-liturgico-prd
+```
+
+### 10.4 Instalar dependencias de la función
+
+```bash
+cd functions && npm install
+```
+
+### 10.5 Probar con el emulador (opcional, recomendado antes del primer deploy)
+
+```bash
+npm run functions:sync-shared          # sincroniza isSolemnity/isEasterVigil
+cd functions
+firebase emulators:start --only functions,firestore,auth
+```
+
+### 10.6 Desplegar
+
+```bash
+firebase use dev
+firebase deploy --only functions
+```
+
+El hook `predeploy` de `firebase.json` corre `scripts/sync-functions-shared.js`
+automáticamente antes de cada deploy, así que la copia de `liturgical.js` nunca
+queda desactualizada.
+
+Repetir con `firebase use prod` cuando esté verificado en dev.
+
+### 10.7 Región
+
+La función usa `us-central1` (`functions/index.js`, `setGlobalOptions`),
+alineada con la recomendación de la sección [2.7](#27-habilitar-firestore) para
+Firestore. Si el Firestore real de algún proyecto vive en otra región,
+confirmarlo en Console → Firestore → Data y ajustar la región en
+`functions/index.js` antes de desplegar (mejor latencia; no es obligatorio que
+coincidan, pero se recomienda).
+
+### 10.8 Verificar el deploy
+
+En Firebase Console → Firestore → Data debería aparecer la colección
+`readings` con documentos `YYYY-MM-DD` a medida que la app los pide. También:
+
+```bash
+firebase functions:log
+```
 
 ---
 

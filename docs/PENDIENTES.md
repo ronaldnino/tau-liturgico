@@ -12,20 +12,32 @@ queremos olvidar. Cada ítem indica **contexto**, **qué hacer**, **prioridad** 
 ## Abiertos
 
 ### 1. Backend propio para las lecturas (evitar scraping/Cloudflare)
-- **Prioridad:** media-alta · **Riesgo:** medio
-- **Contexto:** Las lecturas se obtienen por *scraping* del cliente desde
+- **Prioridad:** media-alta · **Riesgo:** medio · **Estado:** código listo, falta desplegar
+- **Contexto:** Las lecturas se obtenían por *scraping* del cliente desde
   `dominicos.org` y `vaticannews.va`. Vatican News está detrás de **Cloudflare**,
   que bloquea IPs de baja reputación (operadores de Venezuela) — causaba el falso
   "Sin conexión". En 1.0.2 se mitigó (User-Agent de navegador + timeout + no
   bloquear el arranque), pero **el bloqueo no se puede vencer al 100% desde el
   cliente**.
-- **Qué hacer:** Enrutar las lecturas por una **Firebase Cloud Function** (u otro
-  backend) que haga el scraping/normalización desde un servidor con buena
-  reputación de IP y devuelva JSON. La app deja de depender de sitios externos
-  protegidos por Cloudflare y se elimina el problema de geo-bloqueo.
-- **Beneficio extra:** permite cachear, cambiar de fuente sin actualizar la app, y
-  parsear en el servidor (menos frágil ante cambios de HTML).
-- **Referencia:** `src/services/lectionary.js`, `src/store/index.js` (`sync()`).
+- **Hecho:** el scraping se movió a una Cloud Function HTTPS `getReadings`
+  (`functions/index.js` + `functions/src/lectionary.js`, port casi literal de la
+  lógica que antes vivía en `src/services/lectionary.js`) con *cache-through* en
+  Firestore (`readings/{YYYY-MM-DD}`) — una fecha se scrapea una sola vez para
+  todos los usuarios, y corre desde IPs de Google Cloud en vez del móvil del
+  usuario, resolviendo el geo-bloqueo. El cliente (`src/services/lectionary.js`)
+  quedó como un wrapper delgado que llama a la función con el mismo patrón de
+  auth que ya usaba `src/services/profile.js` (headers manuales, sin SDK nativo
+  nuevo — ver `src/services/firebaseAuth.js`).
+- **Falta:** el deploy en sí. Requiere activar el plan **Blaze** en los proyectos
+  Firebase (`tau-liturgico-dev`/`tau-liturgico-prd`) y correr
+  `firebase deploy --only functions` — pasos exactos en
+  [FIREBASE_SETUP.md § 10](FIREBASE_SETUP.md#10-cloud-functions-lecturas). Mover
+  a "Hecho" una vez desplegado y verificado en dev.
+- **No resuelve:** el ítem 4 (salmo ausente en domingos >±30 días) — es una
+  limitación de *contenido* de Evangelizo/Vatican News, no de red, así que una
+  mejor reputación de IP no lo arregla.
+- **Referencia:** `functions/`, `src/services/lectionary.js`, `firebase.json`,
+  `scripts/sync-functions-shared.js`.
 
 ### 2. Habilitar R8/ProGuard (minificación) en release
 - **Prioridad:** media · **Riesgo:** medio-alto
@@ -50,7 +62,7 @@ queremos olvidar. Cada ítem indica **contexto**, **qué hacer**, **prioridad** 
   quedarse o documentarse con `eslint-disable` puntual.
 
 ### 4. Salmo ausente en domingos a más de ±30 días (al navegar por fecha)
-- **Prioridad:** baja · **Riesgo:** bajo · **Bloqueado por:** ítem 1
+- **Prioridad:** baja · **Riesgo:** bajo
 - **Contexto:** El salmo de los domingos por fecha se resuelve con **Evangelizo**
   (dominicos redirige los domingos a una homilía). Pero Evangelizo solo acepta
   fechas dentro de **±30 días** de hoy; fuera de ese rango se cae a Vatican News,
@@ -61,16 +73,17 @@ queremos olvidar. Cada ítem indica **contexto**, **qué hacer**, **prioridad** 
 - **UX ya mitigada:** la ranura del salmo **ya no desaparece**; se muestra como
   "Contenido no disponible" (ver `buildCanonicalReadings` y [LECTURAS.md](LECTURAS.md)).
   Lo que falta es el **contenido** del salmo, no la estructura.
-- **Investigado y descartado (sin backend):** el límite de Evangelizo es una
-  restricción del servidor sobre el parámetro `date` (confirmado contra su propio
-  manual de API en `feed.evangelizo.org/v2/reader.php`), sin parámetro alterno
-  (p. ej. por ciclo litúrgico) que lo evite. Un sondeo rápido de fuentes
-  alternativas en español (Opus Dei, Corazones.org, Conferencia Episcopal
-  Española) no encontró un reemplazo confiable. No hay corrección de bajo riesgo
-  independiente disponible; **este ítem depende de resolver primero el ítem 1**
-  (backend propio, que no tendría el límite de ±30 días).
-- **Referencia:** `src/services/lectionary.js` (`fetchEvangelizoReadings`,
-  `fetchFallbackReadings`).
+- **Investigado y descartado:** el límite de Evangelizo es una restricción del
+  servidor sobre el parámetro `date` (confirmado contra su propio manual de API
+  en `feed.evangelizo.org/v2/reader.php`), sin parámetro alterno (p. ej. por
+  ciclo litúrgico) que lo evite — y esa restricción aplica sin importar quién
+  llame (cliente o la Cloud Function del ítem 1), así que **el backend propio no
+  lo resuelve**: solo arregla el geo-bloqueo de Cloudflare, que es un problema de
+  red distinto. Un sondeo rápido de fuentes alternativas en español (Opus Dei,
+  Corazones.org, Conferencia Episcopal Española) no encontró un reemplazo
+  confiable. No hay corrección de bajo riesgo disponible por ahora.
+- **Referencia:** `functions/src/lectionary.js` (`fetchEvangelizoReadings`,
+  `fetchFallbackReadings`) — el código de scraping vive ahí desde el ítem 1.
 
 ### 5. `uses-feature` de cámara — verificar tras publicar
 - **Prioridad:** baja · **Riesgo:** bajo
