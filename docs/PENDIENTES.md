@@ -88,9 +88,9 @@ queremos olvidar. Cada ítem indica **contexto**, **qué hacer**, **prioridad** 
 ### 5. Soporte de 16 KB memory page size (Google Play)
 - **Prioridad:** alta · **Riesgo:** alto (implica subir React Native de versión)
 - **Estado:** bloquea el release 1.0.4. En progreso, sobre `main` directamente
-  (sin rama aparte): completado el primer salto incremental **0.74.5 → 0.75.5**.
-  Todavía **no resuelve** el warning de 16 KB (llega recién en RN 0.77) — falta
-  seguir con 0.75→0.76→0.77.
+  (sin rama aparte): completados los saltos incrementales **0.74.5 → 0.75.5 →
+  0.76.9**. Todavía **no resuelve** el warning de 16 KB (llega recién en RN
+  0.77) — falta el último salto, 0.76→0.77.
 - **Contexto:** Al subir el AAB de 1.0.4 (versionCode 5) a Play Console apareció
   el error "Your app does not support 16 KB memory page sizes" (con opción
   "Proceed anyway", no es un bloqueo duro todavía). Es un requisito distinto al
@@ -141,12 +141,42 @@ queremos olvidar. Cada ítem indica **contexto**, **qué hacer**, **prioridad** 
   - Validado: `./gradlew :app:assembleDebug` compila, `npm test` (42/42) y
     `npm run lint` (0 errores) pasan, app probada visualmente en emulador
     Android (Onboarding con animaciones/checklist renderiza bien).
-- **Falta:** repetir el mismo proceso para 0.75→0.76 y 0.76→0.77 (mismo patrón:
-  diff de `rn-diff-purge`, bump de dependencias nativas, `assembleDebug` hasta
-  que compile, smoke test en emulador). Revisar particularmente
-  `react-native-sound` (0.11.2, sin evidencia de mantenimiento activo) y
-  `@react-native-firebase/*` (18.9.0, puede requerir salto a v22+ con el App
-  Check re-verificado) en pasos posteriores — no tocados todavía en este paso 1.
+- **Progreso — paso 2 (0.75.5 → 0.76.9), hecho:**
+  - `react-native` 0.75.5→0.76.9; `@react-native/babel-preset` y
+    `@react-native/metro-config` →0.76.9; se agregaron como devDependencies
+    explícitas `@react-native-community/cli`, `cli-platform-android` y
+    `cli-platform-ios` en `15.0.1` (el template de esta versión ya no los trae
+    implícitos vía `react-native`).
+  - `SoLoader.init(this, false)` → `SoLoader.init(this, OpenSourceMergedSoMapping)`
+    en `MainApplication.kt` (API de SoLoader cambiada en 0.76, obligatorio con
+    o sin New Architecture).
+  - `minSdkVersion` 23→24 (default del template subió; Android 6.0 deja de
+    soportarse — impacto mínimo esperado en 2026).
+  - Gradle wrapper 8.8→8.10.2. AGP se mantuvo en `8.6.0` (coincide con lo que
+    pide el `@react-native/gradle-plugin` de esta versión, no hizo falta subirlo).
+  - **`newArchEnabled` se dejó deliberadamente en `false`**: el template de RN
+    0.76 lo pone en `true` por defecto, pero la New Architecture sigue opcional
+    hasta bien más adelante — migrarla es un proyecto aparte, no parte de este
+    upgrade incremental.
+  - `react-native-reanimated` 3.15.5→3.16.7 (otra vez API interna de RN
+    movida: `BorderRadiiDrawableUtils`, `NativeViewHierarchyManager.updateLayout`).
+  - `react-native-svg` 15.2.0→15.11.1 — `VirtualView.setPointerEvents` dejó de
+    poder hacer *override* de la firma heredada de `ReactViewGroup` en RN 0.76;
+    error de compilación (no solo warning) hasta actualizar.
+  - Validado igual que el paso 1: build, 42/42 tests, lint limpio, smoke test
+    visual en emulador (Onboarding).
+  - **Nota operativa:** tras cada `npm install` que cambia
+    `@react-native/metro-config`/`babel-preset`, hay que **reiniciar Metro**
+    (`lsof -ti:8081 | xargs kill -9` + `npx react-native start --reset-cache`)
+    — si no, Metro sigue sirviendo con el transform viejo y tira
+    `SyntaxError` en archivos core de RN (pasó con `EventEmitter.js` al
+    reusar el Metro del paso 1 sin reiniciarlo).
+- **Falta:** el último salto, 0.76→0.77 (mismo patrón: diff de `rn-diff-purge`,
+  bump de dependencias nativas, `assembleDebug` hasta que compile, smoke test
+  en emulador — y ahí sí debería desaparecer el warning de 16 KB). Revisar
+  particularmente `react-native-sound` (0.11.2, sin evidencia de mantenimiento
+  activo) y `@react-native-firebase/*` (18.9.0, puede requerir salto a v22+ con
+  el App Check re-verificado) — no tocados todavía en los pasos 1 y 2.
 - **Referencia:** `android/build.gradle`, `android/settings.gradle`,
   `android/app/build.gradle`, `package.json`. Diffs oficiales en
   `github.com/react-native-community/rn-diff-purge` (usar tags `version/X.Y.Z`,
