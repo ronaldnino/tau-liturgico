@@ -87,10 +87,13 @@ queremos olvidar. Cada ítem indica **contexto**, **qué hacer**, **prioridad** 
 
 ### 5. Soporte de 16 KB memory page size (Google Play)
 - **Prioridad:** alta · **Riesgo:** alto (implica subir React Native de versión)
-- **Estado:** bloquea el release 1.0.4. En progreso, sobre `main` directamente
-  (sin rama aparte): completados los saltos incrementales **0.74.5 → 0.75.5 →
-  0.76.9**. Todavía **no resuelve** el warning de 16 KB (llega recién en RN
-  0.77) — falta el último salto, 0.76→0.77.
+- **Estado:** código resuelto y verificado localmente (upgrade completo
+  **0.74.5 → 0.75.5 → 0.76.9 → 0.77.3**, sobre `main` directamente sin rama
+  aparte). Falta el paso final: generar el AAB de release definitivo, subir
+  versión, y re-subir a Play Console para confirmar que el warning
+  desaparece también del lado de Google (la verificación con `llvm-readelf`
+  es la prueba técnica real, pero Play Console es quien decide si acepta el
+  release).
 - **Contexto:** Al subir el AAB de 1.0.4 (versionCode 5) a Play Console apareció
   el error "Your app does not support 16 KB memory page sizes" (con opción
   "Proceed anyway", no es un bloqueo duro todavía). Es un requisito distinto al
@@ -171,12 +174,53 @@ queremos olvidar. Cada ítem indica **contexto**, **qué hacer**, **prioridad** 
     — si no, Metro sigue sirviendo con el transform viejo y tira
     `SyntaxError` en archivos core de RN (pasó con `EventEmitter.js` al
     reusar el Metro del paso 1 sin reiniciarlo).
-- **Falta:** el último salto, 0.76→0.77 (mismo patrón: diff de `rn-diff-purge`,
-  bump de dependencias nativas, `assembleDebug` hasta que compile, smoke test
-  en emulador — y ahí sí debería desaparecer el warning de 16 KB). Revisar
-  particularmente `react-native-sound` (0.11.2, sin evidencia de mantenimiento
-  activo) y `@react-native-firebase/*` (18.9.0, puede requerir salto a v22+ con
-  el App Check re-verificado) — no tocados todavía en los pasos 1 y 2.
+- **Progreso — paso 3 (0.76.9 → 0.77.3), hecho — resuelve el warning:**
+  - `react-native` 0.76.9→0.77.3; `@react-native/babel-preset` y
+    `@react-native/metro-config` →0.77.3. NDK 26.1→**27.1.12297006**, Kotlin
+    1.9.25→2.0.21, AGP 8.6.0→**8.7.2** (pineado por el `@react-native/gradle-plugin`
+    de esta versión). `newArchEnabled` se mantuvo en `false`.
+  - `react-native-safe-area-context` 4.10.5→5.2.0 y `react-native-gesture-handler`
+    2.20.2→2.22.1 — ambos fallaban compilando contra la interfaz
+    `ViewManagerDelegate` cambiada en RN 0.77 ("Type argument is not within
+    its bounds", "overrides nothing").
+  - `react-native-reanimated` 3.16.7→**3.17.5** — la que trae el fix real de
+    alineación 16 KB (confirmado que 3.19.5 exige RN ≥78 y falla con
+    "Unsupported React Native version", así que no ir más allá de la serie
+    3.17.x/3.18.x mientras sigamos en RN 0.77).
+  - `react-native-screens` 3.37.0→**4.11.1** — el salto a la serie 4.x fue
+    necesario para la alineación 16 KB de `librnscreens.so`; hay un issue
+    abierto en el repo (cerrado "not planned") sobre que **32-bit**
+    (armeabi-v7a/x86) queda en 4 KB incluso en 4.x — no bloquea, ver nota de
+    verificación abajo.
+  - **Verificación real de alineación (no confiar solo en si aparece el
+    diálogo del SO):** el diálogo "This app isn't 16 KB compatible" dejó de
+    aparecer en pantalla, pero **eso no es prueba suficiente** — Android
+    parece no re-mostrarlo tras un primer dismiss en el mismo dispositivo,
+    aunque el problema siga sin resolver (pasó en los pasos 1 y 2: no
+    reapareció aunque los `.so` seguían en 4 KB). La prueba real es extraer
+    los `.so` del APK/AAB y mirar la alineación de los segmentos `LOAD` con
+    `llvm-readelf -l` (del NDK instalado, ruta
+    `<NDK>/toolchains/llvm/prebuilt/darwin-x86_64/bin/llvm-readelf`):
+    ```
+    unzip -o app-release.aab "base/lib/arm64-v8a/*.so" -d extracted
+    llvm-readelf -l extracted/base/lib/arm64-v8a/<lib>.so | awk '/^  LOAD/ {print $NF}'
+    ```
+    Confirmado en el AAB de release firmado: **todas** las `.so` en
+    `arm64-v8a` (la arquitectura real de dispositivos de 16 KB) quedan en
+    `0x4000` (16 KB) — `libhermes`, `libjsi`, `libreactnative`,
+    `libreanimated`, `librnscreens`, `libworklets`, etc. Solo `libconceal.so`
+    en `x86_64` (arquitectura de emulador, no de dispositivos reales) quedó
+    en 4 KB — sin impacto práctico.
+  - Validado igual que los pasos 1 y 2: build de debug y de **release**
+    (`bundleRelease`) exitosas, 42/42 tests, lint limpio, smoke test visual
+    en emulador con `wipe-data` (estado 100% limpio, para que la ausencia del
+    diálogo no fuera falso positivo).
+- **Pendiente aparte (no bloquea, no tocado en este upgrade):**
+  `react-native-sound` (0.11.2, sin evidencia de mantenimiento activo) y
+  `@react-native-firebase/*` (18.9.0) siguen sin revisar — compilaron y
+  funcionaron bien contra RN 0.77.3 tal como estaban, así que no fue
+  necesario tocarlos para resolver el 16 KB, pero conviene revisarlos en
+  algún momento por separado (ver riesgos ya documentados arriba).
 - **Referencia:** `android/build.gradle`, `android/settings.gradle`,
   `android/app/build.gradle`, `package.json`. Diffs oficiales en
   `github.com/react-native-community/rn-diff-purge` (usar tags `version/X.Y.Z`,
