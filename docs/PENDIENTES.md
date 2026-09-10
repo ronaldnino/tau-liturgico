@@ -85,7 +85,37 @@ queremos olvidar. Cada ítem indica **contexto**, **qué hacer**, **prioridad** 
 - **Referencia:** `functions/src/lectionary.js` (`fetchEvangelizoReadings`,
   `fetchFallbackReadings`) — el código de scraping vive ahí desde el ítem 1.
 
-### 5. `uses-feature` de cámara — verificar tras publicar
+### 5. Soporte de 16 KB memory page size (Google Play)
+- **Prioridad:** alta · **Riesgo:** alto (implica subir React Native de versión)
+- **Estado:** bloquea el release 1.0.4 — pausado hasta resolver esto.
+- **Contexto:** Al subir el AAB de 1.0.4 (versionCode 5) a Play Console apareció
+  el error "Your app does not support 16 KB memory page sizes" (con opción
+  "Proceed anyway", no es un bloqueo duro todavía). Es un requisito distinto al
+  del ítem de `targetSdk` (ver Hecho): Android 15+ soporta dispositivos con
+  tamaño de página de memoria de 16 KB, y las librerías nativas (`.so`) de la
+  app deben estar alineadas a ese tamaño.
+- **Causa raíz investigada:** varias piezas del stack están por debajo de la
+  versión mínima con soporte 16 KB:
+  - `react-native-reanimated` en `3.10.1` — el soporte llegó en `3.15.0+`.
+  - React Native en `0.74.5` — el soporte nativo llegó en `0.76`/`0.77`.
+  - NDK instalado: `26.1` y `27.1`; la alineación por defecto a 16 KB requiere
+    **r28+** (con NDK 27 hay que agregar flags de linker manualmente, y los
+    módulos nativos compilados vía CMake interno de RN no siempre los propagan).
+  - AGP fijado en `8.2.1` por `@react-native/gradle-plugin` de RN 0.74; se
+    recomienda `8.5.1+`.
+- **Qué hacer:** Planear un upgrade de React Native 0.74 → 0.76/0.77 (salto con
+  posibles *breaking changes*, requiere testing a fondo de toda la app),
+  actualizar `react-native-reanimated` a `3.15.0+`, y revisar el resto de
+  módulos nativos (`screens`, `svg`, `sound`, `tts`, `firebase`,
+  `gesture-handler`, etc.) por compatibilidad. No es un hotfix — necesita su
+  propia rama y plan de pruebas.
+- **Por qué no se hizo ya:** es un proyecto de upgrade mayor, no algo para
+  resolver junto con el fix de `targetSdk` (que sí era urgente y de bajo riesgo).
+- **Referencia:** `android/build.gradle` (`ndkVersion`, AGP vía
+  `node_modules/@react-native/gradle-plugin`), `package.json` (`react-native`,
+  `react-native-reanimated`).
+
+### 6. `uses-feature` de cámara — verificar tras publicar
 - **Prioridad:** baja · **Riesgo:** bajo
 - **Contexto:** En 1.0.2 se añadió
   `<uses-feature android:name="android.hardware.camera" android:required="false" />`
