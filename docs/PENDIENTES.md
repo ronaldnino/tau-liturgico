@@ -87,7 +87,10 @@ queremos olvidar. Cada ítem indica **contexto**, **qué hacer**, **prioridad** 
 
 ### 5. Soporte de 16 KB memory page size (Google Play)
 - **Prioridad:** alta · **Riesgo:** alto (implica subir React Native de versión)
-- **Estado:** bloquea el release 1.0.4 — pausado hasta resolver esto.
+- **Estado:** bloquea el release 1.0.4. En progreso, sobre `main` directamente
+  (sin rama aparte): completado el primer salto incremental **0.74.5 → 0.75.5**.
+  Todavía **no resuelve** el warning de 16 KB (llega recién en RN 0.77) — falta
+  seguir con 0.75→0.76→0.77.
 - **Contexto:** Al subir el AAB de 1.0.4 (versionCode 5) a Play Console apareció
   el error "Your app does not support 16 KB memory page sizes" (con opción
   "Proceed anyway", no es un bloqueo duro todavía). Es un requisito distinto al
@@ -111,9 +114,44 @@ queremos olvidar. Cada ítem indica **contexto**, **qué hacer**, **prioridad** 
   propia rama y plan de pruebas.
 - **Por qué no se hizo ya:** es un proyecto de upgrade mayor, no algo para
   resolver junto con el fix de `targetSdk` (que sí era urgente y de bajo riesgo).
-- **Referencia:** `android/build.gradle` (`ndkVersion`, AGP vía
-  `node_modules/@react-native/gradle-plugin`), `package.json` (`react-native`,
-  `react-native-reanimated`).
+- **Progreso — paso 1 (0.74.5 → 0.75.5), hecho:**
+  - `react-native` 0.74.5→0.75.5, `react` 18.2.0→18.3.1,
+    `react-test-renderer` →18.3.1, `@react-native/babel-preset` y
+    `@react-native/metro-config` →0.75.5.
+  - Nuevo mecanismo de autolinking (`autolinkLibrariesWithApp()` en
+    `android/app/build.gradle` + `ReactSettingsExtension` en
+    `android/settings.gradle`, reemplaza el `apply from: ... native_modules.gradle`
+    manual) — diff tomado de `rn-diff-purge` (tags `version/0.74.5`↔`version/0.75.5`).
+  - Kotlin 1.9.22→1.9.25, Gradle wrapper 8.6→8.8, se quitó
+    `android.enableJetifier=true` (ya no hace falta), `android:supportsRtl="true"`
+    en el manifest.
+  - **AGP subido a 8.6.0 explícito** (`android/build.gradle`): RN 0.75.5 trae
+    AGP 8.5.0 por defecto vía `@react-native/gradle-plugin`, pero una
+    dependencia transitiva (`androidx.core:core:1.16.0`, arrastrada por las
+    libs de abajo) exige AGP 8.6.0+.
+  - `react-native-reanimated` 3.10.1→3.15.5 — la 3.10.1 usaba APIs internas de
+    RN (`ReactViewBackgroundDrawable.getFullBorderRadius()`,
+    `measureLayoutRelativeToParent`, etc.) que RN 0.75 eliminó; error de
+    compilación confirmado empíricamente, no solo por investigación.
+  - `react-native-screens` 3.31.1→3.37.0 y `react-native-gesture-handler`
+    2.16.2→**2.20.2** (¡cuidado! probar primero con la última versión, 2.29.1,
+    falló con "Cannot access 'ViewManagerWithGeneratedInterface'" — es
+    demasiado nueva, apunta a RN ≥0.80; hay que usar una versión de gesture-handler
+    contemporánea a la versión de RN objetivo, no siempre la más reciente).
+  - Validado: `./gradlew :app:assembleDebug` compila, `npm test` (42/42) y
+    `npm run lint` (0 errores) pasan, app probada visualmente en emulador
+    Android (Onboarding con animaciones/checklist renderiza bien).
+- **Falta:** repetir el mismo proceso para 0.75→0.76 y 0.76→0.77 (mismo patrón:
+  diff de `rn-diff-purge`, bump de dependencias nativas, `assembleDebug` hasta
+  que compile, smoke test en emulador). Revisar particularmente
+  `react-native-sound` (0.11.2, sin evidencia de mantenimiento activo) y
+  `@react-native-firebase/*` (18.9.0, puede requerir salto a v22+ con el App
+  Check re-verificado) en pasos posteriores — no tocados todavía en este paso 1.
+- **Referencia:** `android/build.gradle`, `android/settings.gradle`,
+  `android/app/build.gradle`, `package.json`. Diffs oficiales en
+  `github.com/react-native-community/rn-diff-purge` (usar tags `version/X.Y.Z`,
+  comparar con `git diff` local — el `.diff` de comparación de GitHub entre
+  tags sin historia común muestra todo como archivo nuevo, no sirve tal cual).
 
 ### 6. `uses-feature` de cámara — verificar tras publicar
 - **Prioridad:** baja · **Riesgo:** bajo
