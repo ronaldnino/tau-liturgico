@@ -3,8 +3,22 @@
 
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.CAMERA" />
-    <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
-    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" android:maxSdkVersion="32" />
+
+    <!-- Sin permiso de galería: la foto de perfil se elige con el Photo Picker
+         del sistema (react-native-image-picker usa PickVisualMedia de
+         androidx.activity, que no requiere READ_MEDIA_IMAGES ni
+         READ_EXTERNAL_STORAGE). Declararlos sin usarlos disparaba la política
+         de Google Play "Use alternative system pickers for photos / videos". -->
+
+    <!-- react-native-fs declara WRITE_EXTERNAL_STORAGE en su manifest (y Android
+         infiere READ_EXTERNAL_STORAGE a partir de él), pero en esta app RNFS solo
+         escribe en el caché privado (CachesDirectoryPath), que nunca requiere este
+         permiso. Se elimina explícitamente del merge para no disparar la misma
+         política de Google Play. -->
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"
+                     tools:node="remove"/>
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"
+                     tools:node="remove"/>
 
     <!-- Declarar CAMERA hace que Android infiera hardware.camera como REQUERIDO,
          lo que oculta la app en Play para dispositivos sin cámara (tablets, etc.).

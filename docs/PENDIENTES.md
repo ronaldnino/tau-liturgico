@@ -84,6 +84,29 @@ queremos olvidar. Cada ítem indica **contexto**, **qué hacer**, **prioridad** 
 
 ## Hecho
 
+- **1.0.9 (versionCode 10)** — Política de Google Play "Use alternative
+  system pickers for photos / videos": al intentar publicar, Play bloqueó el
+  envío a revisión por esto (no era un warning informativo, impedía enviar).
+  Causa: `AndroidManifest.xml` declaraba `READ_MEDIA_IMAGES` y
+  `READ_EXTERNAL_STORAGE` (maxSdk 32) aunque `react-native-image-picker@8.2.1`
+  **ya usa el Photo Picker del sistema** internamente
+  (`androidx.activity.result.contract.ActivityResultContracts.PickVisualMedia`,
+  confirmado en el código fuente de la librería) — no necesita ningún permiso
+  de galería. Se quitó `READ_MEDIA_IMAGES` de nuestro manifest. También
+  apareció `WRITE_EXTERNAL_STORAGE`, declarado por `react-native-fs` en su
+  propio manifest (usado solo para el caché privado de la app —
+  `CachesDirectoryPath`—, que nunca requiere este permiso); se eliminó del
+  merge con `tools:node="remove"`. Un tercer permiso, `READ_EXTERNAL_STORAGE`
+  sin `maxSdkVersion`, seguía apareciendo en el manifest final sin que
+  ninguna fuente (ni node_modules ni AARs de Gradle) lo declarara
+  explícitamente — el reporte de fusión (`manifest-merger-blame-*-report.txt`)
+  no le atribuye origen, así que probablemente lo sintetiza el propio
+  tooling de Android; se eliminó también con `tools:node="remove"` sin
+  investigar más a fondo el porqué exacto. Verificado: `aapt2 dump
+  permissions` sobre el APK universal real ya no muestra ningún permiso de
+  `storage`/`media`; build, alineación 16 KB (`zipalign -P 16`, ambas
+  arquitecturas), 42/42 tests, lint y arranque en emulador sin crash, todos
+  verificados de nuevo tras el cambio.
 - **1.0.8 (versionCode 9)** — R8/ProGuard habilitado en release
   (`enableProguardInReleaseBuilds = true`). AAB de ~27.5 MB → ~25.5 MB (-7%).
   No hizo falta escribir reglas manuales: casi todos los módulos nativos ya
