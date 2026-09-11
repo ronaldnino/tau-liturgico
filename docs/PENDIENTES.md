@@ -85,149 +85,7 @@ queremos olvidar. Cada ítem indica **contexto**, **qué hacer**, **prioridad** 
 - **Referencia:** `functions/src/lectionary.js` (`fetchEvangelizoReadings`,
   `fetchFallbackReadings`) — el código de scraping vive ahí desde el ítem 1.
 
-### 5. Soporte de 16 KB memory page size (Google Play)
-- **Prioridad:** alta · **Riesgo:** alto (implica subir React Native de versión)
-- **Estado:** código resuelto y verificado localmente (upgrade completo
-  **0.74.5 → 0.75.5 → 0.76.9 → 0.77.3**, sobre `main` directamente sin rama
-  aparte). Falta el paso final: generar el AAB de release definitivo, subir
-  versión, y re-subir a Play Console para confirmar que el warning
-  desaparece también del lado de Google (la verificación con `llvm-readelf`
-  es la prueba técnica real, pero Play Console es quien decide si acepta el
-  release).
-- **Contexto:** Al subir el AAB de 1.0.4 (versionCode 5) a Play Console apareció
-  el error "Your app does not support 16 KB memory page sizes" (con opción
-  "Proceed anyway", no es un bloqueo duro todavía). Es un requisito distinto al
-  del ítem de `targetSdk` (ver Hecho): Android 15+ soporta dispositivos con
-  tamaño de página de memoria de 16 KB, y las librerías nativas (`.so`) de la
-  app deben estar alineadas a ese tamaño.
-- **Causa raíz investigada:** varias piezas del stack están por debajo de la
-  versión mínima con soporte 16 KB:
-  - `react-native-reanimated` en `3.10.1` — el soporte llegó en `3.15.0+`.
-  - React Native en `0.74.5` — el soporte nativo llegó en `0.76`/`0.77`.
-  - NDK instalado: `26.1` y `27.1`; la alineación por defecto a 16 KB requiere
-    **r28+** (con NDK 27 hay que agregar flags de linker manualmente, y los
-    módulos nativos compilados vía CMake interno de RN no siempre los propagan).
-  - AGP fijado en `8.2.1` por `@react-native/gradle-plugin` de RN 0.74; se
-    recomienda `8.5.1+`.
-- **Qué hacer:** Planear un upgrade de React Native 0.74 → 0.76/0.77 (salto con
-  posibles *breaking changes*, requiere testing a fondo de toda la app),
-  actualizar `react-native-reanimated` a `3.15.0+`, y revisar el resto de
-  módulos nativos (`screens`, `svg`, `sound`, `tts`, `firebase`,
-  `gesture-handler`, etc.) por compatibilidad. No es un hotfix — necesita su
-  propia rama y plan de pruebas.
-- **Por qué no se hizo ya:** es un proyecto de upgrade mayor, no algo para
-  resolver junto con el fix de `targetSdk` (que sí era urgente y de bajo riesgo).
-- **Progreso — paso 1 (0.74.5 → 0.75.5), hecho:**
-  - `react-native` 0.74.5→0.75.5, `react` 18.2.0→18.3.1,
-    `react-test-renderer` →18.3.1, `@react-native/babel-preset` y
-    `@react-native/metro-config` →0.75.5.
-  - Nuevo mecanismo de autolinking (`autolinkLibrariesWithApp()` en
-    `android/app/build.gradle` + `ReactSettingsExtension` en
-    `android/settings.gradle`, reemplaza el `apply from: ... native_modules.gradle`
-    manual) — diff tomado de `rn-diff-purge` (tags `version/0.74.5`↔`version/0.75.5`).
-  - Kotlin 1.9.22→1.9.25, Gradle wrapper 8.6→8.8, se quitó
-    `android.enableJetifier=true` (ya no hace falta), `android:supportsRtl="true"`
-    en el manifest.
-  - **AGP subido a 8.6.0 explícito** (`android/build.gradle`): RN 0.75.5 trae
-    AGP 8.5.0 por defecto vía `@react-native/gradle-plugin`, pero una
-    dependencia transitiva (`androidx.core:core:1.16.0`, arrastrada por las
-    libs de abajo) exige AGP 8.6.0+.
-  - `react-native-reanimated` 3.10.1→3.15.5 — la 3.10.1 usaba APIs internas de
-    RN (`ReactViewBackgroundDrawable.getFullBorderRadius()`,
-    `measureLayoutRelativeToParent`, etc.) que RN 0.75 eliminó; error de
-    compilación confirmado empíricamente, no solo por investigación.
-  - `react-native-screens` 3.31.1→3.37.0 y `react-native-gesture-handler`
-    2.16.2→**2.20.2** (¡cuidado! probar primero con la última versión, 2.29.1,
-    falló con "Cannot access 'ViewManagerWithGeneratedInterface'" — es
-    demasiado nueva, apunta a RN ≥0.80; hay que usar una versión de gesture-handler
-    contemporánea a la versión de RN objetivo, no siempre la más reciente).
-  - Validado: `./gradlew :app:assembleDebug` compila, `npm test` (42/42) y
-    `npm run lint` (0 errores) pasan, app probada visualmente en emulador
-    Android (Onboarding con animaciones/checklist renderiza bien).
-- **Progreso — paso 2 (0.75.5 → 0.76.9), hecho:**
-  - `react-native` 0.75.5→0.76.9; `@react-native/babel-preset` y
-    `@react-native/metro-config` →0.76.9; se agregaron como devDependencies
-    explícitas `@react-native-community/cli`, `cli-platform-android` y
-    `cli-platform-ios` en `15.0.1` (el template de esta versión ya no los trae
-    implícitos vía `react-native`).
-  - `SoLoader.init(this, false)` → `SoLoader.init(this, OpenSourceMergedSoMapping)`
-    en `MainApplication.kt` (API de SoLoader cambiada en 0.76, obligatorio con
-    o sin New Architecture).
-  - `minSdkVersion` 23→24 (default del template subió; Android 6.0 deja de
-    soportarse — impacto mínimo esperado en 2026).
-  - Gradle wrapper 8.8→8.10.2. AGP se mantuvo en `8.6.0` (coincide con lo que
-    pide el `@react-native/gradle-plugin` de esta versión, no hizo falta subirlo).
-  - **`newArchEnabled` se dejó deliberadamente en `false`**: el template de RN
-    0.76 lo pone en `true` por defecto, pero la New Architecture sigue opcional
-    hasta bien más adelante — migrarla es un proyecto aparte, no parte de este
-    upgrade incremental.
-  - `react-native-reanimated` 3.15.5→3.16.7 (otra vez API interna de RN
-    movida: `BorderRadiiDrawableUtils`, `NativeViewHierarchyManager.updateLayout`).
-  - `react-native-svg` 15.2.0→15.11.1 — `VirtualView.setPointerEvents` dejó de
-    poder hacer *override* de la firma heredada de `ReactViewGroup` en RN 0.76;
-    error de compilación (no solo warning) hasta actualizar.
-  - Validado igual que el paso 1: build, 42/42 tests, lint limpio, smoke test
-    visual en emulador (Onboarding).
-  - **Nota operativa:** tras cada `npm install` que cambia
-    `@react-native/metro-config`/`babel-preset`, hay que **reiniciar Metro**
-    (`lsof -ti:8081 | xargs kill -9` + `npx react-native start --reset-cache`)
-    — si no, Metro sigue sirviendo con el transform viejo y tira
-    `SyntaxError` en archivos core de RN (pasó con `EventEmitter.js` al
-    reusar el Metro del paso 1 sin reiniciarlo).
-- **Progreso — paso 3 (0.76.9 → 0.77.3), hecho — resuelve el warning:**
-  - `react-native` 0.76.9→0.77.3; `@react-native/babel-preset` y
-    `@react-native/metro-config` →0.77.3. NDK 26.1→**27.1.12297006**, Kotlin
-    1.9.25→2.0.21, AGP 8.6.0→**8.7.2** (pineado por el `@react-native/gradle-plugin`
-    de esta versión). `newArchEnabled` se mantuvo en `false`.
-  - `react-native-safe-area-context` 4.10.5→5.2.0 y `react-native-gesture-handler`
-    2.20.2→2.22.1 — ambos fallaban compilando contra la interfaz
-    `ViewManagerDelegate` cambiada en RN 0.77 ("Type argument is not within
-    its bounds", "overrides nothing").
-  - `react-native-reanimated` 3.16.7→**3.17.5** — la que trae el fix real de
-    alineación 16 KB (confirmado que 3.19.5 exige RN ≥78 y falla con
-    "Unsupported React Native version", así que no ir más allá de la serie
-    3.17.x/3.18.x mientras sigamos en RN 0.77).
-  - `react-native-screens` 3.37.0→**4.11.1** — el salto a la serie 4.x fue
-    necesario para la alineación 16 KB de `librnscreens.so`; hay un issue
-    abierto en el repo (cerrado "not planned") sobre que **32-bit**
-    (armeabi-v7a/x86) queda en 4 KB incluso en 4.x — no bloquea, ver nota de
-    verificación abajo.
-  - **Verificación real de alineación (no confiar solo en si aparece el
-    diálogo del SO):** el diálogo "This app isn't 16 KB compatible" dejó de
-    aparecer en pantalla, pero **eso no es prueba suficiente** — Android
-    parece no re-mostrarlo tras un primer dismiss en el mismo dispositivo,
-    aunque el problema siga sin resolver (pasó en los pasos 1 y 2: no
-    reapareció aunque los `.so` seguían en 4 KB). La prueba real es extraer
-    los `.so` del APK/AAB y mirar la alineación de los segmentos `LOAD` con
-    `llvm-readelf -l` (del NDK instalado, ruta
-    `<NDK>/toolchains/llvm/prebuilt/darwin-x86_64/bin/llvm-readelf`):
-    ```
-    unzip -o app-release.aab "base/lib/arm64-v8a/*.so" -d extracted
-    llvm-readelf -l extracted/base/lib/arm64-v8a/<lib>.so | awk '/^  LOAD/ {print $NF}'
-    ```
-    Confirmado en el AAB de release firmado: **todas** las `.so` en
-    `arm64-v8a` (la arquitectura real de dispositivos de 16 KB) quedan en
-    `0x4000` (16 KB) — `libhermes`, `libjsi`, `libreactnative`,
-    `libreanimated`, `librnscreens`, `libworklets`, etc. Solo `libconceal.so`
-    en `x86_64` (arquitectura de emulador, no de dispositivos reales) quedó
-    en 4 KB — sin impacto práctico.
-  - Validado igual que los pasos 1 y 2: build de debug y de **release**
-    (`bundleRelease`) exitosas, 42/42 tests, lint limpio, smoke test visual
-    en emulador con `wipe-data` (estado 100% limpio, para que la ausencia del
-    diálogo no fuera falso positivo).
-- **Pendiente aparte (no bloquea, no tocado en este upgrade):**
-  `react-native-sound` (0.11.2, sin evidencia de mantenimiento activo) y
-  `@react-native-firebase/*` (18.9.0) siguen sin revisar — compilaron y
-  funcionaron bien contra RN 0.77.3 tal como estaban, así que no fue
-  necesario tocarlos para resolver el 16 KB, pero conviene revisarlos en
-  algún momento por separado (ver riesgos ya documentados arriba).
-- **Referencia:** `android/build.gradle`, `android/settings.gradle`,
-  `android/app/build.gradle`, `package.json`. Diffs oficiales en
-  `github.com/react-native-community/rn-diff-purge` (usar tags `version/X.Y.Z`,
-  comparar con `git diff` local — el `.diff` de comparación de GitHub entre
-  tags sin historia común muestra todo como archivo nuevo, no sirve tal cual).
-
-### 6. `uses-feature` de cámara — verificar tras publicar
+### 5. `uses-feature` de cámara — verificar tras publicar
 - **Prioridad:** baja · **Riesgo:** bajo
 - **Contexto:** En 1.0.2 se añadió
   `<uses-feature android:name="android.hardware.camera" android:required="false" />`
@@ -239,6 +97,33 @@ queremos olvidar. Cada ítem indica **contexto**, **qué hacer**, **prioridad** 
 
 ## Hecho
 
+- **1.0.7 (versionCode 8)** — Soporte de 16 KB memory page size (Google
+  Play). Upgrade completo de React Native **0.74.5 → 0.75.5 → 0.76.9 →
+  0.77.3** (sobre `main` directamente, sin rama aparte), con bump de
+  módulos nativos incompatibles en cada paso: `reanimated` 3.10.1→3.17.5,
+  `screens` 3.31.1→4.11.1, `gesture-handler` 2.16.2→2.22.1, `svg`
+  15.2.0→15.11.1, `safe-area-context` 4.10.5→5.2.0. NDK 26.1→27.1.12297006,
+  AGP 8.2.1→8.7.2, Kotlin 1.9.22→2.0.21, Gradle 8.6→8.10.2.
+  **Causa raíz real** (no obvia): `react-native-keychain@8.2.0` traía
+  `libconceal.so` (cifrado de Facebook, abandonado) sin alinear a 16 KB en
+  `x86_64` — aunque **arm64-v8a ya pasaba limpio**, Play Console evalúa
+  *todas* las ABIs de 64 bits del bundle, así que el error seguía
+  apareciendo (versionCode 6 y 7, ambos consumidos/quemados sin poder
+  reintentarse — Play no permite reusar un `versionCode`, ni con error).
+  `react-native-keychain@10.0.0` eliminó Conceal por completo (usa Android
+  Keystore nativo); la API usada en `src/services/auth.js`
+  (`setGenericPassword`/`getGenericPassword`/`resetGenericPassword`) no
+  cambió. **Verificación que sí sirve** (el diálogo "This app isn't 16 KB
+  compatible" en el dispositivo NO es prueba suficiente — Android deja de
+  mostrarlo tras el primer *dismiss* aunque el problema siga sin resolver):
+  `llvm-readelf -l <NDK>/.../bin/llvm-readelf` sobre cada `.so`, y sobre
+  todo `zipalign -c -P 16 -v 4` (herramienta oficial de Android) corrido
+  contra los *splits* reales generados con `bundletool build-apks`
+  (`base-arm64_v8a.apk` y `base-x86_64.apk`, no el AAB crudo) — hay que
+  chequear **todas** las ABIs de 64 bits, no solo arm64. Detalle completo
+  del proceso (los 3 pasos del upgrade, versiones exactas, y la trampa del
+  `versionCode` quemado) en el historial de commits `2204597`..`0b1ac5b` y
+  en la sesión de Claude Code que lo resolvió.
 - **sin publicar** — Vigilia Pascual: verificado en vivo que ninguna fuente la
   sirve (dominicos redirige como un domingo; Vatican News responde con las
   lecturas del Sábado Santo *diurno*, una liturgia distinta, bajo la misma URL
