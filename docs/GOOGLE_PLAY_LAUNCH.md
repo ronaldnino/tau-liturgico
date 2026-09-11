@@ -157,6 +157,43 @@ Mejoras y correcciones:
 
 ---
 
+## Release name y Release notes (v1.0.6)
+
+**Versión:** versionName `1.0.6` · versionCode `7`
+
+**Release name:**
+```
+1.0.6 — Compatibilidad con Android 16
+```
+
+**Release notes (What's new):**
+```
+Actualización técnica para mantener la app al día con los últimos
+requisitos de Android y Google Play. No incluye cambios visibles en el
+uso diario de la app.
+
+• Compatibilidad con Android 16 y dispositivos de nueva generación.
+• Mejoras de estabilidad y rendimiento internas.
+```
+
+**Cambios técnicos incluidos:**
+- `targetSdkVersion` 35→36 (Android 16), requisito de Google Play para
+  seguir recibiendo actualizaciones.
+- Soporte de tamaño de página de memoria de 16 KB (requisito de Google
+  Play para dispositivos recientes) — requirió actualizar React Native
+  0.74.5→0.77.3 y varios módulos nativos (reanimated, screens,
+  gesture-handler, svg, safe-area-context). Verificado con `llvm-readelf`
+  y `zipalign -P 16` (herramientas oficiales de Android) sobre el split
+  real `arm64-v8a` del AAB firmado.
+- versionCode 6 (1.0.5) quedó descartado sin publicar: Play Console lo
+  consumió tras un intento de subida y no permite reutilizarlo, aunque el
+  binario en sí era correcto.
+- Sin cambios de UI, funcionalidad ni contenido — ver
+  [PENDIENTES.md ítem 5](PENDIENTES.md) para el detalle completo del
+  upgrade.
+
+---
+
 ## Declaraciones en App content
 
 ### Advertising ID
