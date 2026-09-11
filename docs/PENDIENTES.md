@@ -39,18 +39,13 @@ queremos olvidar. Cada ítem indica **contexto**, **qué hacer**, **prioridad** 
 - **Referencia:** `functions/`, `src/services/lectionary.js`, `firebase.json`,
   `scripts/sync-functions-shared.js`.
 
-### 2. Habilitar R8/ProGuard (minificación) en release
-- **Prioridad:** media · **Riesgo:** medio-alto
-- **Contexto:** `enableProguardInReleaseBuilds = false` en
-  `android/app/build.gradle`. El AAB pesa ~27 MB. Google Play avisa: "no
-  deobfuscation file" y que R8 reduce tamaño. La advertencia es informativa (no
-  ofuscamos), pero activar R8 reduciría tamaño y ofuscaría el código.
-- **Qué hacer:** Poner `minifyEnabled true`, afinar **reglas ProGuard** para los
-  módulos nativos (Firebase, reanimated, svg, sound, tts, keychain, image-picker…),
-  **probar a fondo** una build minificada, y subir el `mapping.txt` a Play Console
-  para deofuscar crashes.
-- **Por qué no se hizo aún:** sin reglas correctas la app puede crashear en
-  release; necesita su propia versión con pruebas, no un hotfix.
+### 2. `uses-feature` de cámara — verificar tras publicar
+- **Prioridad:** baja · **Riesgo:** bajo
+- **Contexto:** En 1.0.2 se añadió
+  `<uses-feature android:name="android.hardware.camera" android:required="false" />`
+  para que Play no oculte la app en dispositivos sin cámara.
+- **Qué hacer:** Tras publicar, confirmar en Play Console → *Dispositivos
+  compatibles* que el número de dispositivos no quedó restringido por la cámara.
 
 ### 3. Warnings de lint `react-native/no-inline-styles` (74)
 - **Prioridad:** baja · **Riesgo:** bajo
@@ -85,18 +80,31 @@ queremos olvidar. Cada ítem indica **contexto**, **qué hacer**, **prioridad** 
 - **Referencia:** `functions/src/lectionary.js` (`fetchEvangelizoReadings`,
   `fetchFallbackReadings`) — el código de scraping vive ahí desde el ítem 1.
 
-### 5. `uses-feature` de cámara — verificar tras publicar
-- **Prioridad:** baja · **Riesgo:** bajo
-- **Contexto:** En 1.0.2 se añadió
-  `<uses-feature android:name="android.hardware.camera" android:required="false" />`
-  para que Play no oculte la app en dispositivos sin cámara.
-- **Qué hacer:** Tras publicar, confirmar en Play Console → *Dispositivos
-  compatibles* que el número de dispositivos no quedó restringido por la cámara.
-
 ---
 
 ## Hecho
 
+- **1.0.8 (versionCode 9)** — R8/ProGuard habilitado en release
+  (`enableProguardInReleaseBuilds = true`). AAB de ~27.5 MB → ~25.5 MB (-7%).
+  No hizo falta escribir reglas manuales: casi todos los módulos nativos ya
+  traen sus propias reglas empaquetadas en el AAR (algunas como
+  `proguard.txt`, no `consumer-rules.pro` — R8/AGP las fusiona igual, con
+  cualquier nombre, automáticamente). El único bloqueo real fue memoria:
+  `org.gradle.jvmargs` en `android/gradle.properties` estaba en
+  `-Xmx2048m -XX:MaxMetaspaceSize=512m`, insuficiente para que R8 y las
+  tareas `lintVitalAnalyzeRelease` de varios módulos corran en paralelo sin
+  `OutOfMemoryError: Metaspace` — se subió a `-Xmx4096m -XX:MaxMetaspaceSize=1024m`.
+  **Probado de verdad en dispositivo** (no solo que compile): instalado el
+  APK release minificado en emulador, sin pantalla roja ni crash; flujo
+  completo de onboarding (SVG, Reanimated, gestos, mask-input) y **Firebase
+  Auth de punta a punta** (`signInWithPhoneNumber` → pantalla de OTP →
+  `confirm()` con código de prueba, error `auth/invalid-verification-code`
+  mostrado correctamente) funcionando sin problemas. Un solo warning
+  benigno en logcat (`RNInstallReferrerClient`/`NoSuchMethodException`,
+  capturado internamente por la librería, no crashea nada). `mapping.txt`
+  generado en `android/app/build/outputs/mapping/release/` — **hay que
+  subirlo a Play Console** junto con el AAB para poder deofuscar crashes
+  futuros.
 - **1.0.7 (versionCode 8)** — Soporte de 16 KB memory page size (Google
   Play). Upgrade completo de React Native **0.74.5 → 0.75.5 → 0.76.9 →
   0.77.3** (sobre `main` directamente, sin rama aparte), con bump de
