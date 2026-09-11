@@ -7,7 +7,8 @@
 | Package name | `org.tauliturgico` |
 | App name | Tau Litúrgico |
 | Version inicial | 1.0.0 (version code 1) |
-| Versión actual | 1.0.2 (version code 3) |
+| Versión publicada en Play | 1.0.3 (version code 4) |
+| Próxima versión a publicar | 1.0.9 (version code 10) |
 | AAB generado | `tau-liturgico.aab` |
 | Keystore | `el algun lugar secreto del mundo -> tau-liturgico-release.keystore` |
 | Key alias | `tau-liturgico` |
@@ -165,6 +166,89 @@ Mejoras y correcciones:
 ```
 1.0.7 — Compatibilidad con Android 16
 ```
+
+**Release notes (What's new):**
+```
+Actualización técnica para mantener la app al día con los últimos
+requisitos de Android y Google Play. No incluye cambios visibles en el
+uso diario de la app.
+
+• Compatibilidad con Android 16 y dispositivos de nueva generación.
+• Mejoras de estabilidad y rendimiento internas.
+```
+
+**Cambios técnicos incluidos:**
+- `targetSdkVersion` 35→36 (Android 16), requisito de Google Play para
+  seguir recibiendo actualizaciones.
+- Soporte de tamaño de página de memoria de 16 KB (requisito de Google
+  Play para dispositivos recientes) — requirió actualizar React Native
+  0.74.5→0.77.3, varios módulos nativos (reanimated, screens,
+  gesture-handler, svg, safe-area-context), y `react-native-keychain`
+  8→10 (la 8.x traía `libconceal.so` sin alinear en `x86_64`, la causa
+  real del error — arm64-v8a ya pasaba limpio desde antes). Verificado
+  con `llvm-readelf` y `zipalign -P 16` (herramientas oficiales de
+  Android) sobre los *splits* reales `arm64-v8a` **y** `x86_64` del AAB
+  firmado, generados con `bundletool`.
+- versionCode 6 (1.0.5) y 7 (1.0.6) quedaron descartados sin publicar:
+  Play Console los consumió tras cada intento de subida y no permite
+  reutilizarlos.
+- Sin cambios de UI, funcionalidad ni contenido — ver
+  [PENDIENTES.md](PENDIENTES.md) (sección Hecho) para el detalle completo
+  del upgrade.
+
+---
+
+## Release name y Release notes (v1.0.9) — versión a publicar
+
+**Versión:** versionName `1.0.9` · versionCode `10`
+
+**Release name:**
+```
+1.0.9 — Compatibilidad con Android 16
+```
+
+**Release notes (What's new):**
+```
+Actualización técnica para mantener la app al día con los últimos
+requisitos de Android y Google Play. No incluye cambios visibles en el
+uso diario de la app.
+
+• Compatibilidad con Android 16 y dispositivos de nueva generación.
+• Mejoras de estabilidad y rendimiento internas.
+```
+
+**Cambios técnicos incluidos** (acumulados desde la última versión
+publicada, 1.0.3/versionCode 4 — 1.0.4 a 1.0.8 nunca llegaron a publicarse):
+- `targetSdkVersion` 35→36 (Android 16), requisito de Google Play para
+  seguir recibiendo actualizaciones.
+- Soporte de tamaño de página de memoria de 16 KB — requirió actualizar
+  React Native 0.74.5→0.77.3, varios módulos nativos (reanimated, screens,
+  gesture-handler, svg, safe-area-context), y `react-native-keychain` 8→10
+  (traía `libconceal.so` sin alinear en `x86_64`, la causa real del error).
+  Verificado con `llvm-readelf` y `zipalign -P 16` sobre los *splits* reales
+  `arm64-v8a` y `x86_64` del AAB firmado.
+- R8/ProGuard habilitado en release (`enableProguardInReleaseBuilds = true`).
+  AAB ~27.5 MB → ~25.5 MB. Probado de punta a punta en dispositivo (no solo
+  que compile): Firebase Auth completo (SMS → OTP → confirm()) sin errores
+  bajo minificación. `mapping.txt` generado — **hay que subirlo a Play
+  Console junto con el AAB** para poder deofuscar crashes futuros.
+- Se quitaron los permisos `READ_MEDIA_IMAGES`, `READ_EXTERNAL_STORAGE` y
+  `WRITE_EXTERNAL_STORAGE` del manifest — ya no hacían falta
+  (`react-native-image-picker` usa el Photo Picker del sistema) y disparaban
+  la política de Play "Use alternative system pickers for photos / videos",
+  que bloqueaba el envío a revisión.
+- versionCode 6 (1.0.5), 7 (1.0.6), 8 (1.0.7) y 9 (1.0.8) quedaron
+  descartados sin publicar: Play Console los consumió en cada intento de
+  subida (por el error de 16 KB, luego por la política de fotos) y no
+  permite reutilizarlos.
+- Sin cambios de UI, funcionalidad ni contenido — ver
+  [PENDIENTES.md](PENDIENTES.md) (sección Hecho) para el detalle completo.
+
+---
+
+## Release name y Release notes (v1.0.7) — descartado, no publicado
+
+**Versión:** versionName `1.0.7` · versionCode `8`
 
 **Release notes (What's new):**
 ```
