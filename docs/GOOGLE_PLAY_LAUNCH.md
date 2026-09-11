@@ -157,13 +157,13 @@ Mejoras y correcciones:
 
 ---
 
-## Release name y Release notes (v1.0.6)
+## Release name y Release notes (v1.0.7)
 
-**Versión:** versionName `1.0.6` · versionCode `7`
+**Versión:** versionName `1.0.7` · versionCode `8`
 
 **Release name:**
 ```
-1.0.6 — Compatibilidad con Android 16
+1.0.7 — Compatibilidad con Android 16
 ```
 
 **Release notes (What's new):**
@@ -181,16 +181,19 @@ uso diario de la app.
   seguir recibiendo actualizaciones.
 - Soporte de tamaño de página de memoria de 16 KB (requisito de Google
   Play para dispositivos recientes) — requirió actualizar React Native
-  0.74.5→0.77.3 y varios módulos nativos (reanimated, screens,
-  gesture-handler, svg, safe-area-context). Verificado con `llvm-readelf`
-  y `zipalign -P 16` (herramientas oficiales de Android) sobre el split
-  real `arm64-v8a` del AAB firmado.
-- versionCode 6 (1.0.5) quedó descartado sin publicar: Play Console lo
-  consumió tras un intento de subida y no permite reutilizarlo, aunque el
-  binario en sí era correcto.
+  0.74.5→0.77.3, varios módulos nativos (reanimated, screens,
+  gesture-handler, svg, safe-area-context), y `react-native-keychain`
+  8→10 (la 8.x traía `libconceal.so` sin alinear en `x86_64`, la causa
+  real del error — arm64-v8a ya pasaba limpio desde antes). Verificado
+  con `llvm-readelf` y `zipalign -P 16` (herramientas oficiales de
+  Android) sobre los *splits* reales `arm64-v8a` **y** `x86_64` del AAB
+  firmado, generados con `bundletool`.
+- versionCode 6 (1.0.5) y 7 (1.0.6) quedaron descartados sin publicar:
+  Play Console los consumió tras cada intento de subida y no permite
+  reutilizarlos.
 - Sin cambios de UI, funcionalidad ni contenido — ver
-  [PENDIENTES.md ítem 5](PENDIENTES.md) para el detalle completo del
-  upgrade.
+  [PENDIENTES.md](PENDIENTES.md) (sección Hecho) para el detalle completo
+  del upgrade.
 
 ---
 
